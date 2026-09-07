@@ -23,14 +23,17 @@ Print["PROBE522 begin"];
 Needs["xAct`PSALTer`"];
 Print["PROBE522 psalter_version=", xAct`PSALTer`Private`$Version[[1]]];
 
-(* All six message templates, verbatim, and how many places each is referenced in
-   the installed tree. A count of 1 means "defined but never thrown". *)
+(* The six message templates, verbatim. They live on ParticleSpectrum, not on
+   ValidateLagrangian -- the validator is a private helper that throws them. *)
 Print["PROBE522 message_templates=",
-  ToString[Messages[xAct`PSALTer`Private`ValidateLagrangian], InputForm]];
+  ToString[Messages[ParticleSpectrum], InputForm]];
+
+(* How many places each name appears in the installed tree. One occurrence means
+   "defined but never thrown"; more than one means a throw site exists. *)
 Do[
-  Print["PROBE522 references_", m, "=",
+  Print["PROBE522 occurrences_", m, "=",
     Length@Flatten@Map[
-      FindList[#, "ValidateLagrangian::" <> m] &,
+      FindList[#, "ParticleSpectrum::" <> m] &,
       FileNames["*.m", xAct`PSALTer`Private`$InstallDirectory, Infinity]]],
   {m, {"Zero", "UnknownCoupling", "UnknownField", "NonQuadraticFields",
        "NonLinearCouplings", "ParityOdd"}}];
@@ -38,38 +41,55 @@ Do[
 DefConstantSymbol[Theta1];
 DefField[VectorField[-a], PrintAs -> "A"];
 
-(* ---- Leg A: a bare numeric coefficient. Expected outcome: silence. -------- *)
-Print["=== PROBE522A begin (bare numeric coefficient) ==="];
-bareMessages = {};
-bareCompleted = False;
-Block[{$MessageList = {}},
-  Check[
-    ParticleSpectrum[
-      -(1/4)*CD[-a]@VectorField[-b]*CD[a]@VectorField[b],
-      TheoryName -> "Probe522Bare", MaxLaurentDepth -> 1, ShowPropagator -> False];
-    bareCompleted = True,
-    bareCompleted = False];
-  bareMessages = $MessageList];
-Print["PROBE522A messages=", ToString[bareMessages, InputForm]];
-Print["PROBE522A silent=", bareMessages === {}];
-Print["PROBE522A completed=", bareCompleted];
-Print["PROBE522A wrote_mx=",
+(* ---- Leg A: bare numeric coefficient, against a declared-coupling control ---
+   The expected outcome is that PSALTer says NOTHING about the missing coupling.
+   That cannot be read off $MessageList directly here, because this install emits
+   a large ambient cascade on any theory whatsoever (#543). So run the same
+   operator twice -- once with a declared coupling, once with a bare number -- and
+   compare the message SETS. Any message the bare run raises that the control does
+   not is a complaint about the coefficient. ------------------------------------ *)
+Print["=== PROBE522A begin (bare numeric coefficient vs declared-coupling control) ==="];
+
+kinetic = CD[-a]@VectorField[-b]*CD[a]@VectorField[b];
+
+runLeg[tag_String, lagrangian_] := Module[{msgs = {}, completed = False},
+  Block[{$MessageList = {}},
+    Check[
+      ParticleSpectrum[lagrangian, TheoryName -> tag,
+                       MaxLaurentDepth -> 1, ShowPropagator -> False];
+      completed = True,
+      completed = False];
+    msgs = $MessageList];
+  <|"messages" -> DeleteDuplicates[ToString /@ msgs], "completed" -> completed|>];
+
+control = runLeg["Probe522Control", -(1/4)*Theta1*kinetic];
+bare    = runLeg["Probe522Bare",    -(1/4)*kinetic];
+
+Print["PROBE522A control_message_count=", Length[control["messages"]]];
+Print["PROBE522A bare_message_count=", Length[bare["messages"]]];
+Print["PROBE522A messages_only_in_bare=",
+  ToString[Complement[bare["messages"], control["messages"]], InputForm]];
+Print["PROBE522A no_extra_complaint_about_bare_coefficient=",
+  Complement[bare["messages"], control["messages"]] === {}];
+Print["PROBE522A control_completed=", control["completed"]];
+Print["PROBE522A bare_completed=", bare["completed"]];
+Print["PROBE522A bare_wrote_mx=",
   Length@FileNames["ParticleSpectrographProbe522Bare.mx", Directory[]]];
 Print["=== PROBE522A end ==="];
 
 (* ---- Leg B: a genuinely undeclared symbol. Expected: UnknownCoupling. ----- *)
 Print["=== PROBE522B begin (undeclared symbol) ==="];
+(* PSALTer aborts via Throw, so this must be caught or the script dies here. *)
 unknownMessages = {};
-Block[{$MessageList = {}},
-  Check[
+Catch[
+  Block[{$MessageList = {}},
     ParticleSpectrum[
-      -(1/4)*Global`UndeclaredCoupling*
-        CD[-a]@VectorField[-b]*CD[a]@VectorField[b],
-      TheoryName -> "Probe522Unknown", MaxLaurentDepth -> 1, ShowPropagator -> False],
-    Null];
-  unknownMessages = $MessageList];
+      -(1/4)*Global`UndeclaredCoupling*kinetic,
+      TheoryName -> "Probe522Unknown", MaxLaurentDepth -> 1, ShowPropagator -> False];
+    unknownMessages = $MessageList]];
 Print["PROBE522B messages=", ToString[unknownMessages, InputForm]];
-Print["PROBE522B silent=", unknownMessages === {}];
+Print["PROBE522B unknowncoupling_template=",
+  ToString[MessageName[ParticleSpectrum, "UnknownCoupling"], InputForm]];
 Print["=== PROBE522B end ==="];
 
 Print["PROBE522 done"];

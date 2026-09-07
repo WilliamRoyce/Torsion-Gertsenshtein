@@ -81,22 +81,39 @@ summary[e_] := <|
 
 truncate[s_String] := If[StringLength[s] > 400, StringTake[s, 400] <> "...", s];
 
+
 (* The three-valued core. Returns one of:
-     equal / different / undecided  -- plus the evidence for the last two. *)
-proveEqual[a_, b_] := Module[{d, nonzero},
+     equal / different / undecided  -- plus the evidence for the last two.
+
+   Positions are taken at exactly the ARRAY depth, not at leaf level. The
+   difference expression d = a - b shares the array structure of a and b, but its
+   scalar entries do not: descending into a Times or Plus yields positions that
+   are meaningless in a and b, and Extract then reports nonsense. *)
+proveEqual[a_, b_] := Module[{d, depth, nonzero, total},
   d = TimeConstrained[Simplify[a - b], $simplifySeconds, $TimedOut];
   If[d === $TimedOut,
     Return@<|"status" -> "undecided_timeout",
              "detail" -> "Simplify exceeded " <> ToString[$simplifySeconds] <> " s",
              "positions" -> {}|>];
-  (* PossibleZeroQ can itself decline to decide; treat anything it does not
-     certify as zero as non-zero evidence, and report it. *)
-  nonzero = Position[d, x_ /; !TrueQ[PossibleZeroQ[x]], {-1}, Heads -> False];
+
+  depth = ArrayDepth[d];
+  If[depth === 0,
+    (* scalar comparison *)
+    If[TrueQ[PossibleZeroQ[d]],
+      Return@<|"status" -> "equal_simplified", "detail" -> "", "positions" -> {}|>,
+      Return@<|"status" -> "different", "detail" -> "the two values differ",
+        "positions" -> {<|"position" -> {},
+          "ours" -> truncate@ToString[a, InputForm],
+          "oracle" -> truncate@ToString[b, InputForm],
+          "difference" -> truncate@ToString[d, InputForm]|>}|>]];
+
+  nonzero = Position[d, x_ /; !TrueQ[PossibleZeroQ[x]], {depth}, Heads -> False];
+  total = Times @@ Dimensions[d];
   If[nonzero === {},
     <|"status" -> "equal_simplified", "detail" -> "", "positions" -> {}|>,
     <|"status" -> "different",
-      "detail" -> ToString[Length[nonzero]] <> " of " <>
-                  ToString[Length[Flatten[{a}]]] <> " entries differ",
+      "detail" -> ToString[Length[nonzero]] <> " of " <> ToString[total] <>
+                  " entries differ",
       "positions" -> (Function[pos,
           <|"position" -> pos,
             "ours"       -> truncate@ToString[Extract[a, pos], InputForm],

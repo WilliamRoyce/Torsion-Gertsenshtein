@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# cspell:words notfname
 # ==============================================================================
 # Verification Script for Wolfram Engine, xAct/xCoba and PSALTer
 # ==============================================================================
@@ -389,7 +390,65 @@ check_psalter_deffield_smoke() {
     return 1
 }
 
-# Check 10: Run smoke test
+# Check 10: PSALTer's Wolfram Function Repository dependencies
+#
+# PSALTer calls ResourceFunction["PolynomialDegree"] and
+# ResourceFunction["LinearlyIndependent"] -- five call sites across
+# ValidateLagrangian, UnresolvedPoleRow and the source-constraint null-space code.
+# Neither is declared anywhere in its README or install instructions, and both are
+# downloaded from the Wolfram Function Repository on first use.
+#
+# When they cannot be fetched, PSALTer does not stop: it emits
+# ResourceObject::notfname and CONTINUES, so the NonQuadraticFields validation
+# silently never runs. That is a silent-degradation failure mode, which is why
+# this is checked at verification time rather than discovered mid-run.
+check_psalter_resources() {
+    log_info "Checking PSALTer's Wolfram Function Repository dependencies..."
+
+    if [[ "$PSALTER_PRESENT" != "true" ]]; then
+        log_info "  Skipped (PSALTer not installed)"
+        return 0
+    fi
+
+    local test_code='
+    Do[Print["RESOURCE=", r, " obtainable=",
+         Quiet@Check[Head[ResourceObject[r]] === ResourceObject, False]],
+       {r, {"PolynomialDegree", "LinearlyIndependent"}}];
+    Print["RESOURCE_CHECK_DONE"];
+    '
+    local tmp result
+    tmp=$(mktemp -d)
+    set +e
+    result=$(cd "$tmp" && timeout 300 wolframscript -code "$test_code" 2>&1)
+    set -e
+    rm -rf "$tmp"
+
+    if ! echo "$result" | grep -q "RESOURCE_CHECK_DONE"; then
+        log_warn "Could not check the resource functions"
+        return 0
+    fi
+
+    local missing=0 r
+    for r in PolynomialDegree LinearlyIndependent; do
+        if echo "$result" | grep -q "RESOURCE=${r} obtainable=True"; then
+            log_pass "  ResourceFunction ${r} available"
+        else
+            log_soft_fail "  ResourceFunction ${r} NOT available"
+            missing=1
+        fi
+    done
+
+    if [[ $missing -eq 1 ]]; then
+        log_info "  PSALTer downloads these from the Wolfram Function Repository on"
+        log_info "  first use and CONTINUES WITHOUT THEM, so results degrade silently."
+        log_info "  Needs network access to the Wolfram Cloud, or the resources"
+        log_info "  registered locally with ResourceRegister."
+        return 1
+    fi
+    return 0
+}
+
+# Check 11: Run smoke test
 check_smoke_test() {
     log_info "Running xAct/xCoba smoke test..."
     
@@ -466,6 +525,9 @@ main() {
     echo ""
     
     check_psalter_deffield_smoke || true
+    echo ""
+    
+    check_psalter_resources || true
     echo ""
     
     check_smoke_test || true

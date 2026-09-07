@@ -221,6 +221,27 @@ cross-check.
 > indistinguishable from "PSALTer is slow on PGT+EM", which is precisely the measurement
 > that run exists to make.
 >
+> **Extended (I-526 implementation, 2026-09-07).** Two corrections to the
+> amendment above, both from the live install.
+>
+> **(a) The exposure starts at `DefField`, not at the spectrograph.** `DefField`
+> calls `SummariseField` (`Sources/DefField.m:91`), which exports a
+> `FieldKinematics<Field>.pdf` through the front end
+> (`Sources/DefField/SummariseField.m:85`), unguarded. So `ParticleSpectrographCTEG.m`
+> would hang at **line 7 of 10**, seconds in — not hours later. Good news, in that
+> it fails fast; but the variable is needed far more broadly than "before running
+> `ParticleSpectrum`".
+>
+> **(b) `DISPLAY` is not the cause.** The cause is that no Qt *platform plugin*
+> could be initialized: `offscreen` was the only one with all its shared libraries
+> present (`xcb` is missing five, `wayland-egl` was missing `libwayland-egl1`).
+> Proved by forcing `QT_QPA_PLATFORM=xcb`, which reproduces the abort-then-block
+> exactly. With the libraries present the same `DISPLAY=:27` works in ~1.2 s.
+> Note the optional Inkscape step installs `libwayland-egl1` and so fixes this by
+> side effect — luck, not a guarantee; keep setting the variable.
+>
+> Measurements: `stage1_measurements.md` §2.3–2.4.
+
 > **Where the export lives:** in the scripts (`install-psalter.sh`, the Tier-1 gate script,
 > any PSALTer runner), *not* in `devcontainer.json` — a container-wide setting would
 > override a display other processes may use, and would need a rebuild to take effect, so
@@ -419,6 +440,20 @@ the structure-harvesting pattern is modeled on `SupplementalMaterials-2607`
 `WolframLanguage/ParticleSpectroscopy/JuliaExport.m`, and that the coefficient-tensor and
 explicit-label export exist nowhere upstream.
 
+> **⚠ Amendment (I-526 live probe, 2026-09-07 — PSALTer `bb45adb0`). The
+> six-item list below is WRONG and must become eight.** It omits
+> `$LocalWaveOperator` and `$LocalPropagator`, on two implicit justifications that
+> both fail on the live install:
+>
+> | test | result |
+> |---|---|
+> | `assoc[WaveOperator] === $LocalWaveOperator` | **False** — not redundant; omitting it discards information |
+> | `$LocalPropagator` populated under `ShowPropagator -> False` | **True** (35 leaves) — not display-only, and not suppressed |
+>
+> Measured with the propagator display both on and off, identically. The exporter
+> must read **all eight** globals named in §0.4. Evidence and transcript:
+> `stage1_measurements.md` §7; tracked on #523/#527.
+
 **Input surface** (§0.4): the theory association (`<Name>@WaveOperator`,
 `@PseudoDeterminant`) plus the `xAct`PSALTer`Private`` globals `$LocalSourceConstraints`,
 `$LocalMasslessSpectrum`, `$LocalSpectrum`, `$LocalUnresolvedPoles`,
@@ -495,11 +530,22 @@ must be reported for what it is.
 
 - **Subject:** the roster-conformant PGT+EM theory — `theory_spectrum.toml`, EH + `α₁I1 +
   α₂I2 + α₃I3` + `cF·F²`, **no b5** — generated end to end by our own branch.
-- **Instrumentation:** `AbsoluteTiming` around the whole call plus timestamped checkpoints
+**Instrumentation:** `AbsoluteTiming` around the whole call plus timestamped checkpoints
   at PSALTer's own stage boundaries (`ConstructWaveOperator`, `ConstructSourceConstraints`,
   `ConstructSaturatedPropagator`, `ConstructMassiveAnalysis`, `ConstructMasslessAnalysis`,
   `ConstructUnitarityConditions`, `ConstructSpectrograph`). Partial timings localize the
   cost even if the run never finishes, which is why they matter more than the total.
+
+> **⚠ Amendment (I-526, 2026-09-07 — PSALTer `bb45adb0`).** The timestamped
+> checkpoints described here **do not need to be built.** PSALTer already emits a
+> stage trace: every function defined through its `StackSetDelayed` wrapper shells
+> out an `echo` naming itself on entry whenever there is no notebook front end
+> (`ConstructSpectrograph/CLICallStack.m:8-11`). A plain `wolframscript -file` run
+> therefore prints one line per function entry, covering all seven `Construct*`
+> stages. The Tier-1 gate timestamps that stream
+> (`scripts/psalter/stamp_lines.py`) and extracts stage boundaries afterwards, so
+> the run stays byte-for-byte unmodified while still producing a trace — 18,436
+> stage events across 138 functions on CTEG. See `stage1_measurements.md` §4.2.
 - **Scheduling:** background, engine-idle guard first, nothing else touching Wolfram.
 - **Ceiling:** review at ~1 h and ~8 h; hard abort at **24 h**. If it does not terminate,
   report "did not terminate within 24 h" plainly with the checkpoint trace. Do not work
@@ -550,7 +596,7 @@ belong in `scripts/psalter/` wrappers, outside the glob. Python tests skip clean
 
 | risk | mitigation |
 | --- | --- |
-| ~~`UsingFrontEnd@Export` fails headless~~ **it HANGS headless** | **Resolved 2026-09-06 (I-526):** set `QT_QPA_PLATFORM=offscreen` — export then completes in ~4 s. `DISPLAY` is set in this container, so Qt blocks trying to use it. **Do not guard the export**; the guard would delete a working capability, and a hang (unlike a failure) consumes the single-license lane indefinitely. See the §0.6 amendment |
+| ~~`UsingFrontEnd@Export` fails headless~~ **it HANGS headless, from `DefField` onward** | **Resolved 2026-09-07 (I-526):** set `QT_QPA_PLATFORM=offscreen`; the export then completes in ~4 s. Cause is that no Qt *platform plugin* could be initialized — `offscreen` was the only one with all its libraries present — **not** that `DISPLAY` is set, which was the first guess and is wrong. Exposure begins at `DefField`, not at the spectrograph. **Do not guard the export**; the guard would delete a working capability, and a hang (unlike a failure) consumes the single-license lane indefinitely. See the §0.6 amendments and `stage1_measurements.md` §2.3 |
 | private-symbol churn in PSALTer | pin the commit, record it in every export, and let the fixture tests fail loudly on drift (§0.4) |
 | single-session linearization proves awkward for our field content | documented two-session fallback (§0.5); last resort, hand-derive the (small) quadratic Lagrangian once and automate only the spectroscopy — report the compromise rather than hiding it |
 | `ParticleSpectrum` does not terminate on PGT+EM | report plainly with checkpoints; no workaround (§6) |
