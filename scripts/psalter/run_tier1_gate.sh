@@ -266,6 +266,25 @@ EOF
 }
 
 run_diff() {
+    # Refuse rather than clobber. --diff-only re-runs the comparison and REWRITES
+    # tier1_diff.json in the target directory, so pointing it at a directory that
+    # has the verdict but not the .mx it was derived from would replace a real
+    # result with an "ours_unreadable" failure artifact -- destroying the evidence
+    # it was invoked to check. That is exactly the shape of the committed evidence
+    # under docs/cosmology/evidence/, where the .mx is deliberately excluded.
+    local ours="${RUN_DIR}/ParticleSpectrograph${THEORY}.mx"
+    if [[ ! -f "$ours" ]]; then
+        log_error "No ParticleSpectrograph${THEORY}.mx in ${RUN_DIR}"
+        log_error "  --diff-only recomputes the verdict, so it needs the run's own .mx."
+        if [[ -f "${RUN_DIR}/tier1_diff.json" ]]; then
+            log_info "  That directory already holds a verdict. To read it back without"
+            log_info "  Wolfram and without overwriting anything:"
+            log_info "    python3 scripts/psalter/summarize_diff.py ${RUN_DIR}/tier1_diff.json"
+        fi
+        log_info "  To recompute from scratch (~7 min, occupies the lane): run with no flags."
+        exit 1
+    fi
+
     require_engine_idle
     log_step "Comparing against the oracle"
     set +e

@@ -25,9 +25,24 @@ whose license position is covered by the note on #495.
 
 ## Reproducing
 
-- **Re-verify from these artifacts**, without spending the single-license Wolfram lane:
-  `scripts/psalter/run_tier1_gate.sh --diff-only`
-- **Regenerate from scratch** (~7 min, occupies the lane): the same script with no flag.
+- **Read the verdict back from these artifacts** — no Wolfram, no lane, nothing written:
+
+  ```bash
+  python3 scripts/psalter/summarize_diff.py \
+      docs/cosmology/evidence/tier1-20260907/tier1_diff.json
+  ```
+
+  It re-derives the summary and the exit code (0 only for `match`) from the committed
+  JSON, so it is the right command for anyone checking the recorded result.
+
+- **Recompute the comparison** from the two `.mx` files: `run_tier1_gate.sh --diff-only
+  <run-dir>`. This needs the run's own `ParticleSpectrographCTEG.mx`, which is
+  **deliberately not committed here**, so point it at a `third_party/psalter_runs/`
+  directory — not at this one. Given a directory without the `.mx` the script now
+  refuses and says so; it used to overwrite `tier1_diff.json` with an
+  `ours_unreadable` artifact, i.e. destroy the very evidence it was asked to check.
+
+- **Regenerate from scratch** (~7 min, occupies the lane): the same script with no flags.
 
 ## What the verdict says
 
