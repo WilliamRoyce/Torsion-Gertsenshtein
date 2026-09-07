@@ -210,6 +210,53 @@ agrees exactly and the first divergence is a `1/0` in the inverse path, which fi
 a behavioral change between releases. Testing it needs a 14.2 engine — an
 environment decision, not one #526 can settle.
 
+### 4.4a Does the failure spare the primary algorithm? Checked — no
+
+The natural narrowing is that the broken stage is the one the design already
+demotes. `spectrum_design.md` §5 makes the Schur-complement criterion primary
+precisely because it "does not involve any inversion of the wave operator nor the
+computation of residues of the propagator at massive poles", and instructs that
+the residue route be implemented "**never as a second production path**". Our
+`1/0` is in `ConstructSaturatedPropagator`, which feeds the residue route. And the
+Schur route's main input — the sector coefficient matrices — is exactly the
+`WaveOperator` that came back bit-exact.
+
+**But the Schur route has a second input, and it is also broken.** §5's caveat:
+`O_LL` must be invertible, so gauge modes are removed first. Those come from
+`ConstructSourceConstraints`, which ran at +299 s, *before* the first `Power::infy`
+at +321 s — encouraging, and wrong. Measured by replaying the CTEG Lagrangian
+without its trailing `Quit[]` and inspecting the private globals:
+
+```
+$LocalSourceConstraints   head=List  dims={0}    leaves=1     <- EMPTY
+$LocalWaveOperator        head=List  dims={6,3}  leaves=438
+$LocalPropagator          head=List  dims={6,3}  leaves=227
+$LocalSpectrum            head=List  dims={6}    leaves=713
+$LocalMasslessSpectrum    head=List  dims={6}    leaves=46
+$LocalUnresolvedPoles     head=List  dims={8}    leaves=24
+$LocalSummaryOfTheory     head=List  dims={2}    leaves=664
+$LocalOverallUnitarity    head=Text  dims={1}    leaves=2
+```
+
+**`$LocalSourceConstraints` is `{}` — zero rows.** CTEG is the 21-generator
+formulation (§0.3, §3), and §3 measures the gauge-generator count as exactly the
+number of source-constraint rows. Zero is not a plausible answer for it.
+
+There is no oracle for this key — the committed `.mx` carries only `WaveOperator`
+and `PseudoDeterminant` — so this is measured against a *published count* rather
+than a committed artifact, and it is weaker evidence than the Tier-1 diff. It is
+nonetheless the expected value being 21 and the observed value being 0.
+
+**Conclusion: the blast radius is not confined to the residue path.** The Schur
+route's gauge-mode removal is degraded too, so #543 must be resolved before either
+criterion can be trusted on this install. Recorded so the narrowing is not carried
+forward as a partial certification.
+
+**A limit on Tier 1 worth stating plainly:** the oracle contains two keys, so a
+Tier-1 *pass* would certify the wave operator and the pseudo-determinants and
+nothing else — not the source constraints, the spectrum, or the unitarity
+conditions. Those need Tier 2/3, which is why §3 calls Tier 2 the physics gate.
+
 ### 4.5 A separate defect found on the way
 
 `PolynomialDegree` and `LinearlyIndependent` are downloaded from the Wolfram
@@ -423,9 +470,12 @@ Things found here that belong to someone else:
 3. **PSALTer's two undocumented Wolfram Function Repository dependencies** are worth
    carrying back to the author (D6 relationship): they fail silently and disable
    validation the design relies on.
-4. **`tests_cosmo/` has no `per-file-ignores` entry in ruff** while `tests/` does, so
-   the new suite is linted strictly. That may be intentional; `pyproject.toml`
-   belongs to I-524, so it was not changed.
+4. ~~`tests_cosmo/` has no `per-file-ignores` entry in ruff~~ — **not a gap; do not
+   "fix" it.** Confirmed deliberate: `repo_reshape.md` §8 requires the new tree to
+   start without a blanket, and I-524 deleted the entry cloned from `tests/`. New
+   tests are meant to be linted strictly. The right response to a `D103` there is a
+   docstring, not a per-file ignore. Recorded here because the asymmetry with
+   `tests/` looks like an oversight and will keep being reported as one.
 5. **`#541`** — the pre-existing flaky activation check, fixed here.
 6. **`#495`** — the two committed `.wxf` fixtures are flagged for the release-time
    license review.
