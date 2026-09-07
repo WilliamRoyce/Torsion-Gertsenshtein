@@ -12,6 +12,15 @@
 # explicit); redistributing them from this repository is not. So we commit the
 # route, not the payload.
 #
+# ONE DELIBERATE EXCEPTION (#526): the two small spectrograph exports fetched
+# below, ParticleSpectrograph{VectorTheory,A23Theory}.wxf, are also committed
+# under tests_cosmo/fixtures/psalter/. They are data *outputs* of a computation
+# rather than program source, and committing them is what lets the Stage-1 reader
+# be tested with no Wolfram install at all. The reasoning, and the fact that it is
+# a position rather than a settled conclusion, are recorded in that directory's
+# PROVENANCE.md and flagged on #495 for the release-time review. Nothing else here
+# is committed.
+#
 # Usage:
 #   bash scripts/research/psalter_stage1/fetch_reference_sources.sh [OUTPUT_DIR]
 #
@@ -98,3 +107,5 @@ fetch "${SM7}/WolframLanguage/ParticleSpectrographA23Theory.wxf" \
 
 log "Done. Sources in ${OUT_DIR}"
 log "These are GPL-3.0-or-later: read and adapt with provenance, do not commit verbatim."
+log "One deliberate exception: the two small .wxf exports are committed under"
+log "tests_cosmo/fixtures/psalter/ -- see that directory's PROVENANCE.md (#526)."

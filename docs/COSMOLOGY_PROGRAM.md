@@ -595,13 +595,42 @@ Status: `drafted → dispatched → reported → merged`.
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | I-524 — packaging, extras, CI lane | #524 | — | `pyproject.toml`, `.github/`, `tidalcosmo/__init__.py`, `tidalcosmo/cli/`, `cspell.json` | `cosmo/i524-packaging` | **merged** ✅ CI 34051208887 green on the merged SHA: 2885 passed, 39 skipped |
 | 0 | I-525 — freeze the legacy oracle | #525 | — | `scripts/oracles/`, `tests_cosmo/data/` | `cosmo/i525-oracles` | **merged** ✅ gate re-run independently: 185 fixtures current, regeneration byte-identical |
-| 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/install-psalter.sh`, `scripts/verify-wolfram-setup.sh`, `tests_cosmo/fixtures/` | — | drafted |
+| 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/{install-psalter.sh,verify-wolfram-setup.sh,psalter/}`, `tests_cosmo/fixtures/`, `.gitattributes` | `cosmo/i526-psalter` | **merged** ⚠️ install works and all three probes answered; **Tier-1 reports MISMATCH — the gate working, not failing** (#543). Wolfram lane now free |
 | 1 | I-532 — CAMB seam, background protocol, flag schema | #532 | — | `tidalcosmo/{background,spectator,validity}/` | — | planned |
 | 1 | I-503 — per-operator dispersion + zero-mode scope | #503 | — | `research/lagrangian_enumeration/`, `docs/` | — | planned |
 | 1 | I-S1A — Stage-1 Python side | #527 | — | `tidalcosmo/{config,derive}/` (Python only), `tidalcosmo/spectrum/` | — | planned |
 | 2 | I-S1B — Stage-1 Wolfram side + cost run | #495 | **yes** | `tidalcosmo/derive/wolfram/` | — | outline |
 | 2 | M1b — Cobaya Theory + ΛCDM posterior | — | — | `tidalcosmo/{spectator,presets,likelihoods}/` | — | outline |
 | 2 | M2/O1 — CAMB fork re-apply | #498 | — | fork repo + `tidalcosmo/background/` | — | outline |
+
+### Decision on #543 — the Tier-1 mismatch (orchestrator, 2026-09-07)
+
+**The gate stays as written and the install stays uncertified.** A gate whose whole
+justification is *"a mismatch can only be the install"* is not relaxed the first time it
+reports one.
+
+**What the result actually certifies, which is more than it appears.** `WaveOperator` is
+**bit-exact** — 3 sectors, 303 leaves — so field declaration, decomposition and
+wave-operator construction are demonstrably correct. **That is precisely what the primary
+algorithm consumes**: the Schur-complement criterion (`spectrum_design.md` §5) "does not
+involve any inversion of the wave operator nor the computation of residues of the propagator
+at massive poles". The failure is a `1/0` inside `ConstructSaturatedPropagator`, which feeds
+the **residue route** — the path §5 designates as cross-check and states must "never [be] a
+second production path". So the broken half is the half we had already decided is secondary.
+This narrows the blast radius; it does **not** certify the install.
+
+**Next step is the supervisor, not an engine install.** The leading hypothesis is Wolfram
+14.2 (the oracle's `.mx` header) versus 14.3 (ours), and testing it needs a 14.2 engine.
+Before spending that, ask **Barker** — it is his code, he generated the oracle under 14.2,
+and he can likely settle it in a sentence. Bundled with the two undocumented Function
+Repository dependencies that fail silently (#542) into one D6 conversation on **11
+September**. Only if that is inconclusive is a 14.2 engine worth installing.
+
+**Wave 1 is not blocked.** The Stage-1 Python handoff (I-S1A) tests its reader against the
+**committed upstream `.wxf` fixtures**, which exist precisely so it "can be tested without
+Wolfram installed" (`PROVENANCE.md`). #543 blocks **I-S1B** — the Wolfram-lane half, Wave 2
+— which is where our *own* exports must match. Verified against the design rather than
+assumed.
 
 **Deferred, same class — legacy on a deletion path, record the decision rather than fix the
 code:** #533 (retire the drop rows), #537 (delete the boundary test at M7), #540 (the

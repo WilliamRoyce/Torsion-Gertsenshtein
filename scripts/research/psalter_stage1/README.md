@@ -34,3 +34,19 @@ bash scripts/research/psalter_stage1/fetch_reference_sources.sh
 downloads into `third_party/psalter_reference/` (gitignored) at pinned revisions —
 PSALTer `bb45adb0` (v2.0.2), plus the specific files from `SupplementalMaterials-2506b`
 (the TorC/CTEG companion) and `-2607` (numerical polology) that the study analyses.
+
+### The one exception to that rule
+
+`tests_cosmo/fixtures/psalter/` commits two of the files this script fetches:
+`ParticleSpectrograph{VectorTheory,A23Theory}.wxf`, 692 B and 2,874 B. They are
+data *outputs* of a computation rather than program source, and committing them is
+what lets the Stage-1 reader be tested **without a Wolfram install** — the property
+that makes them worth having, since everything else in the PSALTer chain needs an
+engine and the single-license lane.
+
+That is a position, not a settled conclusion, and it is flagged on #495 for the
+release-time license review regardless. The reasoning, the pinned revision, the
+digests and the known defects in that data are in
+`tests_cosmo/fixtures/psalter/PROVENANCE.md`. Nothing else is committed: PSALTer
+itself, the supplemental sources and the Tier-1 oracle all stay in gitignored
+`third_party/`.

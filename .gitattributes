@@ -28,6 +28,16 @@
 # Documentation
 *.rst text eol=lf
 
+# Wolfram binary serializations -- never line-ending-normalized.
+# These carry raw length bytes that can coincide with CR/LF, so leaving them to
+# git's text=auto heuristic makes their integrity a property of which byte values
+# happen to occur. The committed PSALTer fixtures contain lone CR bytes and no
+# NUL, so the heuristic classifies them as TEXT today; they survive only because
+# they contain no CRLF pairs. Their sha256 digests are the gate in
+# tests_cosmo/fixtures/psalter/PROVENANCE.md, so make it deterministic.
+*.wxf binary
+*.mx binary
+
 # Binary files
 *.png binary
 *.jpg binary

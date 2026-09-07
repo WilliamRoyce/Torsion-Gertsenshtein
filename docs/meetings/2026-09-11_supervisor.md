@@ -117,6 +117,31 @@ validator as load-bearing for correctness.
 
 ---
 
+## 3b. For Wolfgang — two PSALTer findings from installing v2.0.2 (`bb45adb0`)
+
+**The install reproduces your `CTEG` wave operator bit-exactly but not the pseudo-
+determinants.** Running `ParticleSpectrographCTEG.m` unmodified and diffing against the
+committed `.mx`: `WaveOperator` matches exactly (3 sectors, 303 leaves), while
+`PseudoDeterminant` comes back all zeros. The trace localizes it to a `Power::infy`
+(division by zero) at +321 s inside `ConstructSaturatedPropagator`, which becomes
+`0·ComplexInfinity` → `Indeterminate` and zeroes the determinants.
+
+Ruled out by test rather than argument: the two missing Function Repository dependencies
+(supplied locally — identical failure), subkernel availability, and headless graphics.
+**Our leading hypothesis is the engine version** — your `.mx` header decodes to **14.2** and
+we run **14.3**, and everything symbolic agrees up to the point of the inverse.
+
+**Question:** does that ring true, and is 14.2 what you'd expect to be required? Testing it
+our end means installing an older engine, which we would rather not do speculatively.
+
+**Second, smaller:** PSALTer calls `ResourceFunction["PolynomialDegree"]` and
+`ResourceFunction["LinearlyIndependent"]` at five sites, and neither can be fetched in our
+environment — **they fail silently**, so `NonQuadraticFields` validation is inert here as a
+side effect. Worth knowing as an undocumented dependency, since a user without Function
+Repository access loses a validator without being told.
+
+---
+
 ## 4. The weakest link in the Gertsenshtein rung — the primordial magnetic field
 
 O3 cannot be posed without an assumed background B-field, since the mixing is *linear* in
