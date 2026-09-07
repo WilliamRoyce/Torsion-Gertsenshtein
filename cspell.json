@@ -1224,7 +1224,8 @@
     "examples/data/**/*.json",
     "examples/**/*.wl",
     "**/*.wxf",
-    "**/*.mx"
+    "**/*.mx",
+    "docs/cosmology/evidence/**"
   ],
   "noConfigSearch": true
 }
