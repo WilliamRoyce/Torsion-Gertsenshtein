@@ -513,6 +513,19 @@ rules → the **flaw protocol** → the report-back format.
   says "skipped by default" or "enforced", find the mechanism — `--collect-only`, the test,
   the config — before reasoning from it. Three places asserted a publication lane that
   nothing implements (#540).
+- **A verification command must not write into what it verifies.** Distinct from a vacuous
+  gate, and it fails more quietly: the gate works correctly, it just writes its answer over
+  the question. Found the hard way — the committed Tier-1 evidence shipped with a README
+  telling the reader to re-verify with `--diff-only`, which *recomputes* the verdict and
+  **rewrites** `tier1_diff.json`. With the `.mx` deliberately excluded from the commit, the
+  documented command could never have succeeded, and it failed **destructively**: `mismatch`
+  became `ours_unreadable`, still well-formed JSON, so nothing announced it. Anyone checking
+  the recorded result before the supervisor meeting would have silently replaced it with an
+  artifact reading "the gate could not run".
+  **So:** the documented way to read back a recorded result is a **read-only** path
+  (`summarize_diff.py`), and any recompute path **refuses** when its inputs are absent
+  rather than producing a failure artifact in their place. Probe both — refusal *and*
+  non-destruction — the same way a gate is probed failing.
 - **Any guard you add carries its expiry.** When you write a test, assertion, lint rule or
   CI gate, ask in the same breath *what future change makes this wrong rather than merely
   unnecessary?* If there is one, record it **both** where the guard lives and in the row of
