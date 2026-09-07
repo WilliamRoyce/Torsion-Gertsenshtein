@@ -488,6 +488,24 @@ rules → the **flaw protocol** → the report-back format.
   per wave.
 - **Stay inside your owned paths** (listed in the header). Two sessions writing the same
   directory is the one collision a worktree does not prevent.
+- **Assertions get verified before they land; hypotheses do not have to be.** The
+  distinction is not whether you checked before speaking — it is whether the unchecked
+  thing was framed as provisional or as settled. A hypothesis with its test named beside it
+  costs one command when wrong. An unverified claim written into an **instruction site**, or
+  **acted on**, costs whoever follows it. Two entry points, one rule:
+  1. **Writing it into a document another session is told to follow** makes it an assertion.
+     Verify first. (Wave 0: an enumeration glob shipped in a prompt produced 45 pairs where
+     the same paragraph claimed 46; a boundary test shipped into the repo inverts into a
+     blocker at M7 — #537.)
+  2. **Acting on it** makes it an assertion too. (Wave 0: a confirmation run was killed on
+     the unchecked belief that a delegate was duplicating work; it was finishing an
+     hour-old comparison.)
+
+  Corollary already stated in `feedback_gate_not_real_until_it_fails` and worth repeating
+  because it was missed anyway: **a rule stated in prose is not enforcement.** If a document
+  says "skipped by default" or "enforced", find the mechanism — `--collect-only`, the test,
+  the config — before reasoning from it. Three places asserted a publication lane that
+  nothing implements (#540).
 - **Any guard you add carries its expiry.** When you write a test, assertion, lint rule or
   CI gate, ask in the same breath *what future change makes this wrong rather than merely
   unnecessary?* If there is one, record it **both** where the guard lives and in the row of
@@ -584,6 +602,10 @@ Status: `drafted → dispatched → reported → merged`.
 | 2 | I-S1B — Stage-1 Wolfram side + cost run | #495 | **yes** | `tidalcosmo/derive/wolfram/` | — | outline |
 | 2 | M1b — Cobaya Theory + ΛCDM posterior | — | — | `tidalcosmo/{spectator,presets,likelihoods}/` | — | outline |
 | 2 | M2/O1 — CAMB fork re-apply | #498 | — | fork repo + `tidalcosmo/background/` | — | outline |
+
+**Deferred, same class — legacy on a deletion path, record the decision rather than fix the
+code:** #533 (retire the drop rows), #537 (delete the boundary test at M7), #540 (the
+publication-lane markers document an exclusion nothing implements).
 
 **Wave 3+, named only:** WS2 FRW derive (lane), then the O2 fan-out — WS2 background +
 residual ∥ WS3 solver ∥ WS4 line-of-sight ∥ WS6 Stage-2. WS3's first handoff carries
