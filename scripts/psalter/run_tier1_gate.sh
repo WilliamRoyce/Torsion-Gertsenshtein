@@ -265,26 +265,33 @@ EOF
     return 0
 }
 
-run_diff() {
-    # Refuse rather than clobber. --diff-only re-runs the comparison and REWRITES
-    # tier1_diff.json in the target directory, so pointing it at a directory that
-    # has the verdict but not the .mx it was derived from would replace a real
-    # result with an "ours_unreadable" failure artifact -- destroying the evidence
-    # it was invoked to check. That is exactly the shape of the committed evidence
-    # under docs/cosmology/evidence/, where the .mx is deliberately excluded.
+# Refuse rather than clobber. --diff-only RECOMPUTES the comparison and rewrites
+# tier1_diff.json in the target directory, so pointing it at a directory that holds
+# the verdict but not the .mx it was derived from would replace a real result with
+# an "ours_unreadable" failure artifact -- destroying the evidence it was invoked to
+# check, silently, because the overwritten file is still well-formed JSON. That is
+# exactly the shape of the committed evidence under docs/cosmology/evidence/, where
+# the .mx is deliberately excluded.
+#
+# Called before the engine-idle check and before ensure_reference_sources, so the
+# refusal costs no network and no lane.
+require_recomputable_run_dir() {
     local ours="${RUN_DIR}/ParticleSpectrograph${THEORY}.mx"
-    if [[ ! -f "$ours" ]]; then
-        log_error "No ParticleSpectrograph${THEORY}.mx in ${RUN_DIR}"
-        log_error "  --diff-only recomputes the verdict, so it needs the run's own .mx."
-        if [[ -f "${RUN_DIR}/tier1_diff.json" ]]; then
-            log_info "  That directory already holds a verdict. To read it back without"
-            log_info "  Wolfram and without overwriting anything:"
-            log_info "    python3 scripts/psalter/summarize_diff.py ${RUN_DIR}/tier1_diff.json"
-        fi
-        log_info "  To recompute from scratch (~7 min, occupies the lane): run with no flags."
-        exit 1
-    fi
+    [[ -f "$ours" ]] && return 0
 
+    log_error "No ParticleSpectrograph${THEORY}.mx in ${RUN_DIR}"
+    log_error "  --diff-only recomputes the verdict, so it needs the run's own .mx."
+    if [[ -f "${RUN_DIR}/tier1_diff.json" ]]; then
+        log_info "  That directory already holds a verdict. To read it back without"
+        log_info "  Wolfram, without the lane, and without writing anything:"
+        log_info "    python3 scripts/psalter/summarize_diff.py ${RUN_DIR}/tier1_diff.json"
+    fi
+    log_info "  To recompute from scratch (~7 min, occupies the lane): run with no flags."
+    exit 1
+}
+
+run_diff() {
+    require_recomputable_run_dir
     require_engine_idle
     log_step "Comparing against the oracle"
     set +e
@@ -328,6 +335,7 @@ main() {
     if [[ -n "$DIFF_ONLY" ]]; then
         RUN_DIR="$(cd "$DIFF_ONLY" && pwd)"
         log_info "Re-comparing an existing run: ${RUN_DIR}"
+        require_recomputable_run_dir
         require_engine_idle
         ensure_reference_sources
         run_diff
