@@ -275,7 +275,7 @@ EOF
 #
 # Called before the engine-idle check and before ensure_reference_sources, so the
 # refusal costs no network and no lane.
-require_recomputable_run_dir() {
+require_run_dir_can_recompute() {
     local ours="${RUN_DIR}/ParticleSpectrograph${THEORY}.mx"
     [[ -f "$ours" ]] && return 0
 
@@ -291,7 +291,7 @@ require_recomputable_run_dir() {
 }
 
 run_diff() {
-    require_recomputable_run_dir
+    require_run_dir_can_recompute
     require_engine_idle
     log_step "Comparing against the oracle"
     set +e
@@ -335,7 +335,7 @@ main() {
     if [[ -n "$DIFF_ONLY" ]]; then
         RUN_DIR="$(cd "$DIFF_ONLY" && pwd)"
         log_info "Re-comparing an existing run: ${RUN_DIR}"
-        require_recomputable_run_dir
+        require_run_dir_can_recompute
         require_engine_idle
         ensure_reference_sources
         run_diff

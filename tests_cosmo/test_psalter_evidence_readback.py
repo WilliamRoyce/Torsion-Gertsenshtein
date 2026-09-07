@@ -53,7 +53,7 @@ def test_evidence_directory_holds_a_verdict_but_not_the_mx() -> None:
     """The precondition that made the defect possible, asserted so it stays known."""
     assert (EVIDENCE / "tier1_diff.json").is_file()
     assert not list(EVIDENCE.glob("*.mx")), (
-        "an .mx appeared in the committed evidence; the licence position for run "
+        "an .mx appeared in the committed evidence; the license position for run "
         "outputs sits with #495, and its size is why it was excluded"
     )
 
