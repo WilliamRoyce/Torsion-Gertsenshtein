@@ -557,10 +557,19 @@ requiring another end-of-phase sweep:
    > where local reported zero — most likely `allowCompoundWords: true` splitting them
    > locally but not under the action's bundled version. Reproduced from both sides:
    > local-with-compounds reports **0**, the action **2**, and local with compounds
-   > *disabled* reports **11**, so it over-reports in that mode. Chasing parity is a rabbit
-   > hole. **CI is the gate** — possible now because I-524 added `push` on this branch, so
-   > a run fires on every merge. A merge is not verified until the trunk run is green;
-   > treat a local pass as evidence of nothing.
+   > *disabled* reports **11**, so it over-reports in that mode.
+   >
+   > **Settled 2026-09-07: no local configuration reproduces the gate, and it is not the
+   > compound setting.** A second divergence (`distro`, in the I-526 merge) is absent from
+   > local output *even with compounds disabled* — local cspell 10.2.2 carries the word in a
+   > bundled dictionary that the action's version does not. The disagreement is in
+   > **dictionary contents**, so no flag closes it.
+   >
+   > **Therefore: CI is the gate, and the workflow is fix-forward.** Delegate branches get
+   > their own CI before merge, so the only uncovered surface is words the *orchestrator*
+   > introduces in merge-time edits. Push, watch the trunk run, and correct in a follow-up
+   > commit. **Run the changed-file check anyway** — it catches typos and flagged words — but
+   > record it as a typo pass, never as evidence the gate will hold.
    >
    > That file reached trunk via `e310e125`, which no CI had ever observed. The new lane
    > caught it on its first execution — the criterion demonstrated rather than asserted.
