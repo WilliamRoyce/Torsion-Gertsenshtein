@@ -486,6 +486,13 @@ rules → the **flaw protocol** → the report-back format.
   default-to-bumping rule: parallel delegates share `.git` refs, so concurrent bumps
   guarantee a `pyproject.toml` conflict and a tag collision. The orchestrator bumps once
   per wave.
+- **Open a draft PR into `feat/cosmology-program` as soon as you have a commit**, and
+  report its number. This is not bookkeeping: `test.yml` fires on `pull_request` and on
+  `push` to the integration branch, so **a branch with no PR is never seen by CI**, and the
+  orchestrator's local checks provably cannot substitute (see the cspell note in the merge
+  checklist). I-524 opened one and its first run caught a defect that had already been
+  merged blind; I-525 and I-526 opened none, faced the gate only after merging, and reddened
+  the trunk. A draft PR moves that discovery to before the merge, where it is free.
 - **Stay inside your owned paths** (listed in the header). Two sessions writing the same
   directory is the one collision a worktree does not prevent.
 - **Assertions get verified before they land; hypotheses do not have to be.** The
@@ -565,11 +572,18 @@ requiring another end-of-phase sweep:
    > bundled dictionary that the action's version does not. The disagreement is in
    > **dictionary contents**, so no flag closes it.
    >
-   > **Therefore: CI is the gate, and the workflow is fix-forward.** Delegate branches get
-   > their own CI before merge, so the only uncovered surface is words the *orchestrator*
-   > introduces in merge-time edits. Push, watch the trunk run, and correct in a follow-up
-   > commit. **Run the changed-file check anyway** — it catches typos and flagged words — but
-   > record it as a typo pass, never as evidence the gate will hold.
+   > **Therefore: CI is the gate, and the workflow is fix-forward.** Push, watch the trunk
+   > run, and correct in a follow-up commit. **Run the changed-file check anyway** — it
+   > catches typos and flagged words — but record it as a typo pass, never as evidence the
+   > gate will hold.
+   >
+   > **Corrected 2026-09-07 — a premise of this rule was false.** It said "delegate branches
+   > get their own CI before merge, so the only uncovered surface is orchestrator edits."
+   > They do not: `test.yml` fires on `pull_request` and on `push` to this branch, so **a
+   > delegate branch with no PR gets no run at all.** Measured: I-524 had 2 runs (it opened
+   > PR #539); **I-525 and I-526 had zero** and were merged having never faced the gate. Both
+   > then reddened the trunk. Hence the new working rule below: **every delegate opens a
+   > draft PR into `feat/cosmology-program`.**
    >
    > That file reached trunk via `e310e125`, which no CI had ever observed. The new lane
    > caught it on its first execution — the criterion demonstrated rather than asserted.
