@@ -613,6 +613,16 @@ requiring another end-of-phase sweep:
 4. Propagate any instruction-site amendment the session should have made and did not.
 5. Merge; close issues with commit references; **update the wave board and the queue in
    the merge commit**; put a status header on the prompt file.
+
+   > **Never state a CI verdict without its run id and fetched conclusion.** Not another
+   > reminder to check — a *format* requirement, because five rules did not fix this and a
+   > sixth would not either. Write `CI <run-id>: <conclusion>`, which cannot be written
+   > without having fetched it. Wave 0 produced **six** instances of reporting an outcome
+   > read from expectation rather than from the artifact, every one caught by a delegate or
+   > by CI rather than by the orchestrator — including "trunk CI green on `3ff90c2a`" when
+   > that run was `completed/failure`, and a `git push --delete` of four branches that
+   > exited 0 having deleted one. **The exit code is not the outcome; the run is not the
+   > verdict.** Make the claim impossible to write without the evidence.
 6. At a wave boundary: memory + backup.
 
 ### The Wolfram lane
