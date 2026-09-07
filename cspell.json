@@ -1220,7 +1220,9 @@
     "*.svg",
     "examples/data/**/*.csv",
     "examples/data/**/*.json",
-    "examples/**/*.wl"
+    "examples/**/*.wl",
+    "**/*.wxf",
+    "**/*.mx"
   ],
   "noConfigSearch": true
 }

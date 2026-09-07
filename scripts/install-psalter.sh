@@ -24,7 +24,7 @@
 # present. When none can be initialized, Qt aborts the front-end process and
 # UsingFrontEnd then BLOCKS INDEFINITELY rather than failing -- measured here at
 # exactly the imposed 25 s cap, reproducible by forcing an unloadable plugin.
-# A hang, unlike an error, consumes the single-licence Wolfram lane forever and
+# A hang, unlike an error, consumes the single-license Wolfram lane forever and
 # is indistinguishable from "PSALTer is slow".
 #
 # In this container as originally audited, `offscreen` was the ONLY platform
@@ -106,7 +106,7 @@ cleanup() {
 }
 
 # Print the header comment block (between the two "# ===" rules) as help text,
-# so editing the header cannot desynchronise --help from it.
+# so editing the header cannot leave --help out of step with it.
 show_help() {
     awk 'NR==1 && /^#!/ {next} /^#/ {sub(/^# ?/, ""); print; next} {exit}' \
         "${BASH_SOURCE[0]}"

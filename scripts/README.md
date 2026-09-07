@@ -223,8 +223,11 @@ git push && git push --tags
 | `install-wolfram-engine.sh` | Downloads and installs Wolfram Engine             |
 | `activate-wolfram.sh`       | Helps with license activation                     |
 | `install-xact-xcoba.sh`     | Installs xAct/xCoba with GLIBC compatibility      |
+| `install-psalter.sh`        | Installs PSALTer at a pinned commit               |
 | `verify-wolfram-setup.sh`   | Comprehensive verification of all components      |
 | `xact_smoke.wl`             | Wolfram Language smoke test for xAct/xCoba        |
+| `psalter_smoke.wl`          | PSALTer smoke test, incl. headless PDF export     |
+| `psalter/run_tier1_gate.sh` | PSALTer Tier-1 install gate (see its README)      |
 | `bump_version.py`           | Atomic version updates across project files       |
 | `run_wolfram_tests.sh`      | Run all Wolfram unit tests                        |
 | `run_examples.sh`           | Regenerate JSON files from example derivations    |
@@ -239,6 +242,17 @@ git push && git push --tags
 | `WOLFRAM_VERSION`     | `14.3.0`                           | Wolfram Engine version to install |
 | `WOLFRAM_INSTALL_DIR` | `/usr/local/Wolfram/WolframEngine` | Installation directory            |
 | `XACT_VERSION`        | `1.2.1`                            | xAct version to install           |
+| `PSALTER_COMMIT`      | `bb45adb0…` (v2.0.2)               | PSALTer revision to install       |
+| `QT_QPA_PLATFORM`     | unset                              | Set to `offscreen` before running PSALTer |
+
+`QT_QPA_PLATFORM` is not a preference. PSALTer exports a PDF through the Wolfram
+front end every time a field is declared, and the call is neither guarded nor
+time-limited. When no Qt platform plugin can be initialized, the front end aborts
+and that call **blocks indefinitely** rather than failing — which, inside a long
+run, is indistinguishable from PSALTer merely being slow, and holds the
+single-license Wolfram lane open forever. `offscreen` is the plugin most likely to
+be satisfiable on a bare container. `scripts/install-psalter.sh` and the Tier-1
+gate set it themselves; anything else you write must too.
 
 ## Container Rebuild Behavior
 

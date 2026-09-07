@@ -12,7 +12,7 @@ The integrity check is not ceremonial: the files contain no NUL bytes, so git's
 removed or the files were normalized.
 
 See ``tests_cosmo/fixtures/psalter/PROVENANCE.md`` for the source, the pinned
-revision, the licence position (#495) and the known labelling defect.
+revision, the license position (#495) and the known labeling defect.
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ def test_provenance_records_the_pinned_revision_and_digests() -> None:
         assert name in text, f"PROVENANCE.md does not name {name}"
 
 
-def test_provenance_flags_the_licence_review() -> None:
+def test_provenance_flags_the_license_review() -> None:
     """The GPL/MIT position is a position, not a settled conclusion (#495)."""
     text = (FIXTURE_DIR / "PROVENANCE.md").read_text(encoding="utf-8")
     assert "#495" in text

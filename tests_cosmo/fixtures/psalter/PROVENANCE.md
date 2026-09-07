@@ -3,7 +3,7 @@
 Two small published PSALTer result files, committed so the Stage-1 reader can be
 tested **without Wolfram installed**. That property is the whole reason they are
 here: everything else in the PSALTer chain needs a Wolfram Engine and a
-single-licence lane, and a reader that can only be tested behind that lane would
+single-license lane, and a reader that can only be tested behind that lane would
 effectively be untested.
 
 Added by #526 (Wave 0). Consumed by the Stage-1 reader, #527.
@@ -64,7 +64,7 @@ the author's permission is on the record, and borrowed code carries provenance i
 its docstrings).
 
 This is stated as a **position, not a settled conclusion.** It is flagged on
-**#495** for the release-time licence review regardless of the reasoning above.
+**#495** for the release-time license review regardless of the reasoning above.
 
 These two files are the only upstream bytes committed anywhere in this
 repository. Everything else — PSALTer itself, the supplemental sources, the
@@ -74,7 +74,7 @@ payload. These are the deliberate exception, for the testability reason above.
 
 ## Known defect in this data — read before building a test on it
 
-The released **positional** spin labelling (`SPIN_LABELS = {"0+","1-","2+"}`) is
+The released **positional** spin labeling (`SPIN_LABELS = {"0+","1-","2+"}`) is
 demonstrably wrong on `A23Theory`, whose `J`-blocks mix parities. Upstream's own
 `JuliaExport.m` comments assert the positional convention that its own fixture
 contradicts.
