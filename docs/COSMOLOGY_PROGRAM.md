@@ -631,7 +631,7 @@ Status: `drafted → dispatched → reported → merged`.
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | I-524 — packaging, extras, CI lane | #524 | — | `pyproject.toml`, `.github/`, `tidalcosmo/__init__.py`, `tidalcosmo/cli/`, `cspell.json` | `cosmo/i524-packaging` | **merged** ✅ CI 34051208887 green on the merged SHA: 2885 passed, 39 skipped |
 | 0 | I-525 — freeze the legacy oracle | #525 | — | `scripts/oracles/`, `tests_cosmo/data/` | `cosmo/i525-oracles` | **merged** ✅ gate re-run independently: 185 fixtures current, regeneration byte-identical |
-| 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/{install-psalter.sh,verify-wolfram-setup.sh,psalter/}`, `tests_cosmo/fixtures/`, `.gitattributes` | `cosmo/i526-psalter` | **merged** ⚠️ install works and all three probes answered; **Tier-1 reports MISMATCH — the gate working, not failing** (#543). Wolfram lane now free |
+| 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/{install-psalter.sh,verify-wolfram-setup.sh,psalter/}`, `tests_cosmo/fixtures/`, `.gitattributes` | `cosmo/i526-psalter` + `fix/i526-evidence-reverify` (#544) | **merged** ⚠️ install works, all three probes answered; **Tier-1 MISMATCH — the gate working, not failing** (#543, blocks *both* criteria). Evidence at `docs/cosmology/evidence/tier1-20260907/`, read-only via `summarize_diff.py`. Lane free |
 | 1 | I-532 — CAMB seam, background protocol, flag schema | #532 | — | `tidalcosmo/{background,spectator,validity}/` | — | planned |
 | 1 | I-503 — per-operator dispersion + zero-mode scope | #503 | — | `research/lagrangian_enumeration/`, `docs/` | — | planned |
 | 1 | I-S1A — Stage-1 Python side | #527 | — | `tidalcosmo/{config,derive}/` (Python only), `tidalcosmo/spectrum/` | — | planned |
@@ -687,6 +687,25 @@ assumed.
 **Deferred, same class — legacy on a deletion path, record the decision rather than fix the
 code:** #533 (retire the drop rows), #537 (delete the boundary test at M7), #540 (the
 publication-lane markers document an exclusion nothing implements).
+
+### Wave-0 boundary — completed 2026-09-07
+
+Every row `merged`; full gate set green on the trunk (`d3330d23`, CI 34127903873);
+delegate discoveries routed (#535, #536, #537, #538, #540, #541, #542, #543; probes #521,
+#522, #523 closed); memory updated and backed up. **Wave 1 is planned fresh from here** —
+the point of the boundary is that Wave 0's findings get to change it.
+
+**Inputs Wave 1 has that the original outline did not:**
+
+- **#543 blocks both spectrum criteria**, not only the residue cross-check — the Schur
+  route's gauge-mode removal is degraded too (`$LocalSourceConstraints` = `{}` against 21).
+  Awaiting Barker, 11 September.
+- **The Stage-1 exporter must read all eight private globals**, not the six §5 specified —
+  both of that section's justifications were refuted on the live install (#523).
+- **§6's checkpoint machinery need not be built**: PSALTer already emits a per-function
+  trace in CLI mode, so the gate only timestamps stdout.
+- **A Tier-1 *pass* would certify two keys and nothing else** — not source constraints,
+  spectrum, or unitarity conditions. Tier 2 is the physics gate, as §3 says.
 
 **Wave 3+, named only:** WS2 FRW derive (lane), then the O2 fan-out — WS2 background +
 residual ∥ WS3 solver ∥ WS4 line-of-sight ∥ WS6 Stage-2. WS3's first handoff carries
