@@ -1,0 +1,13 @@
+{
+  "theory_name": "CTEG",
+  "started_utc": "2026-09-07T10:37:55Z",
+  "finished_utc": "2026-09-07T10:44:42Z",
+  "timeout_s": 28800,
+  "exit_status": 143,
+  "timed_out": false,
+  "qt_qpa_platform": "offscreen",
+  "script_sha256_before": "2232a103a64987ea1a8af2afb5c154b1795f06530abc1dd30b4b6fe86ff65825",
+  "script_sha256_after": "2232a103a64987ea1a8af2afb5c154b1795f06530abc1dd30b4b6fe86ff65825",
+  "script_unmodified": true,
+  "oracle_sha256": "07a8cd59b7eb722251e05432b91dfe77ada3ad0576b451d3441524c81ec412b4"
+}

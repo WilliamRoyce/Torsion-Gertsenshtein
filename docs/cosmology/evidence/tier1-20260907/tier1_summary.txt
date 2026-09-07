@@ -1,0 +1,74 @@
+======================================================================
+PSALTer Tier-1 install gate
+======================================================================
+  theory        : CTEG
+  wolfram       : 14.3 on Linux-x86-64
+  generated     : 2026-09-07T11:29:49Z
+
+  keys (ours)   : ['xAct`PSALTer`WaveOperator', 'xAct`PSALTer`PseudoDeterminant']
+  keys (oracle) : ['xAct`PSALTer`WaveOperator', 'xAct`PSALTer`PseudoDeterminant']
+
+  per-key comparison
+  ------------------------------------------------------------------
+  FAIL PseudoDeterminant            different            dims=[3, 2] leaves=10
+       6 of 6 entries differ
+       at [1, 1]:
+         ours   = 0
+         oracle = (-2*(1 + 2*xAct`PSALTer`Def^2)*MPlanck2)/3
+       at [1, 2]:
+         ours   = 0
+         oracle = 2*xAct`PSALTer`Def^2*Mu - 2*MuLambda
+       at [2, 1]:
+         ours   = 0
+         oracle = (-2*xAct`PSALTer`Def^2*(1 + xAct`PSALTer`Def^2)*MuLambda*(2*Mu + Nu))/3
+       at [2, 2]:
+         ours   = 0
+         oracle = (2*xAct`PSALTer`Def^2*(1 + 2*xAct`PSALTer`Def^2)*MPlanck2*(Mu - Nu))/9
+       at [3, 1]:
+         ours   = 0
+         oracle = -3*xAct`PSALTer`Def^2*Mu
+  FAIL   PseudoDeterminant.1          different            dims=[2] leaves=3
+         2 of 2 entries differ
+         at [1]:
+           ours   = 0
+           oracle = (-2*(1 + 2*xAct`PSALTer`Def^2)*MPlanck2)/3
+         at [2]:
+           ours   = 0
+           oracle = 2*xAct`PSALTer`Def^2*Mu - 2*MuLambda
+  FAIL     PseudoDeterminant.1.1        head_mismatch        dims=[] leaves=1
+           Integer vs Times
+  FAIL     PseudoDeterminant.1.2        head_mismatch        dims=[] leaves=1
+           Integer vs Plus
+  FAIL   PseudoDeterminant.2          different            dims=[2] leaves=3
+         2 of 2 entries differ
+         at [1]:
+           ours   = 0
+           oracle = (-2*xAct`PSALTer`Def^2*(1 + xAct`PSALTer`Def^2)*MuLambda*(2*Mu + Nu))/3
+         at [2]:
+           ours   = 0
+           oracle = (2*xAct`PSALTer`Def^2*(1 + 2*xAct`PSALTer`Def^2)*MPlanck2*(Mu - Nu))/9
+  FAIL     PseudoDeterminant.2.1        head_mismatch        dims=[] leaves=1
+           Integer vs Times
+  FAIL     PseudoDeterminant.2.2        head_mismatch        dims=[] leaves=1
+           Integer vs Times
+  FAIL   PseudoDeterminant.3          different            dims=[2] leaves=3
+         2 of 2 entries differ
+         at [1]:
+           ours   = 0
+           oracle = -3*xAct`PSALTer`Def^2*Mu
+         at [2]:
+           ours   = 0
+           oracle = 1
+  FAIL     PseudoDeterminant.3.1        head_mismatch        dims=[] leaves=1
+           Integer vs Times
+  FAIL     PseudoDeterminant.3.2        different            dims=[] leaves=1
+           the two values differ
+           at []:
+             ours   = 0
+             oracle = 1
+  ok   WaveOperator                 identical            dims=[3] leaves=303
+
+  tally         : {'different': 5, 'head_mismatch': 5, 'identical': 1}
+  VERDICT       : MISMATCH
+  reason        : at least one entry differs
+======================================================================
