@@ -618,15 +618,31 @@ Status: `drafted → dispatched → reported → merged`.
 justification is *"a mismatch can only be the install"* is not relaxed the first time it
 reports one.
 
-**What the result actually certifies, which is more than it appears.** `WaveOperator` is
-**bit-exact** — 3 sectors, 303 leaves — so field declaration, decomposition and
-wave-operator construction are demonstrably correct. **That is precisely what the primary
-algorithm consumes**: the Schur-complement criterion (`spectrum_design.md` §5) "does not
-involve any inversion of the wave operator nor the computation of residues of the propagator
-at massive poles". The failure is a `1/0` inside `ConstructSaturatedPropagator`, which feeds
-the **residue route** — the path §5 designates as cross-check and states must "never [be] a
-second production path". So the broken half is the half we had already decided is secondary.
-This narrows the blast radius; it does **not** certify the install.
+**What the result certifies.** `WaveOperator` is **bit-exact** — 3 sectors, 303 leaves — so
+field declaration, decomposition and wave-operator construction are demonstrably correct.
+The `1/0` is inside `ConstructSaturatedPropagator`, which feeds the residue route.
+
+> **⚠ Correction (I-526, 2026-09-07) — my narrowing was wrong, and the blast radius is not
+> confined to the cross-check.** I argued here that because the Schur-complement criterion
+> "does not involve any inversion of the wave operator nor the computation of residues of
+> the propagator" (§5), the *primary* path was untouched and only the residue cross-check
+> was degraded. **I verified that one link and generalized past it.** The Schur route has a
+> **second input** I did not check: §5's own caveat that `O_LL` must be invertible, so gauge
+> modes are removed first — and those come from `ConstructSourceConstraints`.
+>
+> Measured, by replaying the CTEG Lagrangian without its trailing `Quit[]`:
+> **`$LocalSourceConstraints` is `{}` — zero rows**, where CTEG's 21-generator formulation
+> requires 21 (§3 measures the generator count as exactly that row count). So gauge-mode
+> removal is degraded too, and **#543 must be resolved before *either* criterion can be
+> trusted on this install.** Evidence strength stated honestly by the session: there is no
+> oracle for that key, so this is measured against a *published count* rather than a
+> committed artifact — weaker than the Tier-1 diff, but 0-versus-21 is not a near miss.
+>
+> **A limit on Tier 1 itself, worth stating plainly:** the oracle holds only two keys, so
+> even a *passing* Tier 1 would certify the wave operator and the pseudo-determinants and
+> **nothing else** — not source constraints, spectrum, or unitarity conditions. That is why
+> §3 calls Tier 2 the physics gate, and it means Tier 1 was never going to certify as much
+> as its name suggests.
 
 **Next step is the supervisor, not an engine install.** The leading hypothesis is Wolfram
 14.2 (the oracle's `.mx` header) versus 14.3 (ours), and testing it needs a 14.2 engine.
