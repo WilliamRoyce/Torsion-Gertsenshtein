@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Verification Script for Wolfram Engine and xAct/xCoba Installation
+# Verification Script for Wolfram Engine, xAct/xCoba and PSALTer
 # ==============================================================================
 # This script checks that all Wolfram-related components are properly installed
 # and working. It should be run after container creation or to diagnose issues.
 #
+# Checks 7-9 cover PSALTer. They WARN when PSALTer is absent, so a container
+# that only needs xAct still passes, and FAIL when it is present but broken.
+# Pass --require-psalter to turn absence into a failure.
+#
 # Usage:
-#   ./scripts/verify-wolfram-setup.sh
+#   ./scripts/verify-wolfram-setup.sh [--require-psalter]
+#
+# Options:
+#   --require-psalter  Treat a missing PSALTer install as a failure
+#   --help, -h         Show this help
 #
 # Exit Codes:
 #   0 - All checks passed
@@ -28,6 +36,13 @@ NC='\033[0m' # No Color
 ERRORS=0
 WARNINGS=0
 
+# PSALTer checks are advisory unless --require-psalter is passed.
+REQUIRE_PSALTER="false"
+PSALTER_PRESENT="false"
+PSALTER_LOAD_TIMEOUT="${PSALTER_LOAD_TIMEOUT:-900}"
+PSALTER_SMOKE_TIMEOUT="${PSALTER_SMOKE_TIMEOUT:-900}"
+PSALTER_COMMIT="${PSALTER_COMMIT:-bb45adb0fa21e467dbd88d4dc36ef21b84abbe6d}"
+
 log_pass() {
     echo -e "${GREEN}[PASS]${NC} $1"
 }
@@ -44,6 +59,17 @@ log_warn() {
 
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+# A missing PSALTer install is a warning by default and a failure under
+# --require-psalter: the script runs at container creation, before PSALTer
+# exists, but the install gate needs it to be hard.
+log_soft_fail() {
+    if [[ "$REQUIRE_PSALTER" == "true" ]]; then
+        log_fail "$1"
+    else
+        log_warn "$1"
+    fi
 }
 
 # Check 1: Wolfram Engine binary available
@@ -65,9 +91,13 @@ check_wolfram_binary() {
 check_wolfram_activation() {
     log_info "Checking Wolfram Engine activation..."
     
+    # Compare against stdout only, and match a LINE rather than the whole
+    # capture: Wolfram Engine intermittently segfaults while shutting down, after
+    # producing correct results, and folding that stderr text into the compared
+    # value made this check fail at random on a perfectly good install.
     local result
-    if result=$(wolframscript -code '1+1' 2>&1); then
-        if [[ "$result" == "2" ]]; then
+    if result=$(wolframscript -code '1+1' 2>/dev/null); then
+        if echo "$result" | grep -qx "2"; then
             log_pass "Wolfram Engine is activated and responding correctly"
             
             # Get version info
@@ -203,7 +233,163 @@ check_xact_loads() {
     fi
 }
 
-# Check 7: Run smoke test
+# Check 7: PSALTer installed
+check_psalter_installed() {
+    log_info "Checking PSALTer installation..."
+
+    local user_dir
+    user_dir=$(wolframscript -code '$UserBaseDirectory' 2>/dev/null | tr -d '\n\r')
+    local psalter_dir="${user_dir}/Applications/xAct/PSALTer"
+
+    if [[ ! -d "$psalter_dir" ]]; then
+        log_soft_fail "PSALTer not installed at ${psalter_dir}"
+        log_info "  Run: ./scripts/install-psalter.sh"
+        return 0
+    fi
+
+    local f
+    for f in PSALTer.m Sources/ParticleSpectrum.m Sources/DefField.m; do
+        if [[ ! -f "${psalter_dir}/${f}" ]]; then
+            log_fail "  PSALTer install is incomplete: missing ${f}"
+            return 1
+        fi
+    done
+    log_pass "PSALTer found at ${psalter_dir}"
+    PSALTER_PRESENT="true"
+
+    # The Stage-1 exporter reads PSALTer's private symbols, so which revision is
+    # installed is a correctness input rather than bookkeeping.
+    local marker="${psalter_dir}/INSTALLED_COMMIT"
+    if [[ ! -f "$marker" ]]; then
+        log_soft_fail "  INSTALLED_COMMIT missing -- installed revision is unknown"
+        log_info "  Re-run: ./scripts/install-psalter.sh --force"
+        return 0
+    fi
+
+    local sha
+    sha=$(head -1 "$marker" | tr -d '\n\r')
+    if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+        log_fail "  INSTALLED_COMMIT does not start with a commit hash"
+        return 1
+    fi
+    log_pass "  Installed revision: ${sha}"
+    if [[ "$sha" != "$PSALTER_COMMIT" ]]; then
+        log_warn "  Installed revision differs from the pin (${PSALTER_COMMIT})"
+    fi
+    return 0
+}
+
+# Check 8: PSALTer loads
+check_psalter_loads() {
+    log_info "Checking PSALTer package loading..."
+
+    if [[ "$PSALTER_PRESENT" != "true" ]]; then
+        log_info "  Skipped (PSALTer not installed)"
+        return 0
+    fi
+
+    # Existence is tested with DownValues, not ValueQ: PSALTer defines its
+    # functions through the StackSetDelayed wrapper, so they carry definition
+    # rules rather than a value.
+    local test_code='
+    Needs["xAct`PSALTer`"];
+    Print["PSALTER_VERSION=", xAct`PSALTer`Private`$Version[[1]]];
+    Print["PSALTER_SYMBOLS_OK=",
+      TrueQ[Length[DownValues[xAct`PSALTer`DefField]] > 0 &&
+            Length[DownValues[xAct`PSALTer`ParticleSpectrum]] > 0]];
+    Print["PSALTER_LOADED"];
+    '
+
+    local tmp result rc
+    tmp=$(mktemp -d)
+    set +e
+    result=$(cd "$tmp" && QT_QPA_PLATFORM=offscreen \
+        timeout "$PSALTER_LOAD_TIMEOUT" wolframscript -code "$test_code" 2>&1)
+    rc=$?
+    set -e
+    rm -rf "$tmp"
+
+    if [[ $rc -eq 124 ]]; then
+        log_fail "PSALTer load timed out after ${PSALTER_LOAD_TIMEOUT}s"
+        log_info "  The first load builds projection-operator tables and is slow;"
+        log_info "  raise the budget with PSALTER_LOAD_TIMEOUT=<seconds>"
+        return 1
+    fi
+
+    # Judged from the output, not the exit status: Wolfram Engine intermittently
+    # segfaults during kernel shutdown, after producing correct results.
+    if echo "$result" | grep -q "PSALTER_LOADED" &&
+       echo "$result" | grep -q "PSALTER_SYMBOLS_OK=True"; then
+        log_pass "PSALTer loads and exports DefField and ParticleSpectrum"
+        local ver
+        ver=$(echo "$result" | sed -n 's/^PSALTER_VERSION=//p' | head -1)
+        [[ -n "$ver" ]] && log_pass "  Package version: ${ver}"
+        return 0
+    fi
+
+    log_fail "PSALTer failed to load"
+    echo "$result" | tail -10
+    return 1
+}
+
+# Check 9: PSALTer DefField smoke test (headless PDF export)
+#
+# This is the check that catches the headless hang. DefField calls SummariseField
+# (Sources/DefField.m:91), which exports a FieldKinematics<Field>.pdf through the
+# Wolfram front end (Sources/DefField/SummariseField.m:85) with no guard and no
+# time limit. The front end needs a Qt platform plugin whose libraries are all
+# present; when none can be initialized, Qt aborts and the export call BLOCKS
+# INDEFINITELY rather than failing. So a hang here is the diagnostic, and must be
+# reported differently from a failure.
+check_psalter_deffield_smoke() {
+    log_info "Running PSALTer DefField smoke test (headless PDF export)..."
+
+    if [[ "$PSALTER_PRESENT" != "true" ]]; then
+        log_info "  Skipped (PSALTer not installed)"
+        return 0
+    fi
+
+    if [[ "${QT_QPA_PLATFORM:-}" != "offscreen" ]]; then
+        log_info "  Note: QT_QPA_PLATFORM is not 'offscreen' in this shell;"
+        log_info "  this check sets it itself, but your own PSALTer runs must too"
+    fi
+
+    local smoke_script="${SCRIPT_DIR}/psalter_smoke.wl"
+    if [[ ! -f "$smoke_script" ]]; then
+        log_warn "PSALTer smoke test script not found: ${smoke_script}"
+        return 0
+    fi
+
+    local tmp result rc
+    tmp=$(mktemp -d)
+    set +e
+    result=$(cd "$tmp" && QT_QPA_PLATFORM=offscreen \
+        timeout "$PSALTER_SMOKE_TIMEOUT" wolframscript -file "$smoke_script" 2>&1)
+    rc=$?
+    set -e
+    rm -rf "$tmp"
+
+    if [[ $rc -eq 124 ]]; then
+        log_fail "PSALTer DefField smoke test HUNG (the front-end export blocked)"
+        log_info "  Fix: export QT_QPA_PLATFORM=offscreen"
+        log_info "  Cause: DefField exports a PDF unconditionally"
+        log_info "  (Sources/DefField.m:91 -> Sources/DefField/SummariseField.m:85)"
+        return 1
+    fi
+
+    if echo "$result" | grep -q "PSALTER SMOKE TEST PASSED" &&
+       echo "$result" | grep -q "PSALTER_DEFFIELD_PDF=1"; then
+        log_pass "PSALTer smoke test passed (DefField exported its PDF headlessly)"
+        return 0
+    fi
+
+    log_fail "PSALTer smoke test did not complete successfully"
+    log_info "  Last lines of output:"
+    echo "$result" | tail -10
+    return 1
+}
+
+# Check 10: Run smoke test
 check_smoke_test() {
     log_info "Running xAct/xCoba smoke test..."
     
@@ -233,9 +419,24 @@ check_smoke_test() {
 
 # Main verification function
 main() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --require-psalter) REQUIRE_PSALTER="true"; shift ;;
+            --help|-h)
+                awk 'NR==1 && /^#!/ {next} /^#/ {sub(/^# ?/, ""); print; next} {exit}' \
+                    "${BASH_SOURCE[0]}"
+                exit 0
+                ;;
+            *)
+                log_fail "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+
     echo ""
     echo "========================================"
-    echo "Wolfram Engine & xAct/xCoba Verification"
+    echo "Wolfram Engine, xAct/xCoba & PSALTer Verification"
     echo "========================================"
     echo ""
     
@@ -256,6 +457,15 @@ main() {
     echo ""
     
     check_xact_loads || true
+    echo ""
+    
+    check_psalter_installed || true
+    echo ""
+    
+    check_psalter_loads || true
+    echo ""
+    
+    check_psalter_deffield_smoke || true
     echo ""
     
     check_smoke_test || true
@@ -282,6 +492,8 @@ main() {
         log_info "  1. sudo ./scripts/install-wolfram-engine.sh"
         log_info "  2. ./scripts/activate-wolfram.sh"
         log_info "  3. ./scripts/install-xact-xcoba.sh"
+        log_info "  4. ./scripts/install-psalter.sh"
+        log_info "  5. export QT_QPA_PLATFORM=offscreen   # PSALTer exports PDFs from DefField"
         exit 1
     fi
 }
