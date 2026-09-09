@@ -237,6 +237,12 @@ trigger** — that is the intended behavior, and `--check` must still report 185
 
 ## Working rules
 
+**You merge first, and two of your files are also owned by I-543.** Keep your edits to
+`scripts/verify-wolfram-setup.sh` strictly to the stale header comment (item 22) and to
+`scripts/install-psalter.sh` strictly to the file mode (item 22) — I-543 changes the
+expected-engine check and the pin in those same files and rebases on top of you. Anything
+wider than that turns into a conflict in the session that is resolving a blocker.
+
 Worktree: `git worktree add /tmp/tidal-remediation -b cosmo/remediation-amendments feat/cosmology-program`.
 **Open a draft PR into `feat/cosmology-program` at your first commit** and report its number —
 a branch with no PR is never seen by CI, which is how two Wave-0 branches merged having never
