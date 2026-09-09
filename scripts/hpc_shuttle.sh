@@ -4,11 +4,6 @@
 # Never edit files on the remote directly. Never rebuild the dev environment
 # there. Never poll squeue/sinfo in a loop. Never retry on SSH auth failure
 # (Fail2Ban 20-min block). See docs: docs/hpc_workflow.md.
-#
-# 2026-09-09: this is generic push/pull/submit plumbing and is unchanged, but
-# the four subcommands it used to ship workloads for were retired after
-# v0.53.0 (#533). Whatever --cmd you pass it now must be a command that still
-# exists; `tidal --help` lists them.
 
 set -euo pipefail
 
@@ -18,6 +13,11 @@ readonly REMOTE_ROOT="${HPC_ROOT:-/rds/user/wr286/hpc-work/tidal}"
 readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly JOBS_FILE="${REPO_ROOT}/scripts/.hpc_jobs"
 readonly TEMPLATE_DIR="${REPO_ROOT}/scripts/hpc_templates"
+
+# 2026-09-09: this is generic push/pull/submit plumbing and is unchanged, but
+# the four subcommands it used to ship workloads for were retired after
+# v0.53.0 (#533). Whatever --cmd you pass it now must be a command that still
+# exists; `tidal --help` lists them.
 
 # --- Helpers --------------------------------------------------------------
 die() { echo "error: $*" >&2; exit 1; }
