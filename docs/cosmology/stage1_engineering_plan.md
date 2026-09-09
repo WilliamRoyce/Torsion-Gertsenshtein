@@ -307,8 +307,12 @@ cross-check.
 > Consequence: `ResourceFunction[…]` downloads fail, PSALTer emits `ResourceObject::notfname`
 > and **carries on**, and the guarded checks silently never run (§0.2's table, and the
 > `LinearlyIndependent` sites under `ConstructSourceConstraints/`). **Function Repository
-> resources must therefore be supplied locally**, which I-526 did successfully on a throwaway
-> copy. The cause is **not diagnosed** — it is not established that it is impossible, only
+> resources must therefore be supplied locally**. I-526 reported doing so on a throwaway copy
+> and getting an identical verdict, but recorded only *that* it supplied them, never *how* —
+> and the sites are reached partly through `NewParallelSubmit`, so a definition present only
+> on the master kernel would not exist on the subkernels. **Whether that stand-in was ever
+> live is being re-verified by I-543; do not cite the refutation as settled** (#543).
+> Why it is unreachable is **not diagnosed** — it is not established that it is impossible, only
 > that it does not work as configured — so this is tracked as **#551** rather than treated as
 > a standing constraint.
 >
