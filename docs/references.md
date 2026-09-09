@@ -52,8 +52,10 @@ P(D) = sin²(κ · B₀ · D / 2)     [κ = √(8πG), D = propagation distance]
 ```
 
 **Implemented in:** [examples/gertsenshtein/theory.toml](examples/gertsenshtein/theory.toml)
-and validated by [sweep_B0.sh](examples/gertsenshtein/sweep_B0.sh) (RMS < 0.015
-vs analytical).
+and validated at v0.53.0 by `sweep_B0.sh` (RMS < 0.015 vs analytical). That
+script drove `tidal sweep` and was removed with it (#533); the validation stands
+as performed, and the script is one command away:
+`git show v0.53.0:examples/gertsenshtein/sweep_B0.sh`.
 
 **Canonical normalization:** The √(8πG) factor is often mis-stated in the
 literature (see Palessandro 2024 critique in arXiv:2405.01407). Dandoy et al.
@@ -98,10 +100,12 @@ the HWHM `2·κ·B₀·k` the amplitude is suppressed by a factor of 2.
 
 **Implemented in:** [examples/gertsenshtein_proca/theory.toml](examples/gertsenshtein_proca/theory.toml)
 which adds a perturbation-level Proca mass `-(mA²/2) a·a` to Einstein-Maxwell.
-Validated end-to-end by [sweep_resonance_1d.sh](examples/gertsenshtein_proca/sweep_resonance_1d.sh)
-(observed HWHM = 0.405 vs theory 0.402 at B₀=0.10, commit `1526d77`) and
-[sweep_resonance.sh](examples/gertsenshtein_proca/sweep_resonance.sh) (2D
-resonance map, HWHM tracks theory within 9% across B₀ ∈ [0.09, 0.25]).
+Validated end-to-end at v0.53.0 by `sweep_resonance_1d.sh` (observed
+HWHM = 0.405 vs theory 0.402 at B₀=0.10, commit `1526d77`) and
+`sweep_resonance.sh` (2D resonance map, HWHM tracks theory within 9% across
+B₀ ∈ [0.09, 0.25]). Both drove `tidal sweep` and were removed with it (#533);
+recover either with
+`git show v0.53.0:examples/gertsenshtein_proca/sweep_resonance_1d.sh`.
 
 **Why perturbation-level Proca, not full-field:** effective photon mass in
 plasma is a dispersion modification, not a Lorentz-invariant Lagrangian mass.
