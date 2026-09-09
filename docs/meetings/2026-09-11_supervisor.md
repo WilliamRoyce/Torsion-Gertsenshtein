@@ -125,9 +125,9 @@ Related, and already acted on: the released validator does **not** enforce coupl
 **measured rather than read**, since the install emits ~23 ambient messages on any theory, so
 we diffed a control theory against one with a bare numeric coefficient and found the
 difference empty. `NonLinearCouplings` is defined but never thrown. A fourth check,
-`NonQuadraticFields`, *has* a throw site but is guarded by a `ResourceFunction` we cannot fetch here —
-`PolynomialDegree` — so it is inert here too. We enforce coupling-linearity
-on our side and treat the validator as load-bearing for correctness.
+`NonQuadraticFields`, *has* a throw site but is guarded by `ResourceFunction["PolynomialDegree"]`,
+which cannot be fetched in our environment — so it is inert here too. We enforce
+coupling-linearity on our side and treat the validator as load-bearing for correctness.
 
 ---
 
