@@ -42,7 +42,6 @@ D1_SPEC = REPO / "examples/data/torsion_gertsenshtein_nonminimal.json"
 
 def _build_inference_args(  # internal test helper
     *,
-    n_samples: int = 1,
     grid_shape: str = "256",
     bounds: str = "0:100",
     ic: str = "plane-wave",
@@ -62,19 +61,19 @@ def _build_inference_args(  # internal test helper
     ),
     extra: tuple[str, ...] = (),
 ):
-    """Construct an argparse Namespace for ``run_inference_step``."""
+    """Construct an argparse Namespace for ``run_inference_step``.
+
+    Built against the ``simulate`` subparser.  It used to be built against
+    ``sample``, which was retired with the rest of the M0 drop rows (#533);
+    ``run_inference_step`` never read any inference-only flag, so the
+    prior/likelihood/method arguments simply drop.
+    """
     from tidal.cli import _build_parser
 
     parser = _build_parser()
     args = [
-        "sample",
+        "simulate",
         str(spec_path),
-        "--prior",
-        "delta1=uniform:-0.025:0.025",
-        "--likelihood",
-        "P_max:maximize",
-        "--baseline-formula",
-        "sin(kappa*B0*t_end/2)**2",
         *(f"--param={p}" for p in fixed_params),
         "--grid-shape",
         grid_shape,
@@ -90,16 +89,6 @@ def _build_inference_args(  # internal test helper
         "0.01",
         "--t-end",
         "10",
-        "--measure",
-        "peak_conversion,conversion",
-        "--source",
-        "h_5",
-        "--target",
-        "a_1",
-        "--method",
-        "mc",
-        "--n-samples",
-        str(n_samples),
         "--output",
         f"/tmp/test_modal_sparse_ic_{os.getpid()}",
         *extra,
