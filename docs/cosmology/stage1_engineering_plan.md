@@ -528,7 +528,7 @@ timeout, strictly serial. Ported in shape from `tidal/cli/_derive.py::_run_wolfr
 > 1. **Never judge a `wolframscript` run by its exit status.** Wolfram 14.3 segfaults on
 >    shutdown intermittently — *after* the work completes and the results are correct. The
 >    CTEG Tier-1 gate run exited **143** having produced correct artifacts, and a trivial
->    one-line command segfaulted once in three runs after printing the right answer.
+>    one-line command produced a segmentation fault once in three runs, after printing the right answer.
 >    **Decide success from what was produced**: the expected file exists, the expected
 >    sentinel line is present. An exact capture of combined stdout+stderr is not reliable
 >    either. (This is also what #541 fixed in `verify-wolfram-setup.sh`.)

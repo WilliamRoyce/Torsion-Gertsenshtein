@@ -834,7 +834,10 @@
     "wolframcloud",
     "Moore",
     "Penrose",
-    "polology"
+    "polology",
+    "shutil",
+    "skipif",
+    "segfault"
   ],
   "ignoreWords": [
     "Abar",
