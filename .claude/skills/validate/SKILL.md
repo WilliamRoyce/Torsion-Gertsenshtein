@@ -26,13 +26,13 @@ Run `uv run pyright`. For EACH error reported:
 - Only ask the user if the fix is genuinely ambiguous
 
 ### Step 3 — Spelling (auto-fix)
-Run `uv run cspell "tidal/**/*.py" "tests/**/*.py"`. For each flagged word:
+Run `uv run cspell "tidal/**/*.py" "tests/**/*.py" "tidalcosmo/**/*.py" "tests_cosmo/**/*.py"`. For each flagged word:
 - Physics/math domain terms (xAct, Christoffel, Lagrangian, Hamiltonian, Fornberg, Yoshida, Boccaletti, eigendecomp, etc.) → add to `.cspell.json` words list
 - Genuine typos → fix in the code
 
 ### Step 4 — Tests
 ```bash
-uv run pytest tests/ -x -q
+uv run pytest -x -q   # pathless: testpaths covers tests/ and tests_cosmo/
 ```
 If any test fails: analyze the root cause, fix it, and re-run. Continue until all tests pass.
 The test suite includes 80+ simulation integration tests with conservation checks at 1e-6 threshold — no separate smoke simulation needed.
@@ -40,7 +40,7 @@ The test suite includes 80+ simulation integration tests with conservation check
 ### Step 5 — Documentation accuracy
 Check key documentation for obvious staleness:
 ```bash
-echo "Actual tests: $(uv run pytest tests/ --collect-only -q 2>&1 | tail -1)"
+echo "Actual tests: $(uv run pytest --collect-only -q 2>&1 | tail -1)"
 echo "Actual examples: $(ls examples/*/theory.toml 2>/dev/null | wc -l)"
 grep -n "Python tests" README.md docs/ROADMAP.md docs/NEXT_PHASES.md 2>/dev/null
 ```

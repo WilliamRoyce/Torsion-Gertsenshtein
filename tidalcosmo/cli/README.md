@@ -6,8 +6,14 @@
 > a later reader can weigh it — **it is expected to be revised or replaced.** Changing it does not
 > require re-litigating H4.
 >
-> **Still genuinely undesigned** — no later handoff has settled this directory's
-> internals. Treat the contents as a sketch.
+> **The subcommand surface is still undesigned** — no later handoff has settled which
+> commands exist or what they take. Treat *that* part as a sketch.
+>
+> **Amendment (I-REM, 2026-09-09).** This read "Still genuinely undesigned … treat the
+> contents as a sketch", which is no longer true of the contents: `__init__.py`,
+> `__main__.py` and `_console.py` shipped at M0 (#524, `654b627a`) with tests in
+> `tests_cosmo/test_cli.py` and `tests_cosmo/test_console.py`. What remains open is the
+> command set, not the directory.
 
 **Responsibility.** Parse arguments, build a typed config from `config/`, call the library. **No
 physics lives here.**
@@ -30,8 +36,11 @@ Here the CLI and the Cobaya component are instead **two thin callers of one libr
 are **dropped** — Cobaya supplies sampling and priors (D9), GetDist and anesthetic supply plots.
 Expect roughly: derive, inspect, validate, and a run entry point.
 
-**Convention that ports.** User-facing errors carry actionable hints — `error_with_hint(msg,
-hints)` rather than a bare error, as used across ~60 legacy error sites.
+**Convention that ports — and has now ported.** User-facing errors carry actionable hints —
+`error_with_hint(msg, hints)` rather than a bare error, as used across ~60 legacy error sites.
+It is the first capability ported out of legacy: `_console.py::error_with_hint`, exercised by
+`tests_cosmo/test_console.py`. It has no callers yet, which is expected — the convention
+lands before the commands that use it.
 
 ---
 

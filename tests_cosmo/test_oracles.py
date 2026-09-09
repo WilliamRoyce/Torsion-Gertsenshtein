@@ -14,8 +14,16 @@ file read.
 
 The byte-for-byte reproducibility gate is deliberately *not* here.  It cannot be:
 proving that re-running reproduces the fixtures requires running legacy.  That
-gate lives in ``--check``, run by hand and by the orchestrator at merge, and is
-kept out of CI so the suite does not fail the day legacy is deleted.
+gate lives in ``--check`` -- run by hand, by the orchestrator at merge, and by
+``.github/workflows/oracle.yml``, which fires only on commits touching ``tidal/``,
+``examples/``, ``scripts/oracles/``, ``tests_cosmo/data/oracles/`` or the lockfile.
+
+Keeping it out of *this suite* is still right: these tests must stay runnable with
+legacy deleted.  Keeping it out of CI entirely was not -- that reasoning treated
+"CI fails the day legacy is deleted" as a coupling to avoid, when it is a guard
+with an expiry (#537's shape).  ``oracle.yml`` is deleted together with legacy
+``inspect`` and ``validate`` at M6/M7; see its header and ``repo_reshape.md``
+section 7's M3 retire row.  (Amended I-REM, 2026-09-09.)
 
 **Retirement:** these fixtures and the shell-out check below go at M7 with the
 boundary test, once M3's §5.2 mapping is recorded.  See §7's M7 row.

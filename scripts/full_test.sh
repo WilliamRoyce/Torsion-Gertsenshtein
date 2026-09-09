@@ -5,6 +5,11 @@
 #
 # Runs both Python (pytest) and Wolfram test suites.
 # Good to run before committing changes.
+#
+# The pytest invocation is deliberately pathless: testpaths in pyproject.toml is
+# ["tests", "tests_cosmo"], and naming a path here would override it and silently skip the
+# cosmology suite -- which is exactly what this script did until 2026-09-09 (I-REM).  Add new
+# suites to testpaths, not to this line.
 
 set -e
 
@@ -23,7 +28,7 @@ WOLFRAM_OK=0
 # Python tests
 echo ">>> Python Tests (pytest)"
 echo ""
-if uv run pytest tests/ -v; then
+if uv run pytest -v; then
     PYTHON_OK=1
     echo ""
     echo "Python tests: PASSED"

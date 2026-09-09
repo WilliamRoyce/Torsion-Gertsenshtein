@@ -22,11 +22,21 @@ jobs:
         run: uv python install
 
       - name: Install the project
-        run: uv sync --all-extras
+        run: uv sync --all-extras --locked
 
+      # Two packages coexist during the cosmology migration (#488), so both get API docs.
+      # --tocfile is not optional here: it defaults to "modules" and --force overwrites, so a
+      # second *bare* invocation would replace modules.rst -- silently dropping tidal's entire
+      # API tree from the published site (#545).  Verified by dry run before landing.  Each
+      # tocfile is referenced from docs/source/index.rst; nothing here is committed, since
+      # docs/source/.gitignore is "*.rst" plus "!index.rst".
+      #
+      # When tidalcosmo is renamed to tidal at M7 and legacy is gone, collapse this back to a
+      # single invocation and drop modules_cosmo from index.rst.
       - name: Build Sphinx documentation
         run: |
           uv run sphinx-apidoc --force --module-first -o docs/source/ tidal/
+          uv run sphinx-apidoc --force --module-first --tocfile modules_cosmo -o docs/source/ tidalcosmo/
           cd docs
           make html
 

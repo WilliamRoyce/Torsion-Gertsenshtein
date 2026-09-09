@@ -742,7 +742,7 @@ use*, not everything that exists.
 | Subcommand | Verdict | Gate against frozen legacy output |
 | --- | --- | --- |
 | `derive` | **port** (WS2) | **semantic** equivalence — see §5.2 |
-| `inspect` | **port** — the accessor layer is how specs are read at all (#401); `tests/data/spec_semantics.txt` is a committed corpus report | reports match, modulo the intended renaming |
+| `inspect` | **port** — the accessor layer is how specs are read at all (#401); `tests/data/spec_semantics.txt` is a committed corpus report. **Carry #535 across**: `--detail` is missing from the legacy `query_flags`, so `--detail summary` fails the v6 guard where `--families` succeeds — do not reproduce that gap | reports match, modulo the intended renaming |
 | `validate` | **port**, narrowed to spec and stability validation | same verdicts on the example corpus |
 | `simulate` | **re-implement, informed-by** — the cosmology forward model is per-`k` in `η`, not a grid PDE; `_simulate.py` (3,126 lines) is thesis-era in shape | not equality: WS3's own gates replace it |
 | `measure` | **drop** — see §5.3 | — |
@@ -863,7 +863,8 @@ is stated as an enforceable rule, not an intention:
   (GH #NNN)` — and a **port manifest** maps new path → legacy path;
 - **a test walks the manifest** and asserts that every `#NNNN` issue reference appearing in a
   legacy source file also appears somewhere in its ported counterpart. Explanations get lost
-  silently; a lost issue number is detectable;
+  silently; a lost issue number is detectable. **Tracked as #534**, to be built at the first
+  port that carries issue references (WS1/M3);
 - where a port *deliberately* changes behavior — the `ExportJSON` `t` filter, the schema change
   of §2.8 — the ported code says so at the site, naming what it fixes;
 - third-party inspiration is cited in the module docstring: DISCO-EB for engine layout, nanoCMB
@@ -916,7 +917,7 @@ that slice's replacement is live.
 | **M1a** | **O0, seam half** — `background/protocol.py` (defined by investigating CAMB's API; it is this milestone's first deliverable), `background/camb_seam.py`, `spectator/` pass-through, `validity/flags.py` with the flag schema. Reference `C_ℓ`/transfer oracles are captured **here**, not at M0.5 | **machine-precision identity** on pass-through arrays (a pass-through returns CAMB's own arrays, so a *sub-percent* tolerance would test nothing and could hide a unit/convention slip); seam-product spot checks; a **gauge-mismatch refusal** test (§2.8 req. 4); flag-schema unit tests | — |
 | **M1b** | **O0, inference half** — the Cobaya `Theory` class and packaging | our pass-through Theory's ΛCDM posterior ≡ a plain-CAMB Cobaya run of the same config, within sampling noise. **Also: benchmark the duplicated-scalar-compute overhead of §2.3 (#515)**, and prove the provisional `config/` layer is *replaced* rather than extended | **`tidal/inference/`** — outdated for a Cobaya interface (D9), goes as soon as the new path stands up |
 | **M2** | **O1** — **the CAMB fork first** (re-apply off the `2.0.3` tag, #498; read CAMB's license), then `TabulatedBackground` against it | H1 §R1 gate, plus the free `set_w_a_table` cross-check at `ϖ_r = 0.8` | — |
-| **M3** | **WS2** — `derive/` + `spec/` **port and extension** (§5.4), conformal time, CAMB/PSALTer conventions, per-channel source functions | semantic equivalence to the frozen specs (§5.2); de Sitter analytics; FRW-derived EOM → Minkowski EOM as `a → const` | `tidal/wolfram/`, `cli/_derive*.py`, `tidal/symbolic/` |
+| **M3** | **WS2** — `derive/` + `spec/` **port and extension** (§5.4), conformal time, CAMB/PSALTer conventions, per-channel source functions | semantic equivalence to the frozen specs (§5.2); de Sitter analytics; FRW-derived EOM → Minkowski EOM as `a → const` | `tidal/wolfram/`, `cli/_derive*.py`, `tidal/symbolic/`. **Also `.github/workflows/oracle.yml`**, once legacy `inspect` and `validate` go at M6/M7 — the job re-runs the frozen legacy oracle and cannot outlive the CLI it invokes (I-REM, 2026-09-09) |
 | **M4** | **WS3** — `solver/` per H3's design, two front-ends | H3's stated per-rung tolerances | `tidal/solver/` |
 | **M5** | **WS4** — `observables/`, `validity/spectator.py`; the first rung attempted | validity flags on every run artifact | `tidal/measurement/`, `cli/_simulate.py`, `cli/_measure.py` |
 | **M6** | whatever `port` rows remain | every §5 `port` row green | the rest of `tidal/`, `tests/`, the `tidal` console script |
@@ -948,8 +949,18 @@ for M6.
 
 ## 8. CI and test strategy for two coexisting packages
 
-- **Two suites.** `tests/` (legacy) stays untouched and green; `tests_cosmo/` grows. Both in
-  `testpaths`; coverage over both roots.
+- **Two suites, one CI job.** `tests/` (legacy) stays untouched and green; `tests_cosmo/`
+  grows. Both in `testpaths`; coverage over both roots.
+
+  > **Decision recorded (I-REM, 2026-09-09) — the lane stays a single job, and #524's open
+  > question is closed.** M0 left it open whether `tidalcosmo` should get a CI job of its own
+  > "if that turns out to be wanted". It is not. Both suites resolve from **one venv**, so a
+  > second job would repeat `uv sync --all-extras` — the dominant cost of the run — to gain
+  > nothing but a second place for the two lanes to drift apart. `test.yml` therefore runs one
+  > pathless `pytest --cov=tidal --cov=tidalcosmo`, which picks both roots up from `testpaths`
+  > and keeps a single coverage number. Revisit only if the suites need genuinely different
+  > environments — which the strangler-fig design is specifically arranged to avoid, since
+  > `tidalcosmo` is destined to *become* `tidal`.
 
 - **A hygiene test**, extending the existing `tests/test_repo_hygiene.py` pattern and adding
   `tidalcosmo/` to its `CHECKED_PREFIXES`: no `^(from|import) tidal\b` anywhere under
@@ -1037,8 +1048,16 @@ for M6.
   > > ~13, and covers only 12 of the 50 TOMLs. The warning stands; the number was loose.)
 
 - **The comparison is semantic, and the mapping is committed.** Per §5.2, the new naming differs
-  from the old by design, so the fixtures ship with a written mapping recording how new
-  corresponds to old. That document is part of the gate, not commentary on it.
+  from the old by design, so the gate needs a written mapping recording how new corresponds to
+  old. That document is part of the gate, not commentary on it.
+
+  > **⚠ Amendment (I-REM, 2026-09-09).** The mapping does **not** ship with the fixtures at
+  > M0.5, and cannot: it records how *new-convention* quantities correspond to legacy ones, and
+  > under #513 no new-convention spec exists until **M3**. It is designed and written as part of
+  > the symbolic-stage (**WS2/M3**) work, and must exist before the derive port's gate is run —
+  > which is what §7's M7 row already assumes ("once M3's §5.2 mapping is recorded"), and what
+  > `tests_cosmo/data/oracles/README.md` already states outright: "**It does not exist yet** —
+  > WS2 owes it at M3." What ships at M0.5 is the frozen legacy output alone.
 
 - **A clean lint and type baseline.** The new tree starts with **no ruff per-file-ignore
   blanket** and strict pyright. The legacy ignore surface — dozens of per-path exemption blocks

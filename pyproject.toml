@@ -370,8 +370,14 @@ convention = "numpy"
 testpaths = ["tests", "tests_cosmo"]
 markers = [
     "slow: integration test with non-trivial compute (simulate, derive, etc.); runs in default lane but can be skipped with `-m 'not slow'`.",
-    "publication: tests of the App C publication pipeline (manifest, canonical data, table/figure scripts); skipped by default, run with `-m publication tests/publication/`.",
-    "publication_slow: subset of publication tests that build PDFs via matplotlib; skipped within `publication` unless explicitly requested.",
+    # These two described a default-lane exclusion that nothing implements: there is no
+    # `addopts`, no `pytest_collection_modifyitems` and no `collect_ignore` anywhere in the
+    # repo, so publication tests run in the default lane like any other (#540).  The claim is
+    # deleted rather than the lane built -- legacy is on a deletion path, and the one real
+    # guard is an environment probe (`skipif shutil.which("latex") is None`).  Use
+    # `-m publication` to select them, `-m "not publication"` to skip.
+    "publication: tests of the App C publication pipeline (manifest, canonical data, table/figure scripts).",
+    "publication_slow: subset of publication tests that build PDFs via matplotlib.",
 ]
 
 [tool.coverage.run]

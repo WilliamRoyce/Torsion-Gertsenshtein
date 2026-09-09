@@ -749,6 +749,9 @@ over one shared core** (§7). O3 forces it; O2 confirms it.
    B1/B3/B6 as gates.
 4. Matrix-WKB rung (§9): **implemented in the first WS3 handoff, alongside Magnus**, with
    the classifier handover exercised from the start; publishable independently (§2.2).
+   **Tracked as #530**, which carries the accuracy question this rung rests on: the
+   `[survey]`-tagged Lin–Hobson–Lasenby bounds are the *only* quantitative accuracy claim for
+   it, and they are re-verified at first use rather than assumed.
 
    > **Amendment (user decision, 2026-09-05/06).** This item previously read "promoted from
    > prototype when the bake-off shows the Magnus baseline exceeding budget in the
@@ -781,7 +784,12 @@ over one shared core** (§7). O3 forces it; O2 confirms it.
 - WS2: `EikonalReduce.wl` + the multi-representation JSON sections (§5), linked to #209
   and H4's conventions spec.
 - η-grid segmented assembly as the WS3 prerequisite (#492).
-- Matrix-WKB implementation tracker (bake-off-gated).
+- Matrix-WKB implementation tracker — **#530**. *(Corrected I-REM, 2026-09-09: this line read
+  "bake-off-gated", contradicting the amendment in §12 item 4 eleven lines above it. Per the
+  2026-09-05/06 user decision WKB is **built in the first WS3 handoff alongside Magnus**, not
+  contingent on the bake-off. The bake-off still runs — it decides composition and handover
+  thresholds against `rk-adaptive` as the mandatory measured baseline — but not whether WKB
+  exists.)*
 - O3 eikonal engine + patch chain tracker (O4-mix #511 as second client).
 - `tidalcosmo/solver/README.md` revision to reflect this design.
 - Re-verify remaining **[survey]** tags against primary sources as they are first used

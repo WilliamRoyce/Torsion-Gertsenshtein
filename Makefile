@@ -1,6 +1,7 @@
-.PHONY: test lint format typecheck docs clean install all help \
+.PHONY: test test-verbose test-coverage lint format format-check typecheck docs docs-clean \
+        clean install all help oracle-check \
         publication publication-benchmarks publication-figures \
-        publication-test
+        publication-test figC6-pull
 
 help:  ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -39,7 +40,7 @@ clean:  ## Remove build artifacts and caches
 	rm -rf .pytest_cache coverage.xml .ruff_cache
 
 install:  ## Install dependencies
-	uv sync --all-extras
+	uv sync --all-extras --locked
 
 all: lint typecheck test  ## Run all checks (lint, typecheck, test)
 
@@ -58,5 +59,13 @@ figC6-pull:  ## Pull jac_speedup.json from HPC (works mid-run thanks to per-conf
 
 publication: publication-figures  ## Rebuild all App C publication artifacts
 
-publication-test:  ## Run publication-pipeline tests (skipped by default lane)
+publication-test:  ## Run publication-pipeline tests
 	uv run pytest -m publication tests/publication/
+
+# Re-runs legacy `tidal inspect` and `tidal validate` across the example corpus and compares
+# against the frozen fixtures in tests_cosmo/data/oracles/ (M0.5, #525).  ~5-8 minutes.
+# CI runs the same command, path-filtered, in .github/workflows/oracle.yml.  Non-zero means
+# the freeze no longer describes what legacy produces -- regenerate and commit the fixtures
+# alongside whatever moved them.  Retired with legacy `inspect`/`validate` at M6/M7.
+oracle-check:  ## Re-check the frozen legacy oracle against live legacy output
+	uv run python -m scripts.oracles.freeze_legacy_oracle --check

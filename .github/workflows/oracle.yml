@@ -1,0 +1,83 @@
+name: Frozen Legacy Oracle
+
+# M0.5 (#525) freezes what legacy `tidal` outputs across the example corpus into
+# tests_cosmo/data/oracles/, so the new package can be gated against committed data rather
+# than a live legacy run -- which is what lets legacy be deleted at all.  That freeze is only
+# honest while it matches what legacy actually produces, hence the standing rule:
+#
+#     if tidal/ or examples/data/ changes, re-run scripts/oracles/ in the same commit.
+#
+# Until now that rule was enforced by nothing.  A rule stated in prose is not enforcement
+# (#540 was the other instance in this wave), and an oracle silently inconsistent with itself
+# is the worst failure mode a gate can have -- it reports "pass" against files that describe
+# behaviour no longer produced.  This job is the detector.
+#
+# EXPIRY -- read this before wondering why CI broke on a deletion commit.
+# This job re-runs the legacy CLI, so it cannot outlive it.  It is deleted in the same commit
+# as legacy `inspect` and `validate`, when the derive port lands (M3 -> M6/M7), NOT adapted.
+# Recorded here and in repo_reshape.md section 7's M3 retire row, per the rule that every
+# guard carries its expiry both where it lives and in the milestone row that triggers it
+# (#537 is the guard that was written without one).  A red run on a commit that deletes
+# legacy is this job asking to be deleted too.
+#
+# The path filter is what makes the cost acceptable: a full --check is ~5-8 minutes (46
+# theories x 4 legacy invocations, serial), and it runs only on commits that can actually
+# invalidate the freeze.  oracle.yml lists itself deliberately -- a gate that does not re-run
+# when its own definition changes is one you can edit blind.
+on:
+  push:
+    branches:
+      - feat/cosmology-program
+    paths:
+      - 'tidal/**'
+      - 'examples/**'
+      - 'scripts/oracles/**'
+      - 'tests_cosmo/data/oracles/**'
+      - 'uv.lock'
+      - '.github/workflows/oracle.yml'
+  pull_request:
+    branches:
+      - feat/cosmology-program
+    paths:
+      - 'tidal/**'
+      - 'examples/**'
+      - 'scripts/oracles/**'
+      - 'tests_cosmo/data/oracles/**'
+      - 'uv.lock'
+      - '.github/workflows/oracle.yml'
+
+# Same shape as test.yml: the event is part of the key on purpose, because a push and a pull
+# request describe different commits (the branch tip and the merge commit), so cancelling one
+# because the other started would hide a real result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  oracle:
+    name: oracle --check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install
+
+      # --locked so a lockfile that has drifted fails loudly here rather than being
+      # silently re-resolved into something the freeze was never measured against.
+      - name: Install the project
+        run: uv sync --all-extras --locked
+
+      # Re-runs legacy `tidal inspect` and `tidal validate` over the corpus and compares
+      # against the committed fixtures.  Non-zero means the freeze no longer describes what
+      # legacy produces: re-run `make oracle-check` locally, inspect the diff, and commit the
+      # regenerated fixtures alongside the change that moved them.
+      - name: Re-check the frozen legacy oracle
+        run: uv run python -m scripts.oracles.freeze_legacy_oracle --check

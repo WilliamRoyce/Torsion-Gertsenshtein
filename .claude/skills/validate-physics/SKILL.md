@@ -20,6 +20,7 @@ Identify which physics tests cover the changed code:
 - `tidal/solver/rhs.py` or `coefficients.py` → `tests/test_solver_rhs.py`
 - `tidal/measurement/` → `tests/test_measurement.py`, `tests/test_new_measurements.py`
 - `tidal/symbolic/` → `tests/test_json_loader.py`
+- `tidalcosmo/X.py` → `tests_cosmo/test_X.py` (the new package; see `docs/COSMOLOGY_PROGRAM.md`)
 - If changes span many files → run full suite
 
 ### Step 2 — Run the mapped tests

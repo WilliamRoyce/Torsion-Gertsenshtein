@@ -31,7 +31,9 @@ Map changed source files to test files:
 - `tidal/cli/_X.py` → `tests/test_cli.py`, `tests/test_cli_parsing.py`
 - `tidal/measurement/` → `tests/test_measurement.py`, `tests/test_new_measurements.py`
 - `tidal/symbolic/` → `tests/test_json_loader.py`
-- If unsure → `uv run pytest tests/ -x -q`
+- `tidalcosmo/X.py` → `tests_cosmo/test_X.py` (the new package; see `docs/COSMOLOGY_PROGRAM.md`)
+- If unsure → `uv run pytest -x -q` (pathless — a path argument overrides `testpaths` and
+  silently skips `tests_cosmo/`)
 
 If ANY test fails: **STOP. Do not commit.** Report the failure and suggest fixes.
 

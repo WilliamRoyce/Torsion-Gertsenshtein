@@ -56,4 +56,3 @@ uv.lock binary
 *.gz binary
 *.tgz binary
 *.bz2 binary
-*.py text eol=lf

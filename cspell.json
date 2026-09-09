@@ -819,7 +819,25 @@
     "\u039bCDM",
     "\u03bc\u03bd\u03c1\u03c3",
     "\u03bc\u03c1\u03bd\u03c3",
-    "\u03c1\u03c3\u03bc\u03bd"
+    "\u03c1\u03c3\u03bc\u03bd",
+    "tidalcosmo",
+    "PSALTer",
+    "psalter",
+    "wxf",
+    "offscreen",
+    "spectrograph",
+    "spectrographs",
+    "CAMB",
+    "apidoc",
+    "tocfile",
+    "pdftotext",
+    "wolframcloud",
+    "Moore",
+    "Penrose",
+    "polology",
+    "shutil",
+    "skipif",
+    "segfault"
   ],
   "ignoreWords": [
     "Abar",
@@ -1228,7 +1246,10 @@
     "examples/**/*.wl",
     "**/*.wxf",
     "**/*.mx",
-    "docs/cosmology/evidence/**"
+    "docs/cosmology/evidence/**/*.json",
+    "docs/cosmology/evidence/**/*.txt",
+    "docs/cosmology/evidence/**/*.log",
+    "docs/cosmology/evidence/**/*.pdf"
   ],
   "noConfigSearch": true
 }

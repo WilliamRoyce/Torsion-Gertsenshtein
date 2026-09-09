@@ -6,7 +6,7 @@
 # This script checks that all Wolfram-related components are properly installed
 # and working. It should be run after container creation or to diagnose issues.
 #
-# Checks 7-9 cover PSALTer. They WARN when PSALTer is absent, so a container
+# Checks 7-10 cover PSALTer. They WARN when PSALTer is absent, so a container
 # that only needs xAct still passes, and FAIL when it is present but broken.
 # Pass --require-psalter to turn absence into a failure.
 #

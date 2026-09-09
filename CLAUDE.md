@@ -10,14 +10,17 @@ Symbolic physics pipeline: Lagrangian (xAct/Mathematica) -> JSON -> native PDE s
 - `tidal/cli/` -- CLI entry points (11 subcommands: derive, simulate, measure, inspect, list, validate, plot, sweep, analyze, sample, doctor)
 - `tidal/inference/` -- Bayesian inference (priors, likelihood, constraints, MC, nested sampling via dynesty/PolyChord)
 - `tidal/measurement/` -- Physics measurements (energy, conversion, mixing, spectra)
-- `examples/` -- 19 physics examples (1+1D through 3+1D), each with theory.toml + .wls + data/*.json
+- `tidalcosmo/` -- the NEW package (Cobaya extension, #488). Written clean beside legacy; never imports it
+- `examples/` -- physics examples (1+1D through 3+1D), each with theory.toml + .wls + data/*.json
 - `research/` -- General quadratic PGT+EM Lagrangian enumeration (xAct/xTras scripts, TeX document, classification JSONs)
-- `tests/` -- ~2,400 Python tests (76 files) + ~260 Wolfram test cases (tests/wolfram/*.wls)
+- `tests/` -- legacy Python tests + ~260 Wolfram test cases (tests/wolfram/*.wls)
+- `tests_cosmo/` -- tests for `tidalcosmo/`. Both suites are in `testpaths`, so a **pathless** `pytest` runs both
 - `docs/` -- Architecture and program docs (`docs/README.md` is the index; `docs/tex/` holds the technical reference)
 
 ## Key Commands
 
-- `uv run pytest tests/ -x -q` -- Run Python tests
+- `uv run pytest -x -q` -- Run Python tests. **Pathless on purpose**: `testpaths` is
+  `["tests", "tests_cosmo"]`, and naming a path overrides it and silently skips the other suite
 - `./scripts/full_test.sh` -- Full test suite (Python + Wolfram)
 - `uv run tidal derive examples/<name>/theory.toml` -- Derive PDEs from Lagrangian
 - `uv run tidal simulate examples/data/<name>.json` -- Run simulation
@@ -51,7 +54,7 @@ Symbolic physics pipeline: Lagrangian (xAct/Mathematica) -> JSON -> native PDE s
 
 ## Workflow Rules
 
-- **After completing any code change**, run relevant tests before moving on. Source→test mapping: `tidal/solver/X.py` → `tests/test_solver_X.py`, `tidal/cli/_X.py` → `tests/test_cli.py`, `tidal/measurement/` → `tests/test_measurement.py`. Unsure → full suite: `uv run pytest tests/ -x -q`
+- **After completing any code change**, run relevant tests before moving on. Source→test mapping: `tidal/solver/X.py` → `tests/test_solver_X.py`, `tidal/cli/_X.py` → `tests/test_cli.py`, `tidal/measurement/` → `tests/test_measurement.py`, `tidalcosmo/X.py` → `tests_cosmo/test_X.py`. Unsure → full suite: `uv run pytest -x -q` (pathless — see Key Commands)
 - **After completing a feature/fix**, commit promptly with conventional format (feat:/fix:/refactor:/test:/docs:). No Co-Authored-By trailer. Separate unrelated changes into distinct commits.
 - **Fix lint/type/spell errors immediately** — `uv run ruff check --fix && uv run ruff format` after code changes. Fix pyright errors. Add domain terms to `cspell.json`, fix genuine typos.
 - **Wolfram pipeline integrity**: ALL symbolic processing stays in Wolfram — never post-process equations in Python. Never skip/bypass the canonical pipeline; fix root causes.
@@ -127,7 +130,12 @@ The project has pivoted (2026-08-29) to a **Cobaya extension**: evolve a new sec
 perturbations as **spectators** on a CAMB LCDM background and turn them into CMB observables
 and real likelihoods. Umbrella **#488**; the operational record is `docs/COSMOLOGY_PROGRAM.md`
 (read that first — it carries the decisions register, the observable ladder and the
-workstreams). Eleven design documents live in `docs/cosmology/`.
+workstreams). The design documents live in `docs/cosmology/`, indexed by `docs/README.md`.
+
+**For current state — what is merged, what is dispatched, what comes next — read the wave
+board** in `docs/COSMOLOGY_PROGRAM.md` (§"Wave board", beside the delegation protocol). It is
+the single source of truth for where things stand; this file gives the strategy, not the
+state.
 
 - **Two packages coexist.** `tidal/` is **legacy**; `tidalcosmo/` is the new package, written
   clean beside it (strangler fig). `tidalcosmo` is a placeholder name — it renames to `tidal`

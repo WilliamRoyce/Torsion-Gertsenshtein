@@ -245,8 +245,12 @@ definition of the theory space the method operates on. Contract rules:
 
   > **Amendment (H8, 2026-09-04 — verified against PSALTer v2.0.2 @ `bb45adb0`):** the failure behavior is
   > **silence**, and the rule is ours alone to enforce (#522). `ValidateLagrangian.m` defines
-  > `ParticleSpectrum::NonLinearCouplings` but **never throws it**; it throws only `Zero`,
-  > `UnknownCoupling`, `UnknownField` and `NonQuadraticFields`. A bare numeric coefficient is
+  > `ParticleSpectrum::NonLinearCouplings` but **never throws it**; it has throw sites only for
+  > `Zero`, `UnknownCoupling`, `UnknownField` and `NonQuadraticFields` — and of those four,
+  > **`NonQuadraticFields` cannot fire on our install**: its guard is
+  > `ResourceFunction["PolynomialDegree"]` (`ValidateLagrangian.m:38`) and the Function
+  > Repository is unreachable here, so PSALTer emits `ResourceObject::notfname` and carries on
+  > (I-REM, 2026-09-09; **#551**, `EXPIRES-WITH: #551`). A bare numeric coefficient is
   > not a `Variable`, so nothing rejects it. `EnsureLinearInCouplings.m` exists, but under
   > `ConstructSourceConstraints/ConjectureNullSpace/`, clearing denominators in a null vector
   > — it is not a Lagrangian validator. The live check is still worth running, to confirm the
@@ -450,7 +454,37 @@ we illustrate its use" (§ECSpectroscopy). Per `J` sector:
 **Caveats, all checkable:** `O_LL` must be invertible, so gauge modes are removed first
 (PSALTer's Moore–Penrose gauge fixing does this) — the method *relocates* the gauge problem
 into Stage 1 rather than removing it (§8), which is precisely what shrinks its per-sample
-burden. The massive/massless reordering is structural — a Stage-1 discovery, fixed-shape per
+burden.
+
+> **⚠ Amendment (I-REM, 2026-09-09 — PSALTer v2.0.2 `bb45adb0`, Wolfram 14.3).
+> `EXPIRES-WITH: #543`. On our install that gauge-mode removal does not happen, so
+> *both* spectrum criteria are blocked — not only the residue cross-check.**
+>
+> `ConstructSourceConstraints` returns `$LocalSourceConstraints = {}` — **zero rows**,
+> where CTEG's 21-generator formulation requires 21 (§3 measures the generator count as
+> exactly that row count). The Schur-complement criterion above does not invert the wave
+> operator, which is why it was first thought untouched; but it has a **second input**, this
+> very caveat, and that input is degraded. Measured by I-526 and reproduced independently by
+> the orchestrator on 2026-09-09; recorded on **#543**.
+>
+> **Evidence strength, stated honestly:** there is no committed fixture for that key, so this
+> is measured against a count in the *published formulation* rather than against a
+> byte-comparable artifact — weaker than the Tier-1 diff. 0-versus-21 is nonetheless not a
+> near miss.
+>
+> **A candidate upstream cause, offered as a hypothesis with its test named — not as a
+> diagnosis.** PSALTer's own `README.md` §"Known bugs" item 1 documents "a sporadic error
+> where some of the gauge symmetries are not identified", arising because "the algorithm uses
+> numerical methods to obtain the gauge symmetries, which involve random number generation at
+> runtime", and "can usually be fixed by re-running `ParticleSpectrum`". An empty constraint
+> list **is** that symptom, and the code path agrees —
+> `ConstructSourceConstraints/ConjectureNullSpace/` with a `MinimalExampleCase` helper is a
+> randomized, conjectural search. If that is the cause, this is upstream flakiness rather
+> than anything about our install, the fix is a re-run, and it is a **different failure** from
+> the deterministic `PseudoDeterminant` zeros — which reproduced identically across two
+> independent runs and therefore cannot be a sporadic error. **I-543 owns the test.**
+>
+> Until #543 resolves, treat neither spectrum criterion as certified on this install. The massive/massless reordering is structural — a Stage-1 discovery, fixed-shape per
 structure (§9). Chequer-Hermitian bookkeeping is a genuine trap: PSALTer's convention for the
 parity-violating SPOs differs from Karananas's by a factor of `i` (`app:PGT_comparison`;
 either is valid), and getting it wrong flips ghost verdicts — the published `K₀` below must be
@@ -836,7 +870,16 @@ propagates nothing).
 >   there is none. `NonLinearCouplings` is never thrown (**#522**), so the live probe only
 >   confirms the silence and harvests wording.
 > - **Inkscape is effectively unused** (every `Vectorize` call site is commented out), and
->   **Wolfram 14.3 + xAct are installed and activated** — only PSALTer itself is not.
+>   **Wolfram 14.3 + xAct are installed and activated**.
+>
+>   > **⚠ This banner has itself gone stale (I-REM, 2026-09-09).** It read "only PSALTer
+>   > itself is not [installed]". **PSALTer v2.0.2 `bb45adb0` was installed and verified on
+>   > 2026-09-07** (#526), and Inkscape 1.2.2 is installed too. The install is nonetheless
+>   > **UNCERTIFIED**: its Tier-1 gate reports MISMATCH (#543). Two further corrections to
+>   > the bullet above: Inkscape is unused *by PSALTer's own `$InkscapePath`*, but its
+>   > dependencies — `libwayland-egl1` in particular — are what make the headless PDF export
+>   > work at all, so removing it reintroduces a hang; and the export hazard begins at
+>   > `DefField`, not at `ParticleSpectrum`. See `stage1_measurements.md` §2.3–2.4.
 > - **Single-session substitution-rule linearization is Barker's own proven pattern**
 >   (`PoincareGaugeTheory.m` + `Linearise.m`), replacing the two-session route assumed here.
 
@@ -847,10 +890,18 @@ resolves them; scope-guard metadata. The Wolfram engineering behind that contrac
 own session:
 
 - **Install PSALTer** (Mathematica 14+/xAct/Inkscape; the SupplementalMaterials repo carries
-  `third_party/WolframEngine_14.3.0_LIN.sh`). Only xAct is installed today. The install also
-  settles the open items needing a live session: the exact `WaveOperator` label metadata, the
-  missing-coupling failure behavior, `Method→"Hard"` cost on a PGT+EM theory (currently
-  unmeasured — record, do not guess).
+  `third_party/WolframEngine_14.3.0_LIN.sh`). The install also settles the open items needing
+  a live session: the exact `WaveOperator` label metadata, the missing-coupling failure
+  behavior, `Method→"Hard"` cost on a PGT+EM theory (currently unmeasured — record, do not
+  guess).
+
+  > **⚠ Amendment (I-REM, 2026-09-09).** This step is **done**: it read "Only xAct is
+  > installed today", which was true when written (2026-09-03) and is not now. Wolfram 14.3,
+  > xAct 1.2.1, Inkscape 1.2.2 and **PSALTer v2.0.2 `bb45adb0`** are all installed and
+  > verified (#526, `scripts/install-psalter.sh`, `scripts/verify-wolfram-setup.sh`). Two of
+  > the three live-session items were settled — the missing-coupling behavior is **silence**
+  > (#522) and `Method` is **inert**, so the cost item is not a `Method` comparison at all
+  > (#521, §14 below). **The install is UNCERTIFIED** — Tier 1 reports MISMATCH (#543).
 - The **spectrum derivation branch** (§4.5) and the auto-generated model/export script (§4.4,
   §4.5), with the enumerated-symmetry validation and the coupling-per-operator contract.
 - **Our own Wolfram-side exporter** reaching into PSALTer's result objects to emit the
@@ -873,6 +924,22 @@ this document.
    but **not as a `Method` comparison** — the option is inert at that revision (#521, §4.5
    amendment). The number to report is the wall time of the call itself, with per-stage
    checkpoints; protocol in `stage1_engineering_plan.md` §6.
+
+   > **⚠ Amendment (I-REM, 2026-09-09).** Still unmeasured *for PGT+EM*, but no longer
+   > unbracketed. **CTEG — a 21-generator PGT theory, 2 fields, 5 constants — completed
+   > `ParticleSpectrum` in 407 s** (6 m 47 s) on four physical cores, comfortably inside the
+   > design's "minutes are fine, hours are survivable" standard.
+   >
+   > **The shape of the cost matters more than the total, and it is measurable without
+   > instrumentation** — PSALTer emits its own stage trace (`stage1_measurements.md` §4.2,
+   > 18,436 events across 138 functions). **~72 % of the run (0 → 294 s) is field declaration
+   > and decomposition** — the rank-3 antisymmetric spin connection — and only ~113 s is the
+   > spectrum analysis proper. **So adding couplings to existing field content is far cheaper
+   > than adding fields**, which is the planning-relevant conclusion.
+   >
+   > **Not a substitute for the Wave-2 measurement.** PGT+EM adds a Maxwell sector and more
+   > couplings, and by the split above the added *field* is what will cost. Re-measure; do
+   > not extrapolate this number.
 2. **Exact `WaveOperator` labeling metadata** — the `J`-block structure is established
    (§6.1), but the per-state ordering convention should be confirmed against a live PSALTer
    and the field-kinematics tables before the exporter hardcodes it. (→ H8.) ***Amendment (H8, 2026-09-04 — verified against PSALTer v2.0.2 @ `bb45adb0`):***

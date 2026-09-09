@@ -7,6 +7,15 @@ __pycache__/
 build/
 dist/
 third_party/
+# Named explicitly under the blanket above, because both are large, generated, and easy to
+# add by accident -- and because the blanket may plausibly be narrowed later (it also covers
+# a 1.75 GB Wolfram Engine installer).
+#   psalter_reference/ -- the upstream PSALTer working tree, installed by
+#     scripts/install-psalter.sh at a pinned commit; reproducible, never edited in place.
+#   psalter_runs/      -- Tier-1 gate run directories (logs, .mx, checkpoints, spectrograph
+#     PDFs).  Anything that must survive is copied into docs/cosmology/evidence/ deliberately.
+third_party/psalter_reference/
+third_party/psalter_runs/
 
 phd-application-context.md
 

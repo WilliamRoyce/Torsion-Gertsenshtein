@@ -24,4 +24,10 @@ the structural inversion this package exists to undo.  New tests here:
   test reaches into legacy, legacy stops being data and becomes undeletable infrastructure.
 * Prefer :func:`runpy.run_module` over ``subprocess`` for entry-point tests -- same
   coverage, and it avoids the ``S404``/``S603`` suppressions a subprocess would need.
+
+  The one standing exception is :mod:`tests_cosmo.test_psalter_evidence_readback`, whose
+  subject *is* a bash script (``scripts/psalter/run_tier1_gate.sh``): there is no module to
+  run, so it shells out with the two suppressions carrying their reason inline.  Recorded
+  here so the next reader sees a justified exception rather than a violation of the rule
+  above.  (I-REM, 2026-09-09.)
 """

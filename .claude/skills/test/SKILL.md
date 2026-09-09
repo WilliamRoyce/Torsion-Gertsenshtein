@@ -16,10 +16,15 @@ Map changed source files to test files using these rules:
 - `tidal/cli/_X.py` → `tests/test_cli.py` and `tests/test_cli_parsing.py`
 - `tidal/measurement/_X.py` → `tests/test_measurement.py` and `tests/test_new_measurements.py`
 - `tidal/symbolic/` → `tests/test_json_loader.py`
+- `tidalcosmo/X.py` → `tests_cosmo/test_X.py` (the new package; see `docs/COSMOLOGY_PROGRAM.md`)
 - `tidal/wolfram/` → Wolfram tests only (skip unless user asks for full suite)
 - If no mapping found or changes span many modules → run full suite
 
 Run: `uv run pytest <matched_test_files> -x -q $ARGUMENTS`
+
+If nothing matches, or the change spans both packages, run the whole thing **pathless**:
+`uv run pytest -x -q`. A path argument overrides `testpaths` in `pyproject.toml`
+(`["tests", "tests_cosmo"]`), which silently skips the cosmology suite.
 
 If user provides explicit arguments (e.g., `/test tests/test_solver_modal.py -k eigendecomp`), pass them through directly.
 
