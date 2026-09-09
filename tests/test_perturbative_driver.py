@@ -262,7 +262,6 @@ class TestPerturbativeCLIFlag:
                 "--periodic",
                 "--perturbative-order",
                 "1",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -293,7 +292,6 @@ class TestPerturbativeCLIFlag:
                 "--bounds",
                 "0:6.283185",
                 "--periodic",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -330,7 +328,6 @@ class TestPerturbativeCLIFlag:
                 "--periodic",
                 "--perturbative-order",
                 "0",
-                "--no-plot",
             ],
         )
         assert ret == 0

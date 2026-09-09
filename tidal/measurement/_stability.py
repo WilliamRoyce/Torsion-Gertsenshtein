@@ -721,9 +721,9 @@ def probe_for_run(  # noqa: PLR0913
 ) -> tuple[ConversionStabilityResult | None, dict[str, Any]]:
     """Run the pre-flight conversion-stability probe for one parameter point.
 
-    The single definition of the probe stage, shared by ``tidal sweep``
-    (:mod:`tidal.cli._sweep`) and ``tidal sample``
-    (:mod:`tidal.inference._likelihood`).  Both used to carry their own
+    The single definition of the probe stage.  It was shared by the sweep
+    and inference entry points (the former retired under GH #533; the latter
+    is :mod:`tidal.inference._likelihood`).  Both used to carry their own
     copy of this preamble, and the copies drifted into two different
     tachyonic policies for four months (GH #454) — so resolving
     parameters, building the grid, parsing the IC wavevector and calling

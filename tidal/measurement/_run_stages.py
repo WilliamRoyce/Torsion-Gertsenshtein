@@ -1,6 +1,6 @@
 """Shared stages for executing one parameter point.
 
-``tidal sweep`` and ``tidal sample`` both answer the same question --
+The sweep and inference entry points both answered the same question --
 "run the simulation at this point in parameter space and measure it" --
 through the same five stages: **resolve params -> probe -> simulate ->
 measure -> classify**.  They differ only in the *policy* applied to the
@@ -388,8 +388,8 @@ class PointOutcome:
 def run_point(ctx: PointContext, *, backend: str = "disk") -> PointOutcome:
     """Run one parameter point: probe -> simulate -> measure -> classify.
 
-    The single definition of the sequence both ``tidal sweep`` and
-    ``tidal sample`` execute.  They used to hand-roll it separately, which
+    The single definition of the sequence the sweep and inference entry
+    points execute.  They used to hand-roll it separately, which
     is why a policy change to the probe stage reached only one of them for
     four months (GH #454) and why they emitted different metadata schemas
     and different status vocabularies (GH #480).

@@ -686,9 +686,8 @@ def _set_full_prior_axis_limits(
     """Set every panel's x/y limits to the *full prior range* per parameter.
 
     Counter-part to :func:`_set_derived_axis_limits` which uses the
-    posterior-weighted 5%-95% interval.  This mode is invoked by
-    ``tidal plot --type corner --full-prior-bounds`` to make the
-    compactified-prior coverage visually honest: each panel shows the
+    posterior-weighted 5%-95% interval.  This mode makes compactified-prior
+    coverage visually honest: each panel shows the
     full range that was sampled, so the user can confirm the posterior is
     genuinely concentrated rather than artificially auto-scaled to a
     sub-region.
@@ -1580,10 +1579,10 @@ def _extract_prior_map(
 ) -> dict[str, tuple[str, float, float]]:
     """Pull (distribution, low, high) for each parameter from the result.
 
-    Priors land in metadata via ``tidal/cli/_sample.py`` (commit that
-    added ``result.metadata["priors"]``). When replotting old chains
-    that pre-date that commit, use ``tidal plot --priors "..."`` to
-    inject them via :func:`tidal.inference._prior.parse_prior`.
+    Priors landed in metadata via the retired ``tidal/cli/_sample.py``
+    (the commit that added ``result.metadata["priors"]``).  When replotting
+    old chains that pre-date it, inject them directly with
+    :func:`tidal.inference._prior.parse_prior`.
 
     The returned bounds are the **effective support** — the range that
     was actually sampled — taken from the record's

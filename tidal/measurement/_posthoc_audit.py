@@ -306,7 +306,6 @@ def _backfill_simulate_args(audit_args: Namespace) -> None:
         "ic_formula": None,
         "output": None,
         "output_format": None,
-        "no_plot": True,
         "quiet": True,
         "resume": None,
         "snapshot": None,

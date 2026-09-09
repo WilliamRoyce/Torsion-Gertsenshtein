@@ -572,7 +572,7 @@ def _evaluate_likelihood(
     # for CDT/PGT), a growing mode counts as tachyonic rather than risk a
     # false negative.  Cost: microseconds per evaluation.
     #
-    # The stage lives in tidal.measurement._stability because tidal sweep
+    # The stage lives in tidal.measurement._stability because the sweep path
     # runs the identical preamble; it used to be copy-pasted here, and the
     # copies drifted into two different policies (GH #454).
     outcome = run_point(

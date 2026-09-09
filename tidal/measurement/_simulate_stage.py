@@ -83,20 +83,16 @@ def _build_sim_args(
     sim_args.param = base_params
 
     if output_dir is None:
-        # In-memory path (inference): no disk writer, no plot.  _simulate
-        # sees output=None and skips both _setup_disk_writer_native and
-        # _generate_output (gated on in_memory_out is not None).
+        # In-memory path (inference): no disk writer.  _simulate sees
+        # output=None and skips _setup_disk_writer_native; _generate_output is
+        # gated on in_memory_out being None.
         sim_args.output = None
         sim_args.output_format = None
-        sim_args.no_plot = True
     else:
-        # Output to subdirectory (force directory format for disk-backed streaming)
-        # Note: no_plot must be False because _infer_output_format checks it first
-        # and would return "summary" (skipping disk write). Instead, set
-        # output_format="directory" which gets checked after no_plot.
+        # Output to subdirectory; force directory format for disk-backed
+        # streaming rather than relying on extension inference.
         sim_args.output = str(output_dir)
         sim_args.output_format = "directory"
-        sim_args.no_plot = False
     sim_args.quiet = True
 
     # Grid shape override for convergence mode

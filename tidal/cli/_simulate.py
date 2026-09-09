@@ -1426,44 +1426,31 @@ def _generate_output(
     sim_data: SimulationData,
     grid_info: GridInfo,
 ) -> None:
-    """Generate output for the native solver path (no py-pde types)."""
-    fmt = _infer_output_format(args)
+    """Report on the completed run.
 
-    if fmt in {"summary", "directory"}:
-        if sim_data.n_snapshots > 0:
-            _print_summary(sim_data)
-        if fmt == "directory" and args.output:
-            from tidal.cli._plot import save_plot
+    Snapshots reach disk through :class:`SnapshotWriter` during the solve, not
+    here; this only prints the human-readable summary.  In-package plotting was
+    retired with the ``plot`` subcommand (#533) -- figures belong in a one-off
+    script or in GetDist/anesthetic, not in the package.
+    """
+    _ = (args, grid_info)
+    if sim_data.n_snapshots > 0:
+        _print_summary(sim_data)
 
-            overview = Path(args.output) / "overview.png"
-            save_plot(overview, sim_data, grid_info)
-        return
 
-    _print_summary(sim_data)
-
-    if args.output is not None:
-        output_path = Path(args.output)
-    else:
-        json_file = Path(args.json_path).resolve()
-        output_path = json_file.parent / f"{json_file.stem}_output.png"
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    from tidal.cli._plot import save_plot
-
-    save_plot(output_path, sim_data, grid_info)
+_IMAGE_SUFFIXES = frozenset({".png", ".pdf", ".jpg", ".svg"})
 
 
 def _infer_output_format(args: Namespace) -> str:
-    """Determine output format from --format or file extension.
+    """Determine output format from --format or the --output path.
 
     Raises
     ------
     ValueError
-        If ``--output`` has a ``.npz`` extension (no longer supported).
+        If ``--output`` names an image or ``.npz`` file.  Neither is produced
+        any more: ``.npz`` went first, and in-package plotting was retired with
+        the ``plot`` subcommand (#533).
     """
-    if args.no_plot:
-        return "summary"
     if args.output_format is not None:
         return args.output_format
     if args.output is not None:
@@ -1474,12 +1461,17 @@ def _infer_output_format(args: Namespace) -> str:
                 "Use a directory path (no extension) for disk-backed output."
             )
             raise ValueError(msg)
-        if ext in {".png", ".pdf", ".jpg", ".svg"}:
-            return ext.lstrip(".")
+        if ext in _IMAGE_SUFFIXES:
+            msg = (
+                f"Cannot write {ext} — `tidal simulate` no longer renders plots "
+                "(retired with `tidal plot`, #533). Pass a directory path with "
+                "no extension to write snapshots, then plot them yourself."
+            )
+            raise ValueError(msg)
         # No extension → directory format (disk-backed streaming)
         if not ext:
             return "directory"
-    return "png"
+    return "summary"
 
 
 # --- Native simulation path (no py-pde) ---
@@ -2692,7 +2684,7 @@ def _simulate(  # noqa: C901, PLR0911, PLR0912, PLR0915
         # Default --perturbative-order: 1 when the JSON declares a
         # perturbation block, 0 otherwise. An explicit --perturbative-order
         # flag on the CLI overrides this default.  Use getattr so callers
-        # built from leaner parsers (e.g. `tidal sample`) still work.
+        # that build a Namespace from a leaner parser still work.
         pert_meta: dict[str, Any] = spec.metadata.get("perturbation") or {}
         pert_order_arg = getattr(args, "perturbative_order", None)
         if pert_order_arg is not None:
@@ -2923,21 +2915,6 @@ def _simulate(  # noqa: C901, PLR0911, PLR0912, PLR0915
         return 0
 
     _generate_output(args, sim_data, grid_info)
-
-    # 10. HTML report (optional)
-    report_path = getattr(args, "report", None)
-    if report_path:
-        from tidal.cli._report import generate_report
-
-        generate_report(
-            sim_data=sim_data,
-            spec=spec,
-            params=params,
-            grid_info=grid_info,
-            scheme=scheme,
-            report_path=report_path,
-        )
-        log(f"  Report saved to: {Path(report_path).resolve()}")
 
     return 0
 

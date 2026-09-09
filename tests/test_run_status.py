@@ -2,8 +2,8 @@
 
 ``run_status`` is the column a reader of a sweep ``results.csv`` or a
 chain CSV uses to decide whether a row is usable and what went wrong when
-it is not.  It had no single definition until GH #480: ``tidal sweep``
-and ``tidal sample`` each grew their own vocabulary, sharing only
+it is not.  It had no single definition until GH #480: the sweep and
+inference paths each grew their own vocabulary, sharing only
 ``success``, and three documents described three mutually inconsistent
 taxonomies -- two of them naming tags no code ever emitted.
 
