@@ -623,6 +623,14 @@ requiring another end-of-phase sweep:
    > that run was `completed/failure`, and a `git push --delete` of four branches that
    > exited 0 having deleted one. **The exit code is not the outcome; the run is not the
    > verdict.** Make the claim impossible to write without the evidence.
+   >
+   > **The rule validated itself within one commit.** A `gh run watch --exit-status` wrapper
+   > reported "CI FAILED" for `3c1209fe`; the fetched conclusion was **`cancelled`** — the
+   > concurrency group superseding an in-flight run because a later commit was pushed, which
+   > is correct behavior and not a failure at all. Wrapping a tool's exit status in a binary
+   > label discards exactly the distinction that matters. `gh run watch` for the wait,
+   > `gh run view --json conclusion` for the verdict; never the former's exit code as the
+   > latter.
 6. At a wave boundary: memory + backup.
 
 ### The Wolfram lane
