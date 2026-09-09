@@ -6,8 +6,15 @@
 > later reader can weigh it — **they are expected to be revised or replaced.** Changing one does
 > not require re-litigating H4.
 
-**There is no code here yet.** This tree is directories and READMEs only, with no
-`__init__.py`.
+**Code lives here.** The package is installable and packaged (`pyproject.toml`): it ships
+`__init__.py`, `py.typed`, and `cli/` (`__init__.py`, `__main__.py`, `_console.py`) behind the
+`tidalcosmo` console script, with tests in `tests_cosmo/`. Most subdirectories below are still
+READMEs only — that is the roadmap, not the current state.
+
+> **Amendment (I-REM, 2026-09-09).** Until now the headline above asserted that the tree held
+> no code and no `__init__.py` — false since `654b627a` (M0, #524). It was corrected in place
+> rather than only annotated, because this is the first file a new session opens, and a stale
+> headline is read long before the amendments beneath it.
 
 > **Amendment (coherence pass, 2026-09-04).** The original rationale here — "an empty
 > importable package would enter pyright, ruff and coverage" — was **false for two of the

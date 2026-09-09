@@ -25,6 +25,12 @@ Fields may be scalars, vectors or tensors up to rank 3, in 1+1D through 3+1D, on
 
 > Define a Lagrangian in TOML → derive linearized PDEs symbolically → simulate with adaptive solvers → measure conversion, spectra and scattering → sweep or sample over parameter space.
 
+### Current direction: cosmology
+
+TIDAL is being extended into a **[Cobaya](https://cobaya.readthedocs.io/) component** that evolves a candidate Lagrangian's linear perturbations as *spectators* on a CAMB ΛCDM background, turning them into CMB observables and real likelihoods. The new code lives in `tidalcosmo/`, written clean beside the `tidal/` package described here rather than on top of it; `tidal/` still exists and still runs, and is migrated capability by capability.
+
+The operational record — goals, decisions, milestones and current state — is **[`docs/COSMOLOGY_PROGRAM.md`](docs/COSMOLOGY_PROGRAM.md)**, with the design documents in [`docs/cosmology/`](docs/cosmology/) and the full documentation index in [`docs/README.md`](docs/README.md). `tidalcosmo` is a placeholder name: it becomes `tidal` once the migration completes, so nothing outside the project should depend on it.
+
 ## Citing TIDAL
 
 A software paper describing TIDAL is in preparation. Until it appears, please cite this repository:

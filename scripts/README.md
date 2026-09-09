@@ -227,13 +227,29 @@ git push && git push --tags
 | `verify-wolfram-setup.sh`   | Comprehensive verification of all components      |
 | `xact_smoke.wl`             | Wolfram Language smoke test for xAct/xCoba        |
 | `psalter_smoke.wl`          | PSALTer smoke test, incl. headless PDF export     |
-| `psalter/run_tier1_gate.sh` | PSALTer Tier-1 install gate (see its README)      |
+| `psalter/`                  | PSALTer Tier-1 install gate, probes and diff tooling — **see `psalter/README.md`** |
+| `oracles/`                  | Frozen legacy oracle (M0.5, #525) — **see `oracles/README.md`** |
 | `bump_version.py`           | Atomic version updates across project files       |
 | `run_wolfram_tests.sh`      | Run all Wolfram unit tests                        |
 | `run_examples.sh`           | Regenerate JSON files from example derivations    |
 | `full_test.sh`              | Run complete test suite (Python + Wolfram)        |
 | `validate_pipeline.sh`      | End-to-end pipeline validation                    |
 | `lint_wolfram.sh`           | Check Wolfram module syntax                       |
+
+Two subdirectories are listed by directory rather than by file, because both carry their own
+README that stays current as their contents change:
+
+- **`scripts/psalter/`** — `run_tier1_gate.sh` (the gate), `tier1_diff.wls`,
+  `summarize_diff.py` (**read-only** readback of a recorded verdict — the gate's `--diff-only`
+  path recomputes and would overwrite it), `extract_checkpoints.py`, `stamp_lines.py`,
+  `vector_smoke.wls`, and the `probe_52*.wls` scripts behind #521–#523.
+- **`scripts/oracles/`** — `freeze_legacy_oracle.py`, the **one place allowed to touch
+  legacy**. Regenerates or verifies the 185 committed fixtures under
+  `tests_cosmo/data/oracles/`. `make oracle-check` runs the verify path; CI runs it
+  path-filtered via `.github/workflows/oracle.yml`.
+
+**Standing rule:** if `tidal/` or `examples/data/` changes, re-run `scripts/oracles/` in the
+same commit, so the frozen oracle keeps describing what legacy actually produces.
 
 ## Environment Variables
 

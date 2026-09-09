@@ -83,14 +83,17 @@ its `True` default, since H6 §6.2 makes the massless sector load-bearing for us
 `ValidateLagrangian.m` defines six messages and has throw sites for four — but only
 **three can fire on this install**, per the amendment below:
 
-| message | throw site? | fires here? | fires on |
+| message | fires on this install? | throw site in the source? | fires on |
 | --- | --- | --- | --- |
 | `Zero` | yes | yes | `PossibleZeroQ` on the Lagrangian |
 | `UnknownCoupling` | yes | yes | a symbol that is not a `ConstantSymbolQ` and not an `xTensorQ` |
 | `UnknownField` | yes | yes | a tensor with no `xAct`PSALTer`<name>`` context — i.e. not `DefField`ed |
-| `NonQuadraticFields` | yes | **no** | `PolynomialDegree > 2` in the fields — guard unavailable, see below |
-| `NonLinearCouplings` | **never** | no | — (message defined at line 6, no throw site in the package) |
-| `ParityOdd` | **never** | no | — |
+| `NonQuadraticFields` | **no** — guard unavailable, see below | yes | `PolynomialDegree > 2` in the fields |
+| `NonLinearCouplings` | no | **never** | — (message defined at line 6, no throw site in the package) |
+| `ParityOdd` | no | **never** | — |
+
+The first column is the one that matters when reading this table on a live install, so it
+comes first; the second records what the *package* would do given its dependencies.
 
 > **⚠ Amendment (I-REM, 2026-09-09 — PSALTer v2.0.2 `bb45adb0`).
 > `EXPIRES-WITH: #551`.** `NonQuadraticFields` has a throw site, but it is guarded by
