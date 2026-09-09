@@ -275,6 +275,43 @@ while GitHub returns 200.
 Our `ParticleSpectrographCTEG.pdf` was produced (the headless export works), and is
 kept in the run directory. Recorded, explicitly **not** a gate.
 
+### 4.7 Independent re-run — orchestrator, 2026-09-09
+
+I-526's success criterion 2 required the orchestrator to re-run this gate **from scratch,
+before Wave 1 is dispatched**, and the Wolfram-lane rule requires the same before the next
+lane occupant starts. It was not done at the wave boundary, and **it could not have been**:
+the gate had been unrunnable since 66 seconds after the run recorded above (#549, fixed in
+`d6753631` — an unavailable optional resource was routed as a broken install). Attempting
+the re-run is what found that.
+
+Run: `third_party/psalter_runs/tier1-20260909T132651Z` (gitignored; the committed evidence
+directory was not written to, verified with `git status`).
+
+| | 2026-09-07 (delegate) | 2026-09-09 (orchestrator) |
+|---|---|---|
+| verdict | `mismatch` | **`mismatch`** |
+| tally | `different` 5, `head_mismatch` 5, `identical` 1 | **identical tally** |
+| `WaveOperator` | identical, 303 leaves | **identical, 303 leaves** |
+| per-entry outcomes | — | **identical** |
+| `used_simplify_fallback` | `[]` | `[]` |
+| `oracle_sha256` | `07a8cd59…` | **same** |
+| `script_unmodified` | true | true |
+| engine | 14.3.0 (July 31, 2025) | same |
+| wall | 407 s | **302 s** |
+| process exit status | **143** | **0** |
+
+`tier1_diff.json` of the re-run: `sha256 63a19679…4ac2d` (it differs from the committed
+artifact only in run-scoped fields — timestamps and paths; every verdict-level field above is
+equal).
+
+**Two things this establishes.** The MISMATCH is **reproducible** — it is a property of this
+configuration, not of one session's procedure or of a transient state, which is what an
+independent re-run exists to decide, and it is now a firmer basis for the #543 conversation
+than a single run was. And the **shutdown segfault is intermittent**: the same gate, on the
+same verdict, exited 143 once and 0 the other time. That is the rule of §2.5 confirmed from
+the other side — a `wolframscript` run's exit status carries no information about whether it
+produced the right answer, in either direction.
+
 ## 5. Probe #521 — `ParticleSpectrum` wall time, `Method` inert
 
 **Answer: confirmed inert on the live install.** Reportable as

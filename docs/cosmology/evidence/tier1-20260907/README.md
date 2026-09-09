@@ -51,3 +51,20 @@ whose license position is covered by the note on #495.
 residue path** — `$LocalSourceConstraints` measures `{}` against 21 expected for CTEG's
 formulation, so the Schur route's gauge-mode removal is degraded too. Both criteria are
 affected; see the correction in `COSMOLOGY_PROGRAM.md`.
+
+## Reproduced independently, 2026-09-09
+
+The orchestrator re-ran the gate from scratch (`third_party/psalter_runs/tier1-20260909T132651Z`,
+gitignored) and got the **same verdict, the same tally, the same per-entry outcomes and the
+same bit-exact `WaveOperator`** — against the same `oracle_sha256`, with the published script
+unmodified. Wall 302 s against this run's 407 s; process exit status 0 against this run's 143,
+which confirms the shutdown segfault is intermittent and carries no information about the
+result.
+
+So the MISMATCH recorded here is a reproducible property of the configuration, not an artifact
+of one session. Details in `docs/cosmology/stage1_measurements.md` §4.7.
+
+Note that this re-run was only possible after #549: the gate had refused to start since 66
+seconds after the run recorded here, because an unavailable optional resource was routed as a
+broken install. Nothing in this directory was written to by either the failed attempt or the
+successful re-run — a read-back path never recomputes (#544).

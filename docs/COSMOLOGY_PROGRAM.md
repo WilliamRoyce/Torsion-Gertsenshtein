@@ -534,6 +534,12 @@ rules → the **flaw protocol** → the report-back format.
   catch it, because such a failure bites at a milestone nothing is tested against yet.
   (Found the hard way: `test_package_boundary.py` inverts into a blocker at M7, when
   `git mv tidalcosmo tidal` makes its own regex match every legitimate import — #537.)
+- **Reduce before you bisect.** Find the smallest input that still shows the defect, iterate
+  there, and run the expensive case only to confirm. Wave 0's Tier-1 failure reproduces on a
+  single scalar field in ~30 s where the CTEG gate takes 7 minutes — a 14× cheaper loop for
+  the same knowledge, and the difference between an afternoon and a week when a hypothesis
+  needs a dozen tests. This extends `feedback_minimal_tests` from choosing test theories to
+  bisecting bugs.
 - One `wolframscript` at a time, machine-wide — only a prompt flagged for the Wolfram lane
   may start a kernel.
 - Conventional commits; no attribution trailers.
@@ -649,7 +655,10 @@ Status: `drafted → dispatched → reported → merged`.
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | I-524 — packaging, extras, CI lane | #524 | — | `pyproject.toml`, `.github/`, `tidalcosmo/__init__.py`, `tidalcosmo/cli/`, `cspell.json` | `cosmo/i524-packaging` | **merged** ✅ CI 34051208887 green on the merged SHA: 2885 passed, 39 skipped |
 | 0 | I-525 — freeze the legacy oracle | #525 | — | `scripts/oracles/`, `tests_cosmo/data/` | `cosmo/i525-oracles` | **merged** ✅ gate re-run independently: 185 fixtures current, regeneration byte-identical |
-| 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/{install-psalter.sh,verify-wolfram-setup.sh,psalter/}`, `tests_cosmo/fixtures/`, `.gitattributes` | `cosmo/i526-psalter` + `fix/i526-evidence-reverify` (#544) | **merged** ⚠️ install works, all three probes answered; **Tier-1 MISMATCH — the gate working, not failing** (#543, blocks *both* criteria). Evidence at `docs/cosmology/evidence/tier1-20260907/`, read-only via `summarize_diff.py`. Lane free |
+| 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/{install-psalter.sh,verify-wolfram-setup.sh,psalter/}`, `tests_cosmo/fixtures/`, `.gitattributes` | `cosmo/i526-psalter` + `fix/i526-evidence-reverify` (#544) | **merged, install UNCERTIFIED** ⚠️ install works, all three probes answered; **Tier-1 MISMATCH** (#543, blocks *both* criteria). Evidence at `docs/cosmology/evidence/tier1-20260907/`, read-only via `summarize_diff.py`. **Re-run from scratch by the orchestrator 2026-09-09: same verdict, same tally, same per-entry outcomes, same bit-exact `WaveOperator`, 302 s — the mismatch is reproducible** (`stage1_measurements.md` §4.7). It was not done at the wave boundary and *could not* have been: the gate had been unrunnable since 66 s after its only run (#549, fixed in `d6753631`). Resolution: **I-543** |
+| 0c | I-REM — instruction sites, docs index, tooling, oracle CI | #545 #546 #540 | — | design docs, `docs/README.md`, `handoffs/README.md`, `tidalcosmo/**/README.md`, `scripts/`, skills, `Makefile`, `.github/`, config | — | drafted — **merges first** |
+| 0c | I-533 — retire the M0 drop rows | #533 | — | `tidal/`, `tests/`, `examples/**/run.sh`, legacy `scripts/`, `docs/tex/` | — | drafted — merges second |
+| 0c | I-543 — resolve the Tier-1 gate | #543 #542 | **yes** | `scripts/psalter/repro_543.wl`, `docs/cosmology/psalter_543_*.md`, `stage1_measurements.md` §4.4–4.6, evidence dir | — | drafted — merges last |
 | 1 | I-532 — CAMB seam, background protocol, flag schema | #532 | — | `tidalcosmo/{background,spectator,validity}/` | — | planned |
 | 1 | I-503 — per-operator dispersion + zero-mode scope | #503 | — | `research/lagrangian_enumeration/`, `docs/` | — | planned |
 | 1 | I-S1A — Stage-1 Python side | #527 | — | `tidalcosmo/{config,derive}/` (Python only), `tidalcosmo/spectrum/` | — | planned |
@@ -734,8 +743,17 @@ a time-dependent background; nothing is ported from `modal.py` and it is not an 
 
 What the next planning session does *first*, before planning anything:
 
-1. Confirm every row of the wave reads `merged`.
-2. Re-run the full gate set once on the merged trunk.
+1. Confirm every row of the wave reads `merged`. **A row whose deliverable is a gate reads
+   `merged` only when the gate *passed*** — I-526 was recorded `merged` with its gate
+   reporting MISMATCH, which is how the wave was declared closed around an unresolved
+   blocker.
+2. Re-run the full gate set once on the merged trunk — **including any lane-held gate, from
+   scratch, not read back.** A delegate's recorded verdict is not verification; only a second
+   run, by another session, from a clean run directory, makes it independent of that session's
+   procedure and environment. (Wave 0: the orchestrator substituted `--diff-only` — which only
+   re-compares the delegate's own artifacts, and destroyed them, #544 — then a read-only
+   summary. Attempting the real thing on 2026-09-09 found the gate had been *unrunnable* since
+   66 seconds after its only run, #549.)
 3. Read the delegates' reported discoveries and **route** each — amend at the site, open an
    issue, or fold into the next wave's scope.
 4. **Prune stale worktrees.** `git worktree list`; for each entry whose branch is an
@@ -743,14 +761,39 @@ What the next planning session does *first*, before planning anything:
    branch. **Never touch a worktree whose session is still active** — check for unmerged
    commits and uncommitted changes first. A stale registration holding a branch ref
    quietly confuses a later `git worktree list`.
-5. Update memory (`project_cosmology_program.md`, the MEMORY.md status line) and back up.
-6. *Then* plan the next wave, in detail; the one after it in outline; nothing beyond.
+5. **Bump the version once, for the wave, and tag it.** The rule lived only as a clause
+   inside the *delegate* working rules ("the orchestrator bumps once per wave"), and neither
+   checklist named it — so Wave 0 shipped three feature merges under `v0.53.0`, which had been
+   cut *before* them and therefore looked current.
+6. **Copy every "the orchestrator will…" commitment out of the wave's prompts and onto this
+   checklist as a named item.** Both misses above share one cause: a commitment addressed to
+   the orchestrator was recorded somewhere other than the checklist the orchestrator executes
+   — I-526's criterion 2 said "the orchestrator will re-run this before Wave 1 is dispatched",
+   and nothing carried it forward.
+7. Update memory (`project_cosmology_program.md`, the MEMORY.md status line) and back up.
+8. *Then* plan the next wave, in detail; the one after it in outline; nothing beyond.
+   **The user initiates that planning session; the orchestrator never starts it on its own.**
 
 ## What to implement next
 
 The program is **design-complete**, has passed the pre-implementation scientific review
-(`docs/cosmology/scientific_review.md`), and is entering implementation.
-**Wave 0 is drafted and ready to dispatch** — see the wave board above. In dependency order:
+(`docs/cosmology/scientific_review.md`), and is in implementation.
+
+> **State, 2026-09-09.** **Wave 0 is merged but not complete**, and a **completion wave**
+> (I-REM ∥ I-533 ∥ I-543) is running before Wave 1 is planned. What is done: #524 M0
+> packaging and the CI lane (`654b627a`), #525 M0.5 with 185 frozen fixtures (`e310e125`),
+> #526 PSALTer installed and its three probes answered (`c8c57251`), plus #544. What is not:
+> **the Tier-1 install gate reports MISMATCH, so the install is uncertified and both
+> spectrum criteria are blocked** (#543) — I-543 resolves it rather than documenting it; the
+> **M0 retire clause** was deferred on a rejected reason — I-533 does it; and the
+> instruction sites, docs index and tooling Wave 0 left inconsistent — I-REM.
+>
+> **Wave 1 is planned by a fresh planning session, which the user initiates** — this
+> orchestrator never starts it. Its composition is settled and recorded below so that
+> session begins from committed state: **#532 (M1a) ∥ #503 ∥ I-S1A (#527)**. **No Wave-1
+> prompt exists yet; writing them is that session's first task.**
+
+The original dependency order, for reference:
 
 1. **#524 (M0)** — packaging: second console script, extras, YAML package-data, the CI lane.
    The verification gates themselves are already live (`8b54fe6e`, `7b6f7a17`).
@@ -774,9 +817,10 @@ The program is **design-complete**, has passed the pre-implementation scientific
    plus #515's duplicated-compute benchmark. Retires `tidal/inference/`.
 5. **#498 / M2 → O1** — the CAMB fork first (re-apply off `2.0.3`), then `TabulatedBackground`.
 
-**In parallel, unblocked by the above:** **#526** — install PSALTer and pass the Tier-1 gate.
-It is the single blocker behind #521, #522 and #523, so it converts three stalled issues into
-one afternoon. WS6 (#495) is buildable any time after M0.
+**~~In parallel, unblocked by the above:~~ #526 — DONE 2026-09-07** (`c8c57251`): PSALTer is
+installed and #521/#522/#523 are closed, but **the Tier-1 gate did not pass** and the install
+is uncertified — see #543 and the completion-wave note above. WS6 (#495) is buildable after
+M0 on the Python side; its Wolfram side waits on the certified configuration.
 
 **Also parallel, and it gates the settled rung order:** **#503** — the per-operator photon
 dispersion relations. Whether O4a is the cheap rung depends on its answer — though note
