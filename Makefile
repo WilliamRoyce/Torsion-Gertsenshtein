@@ -58,5 +58,13 @@ figC6-pull:  ## Pull jac_speedup.json from HPC (works mid-run thanks to per-conf
 
 publication: publication-figures  ## Rebuild all App C publication artifacts
 
-publication-test:  ## Run publication-pipeline tests (skipped by default lane)
+publication-test:  ## Run publication-pipeline tests
 	uv run pytest -m publication tests/publication/
+
+# Re-runs legacy `tidal inspect` and `tidal validate` across the example corpus and compares
+# against the frozen fixtures in tests_cosmo/data/oracles/ (M0.5, #525).  ~5-8 minutes.
+# CI runs the same command, path-filtered, in .github/workflows/oracle.yml.  Non-zero means
+# the freeze no longer describes what legacy produces -- regenerate and commit the fixtures
+# alongside whatever moved them.  Retired with legacy `inspect`/`validate` at M6/M7.
+oracle-check:  ## Re-check the frozen legacy oracle against live legacy output
+	uv run python -m scripts.oracles.freeze_legacy_oracle --check
