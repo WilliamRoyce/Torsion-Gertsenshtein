@@ -68,3 +68,28 @@ Note that this re-run was only possible after #549: the gate had refused to star
 seconds after the run recorded here, because an unavailable optional resource was routed as a
 broken install. Nothing in this directory was written to by either the failed attempt or the
 successful re-run — a read-back path never recomputes (#544).
+
+## The rendered spectrograph corroborates the verdict, with no Wolfram needed
+
+`ParticleSpectrographCTEG-rerun-20260909.pdf` is the spectrograph PSALTer rendered during the
+2026-09-09 re-run — the artifact the author would actually look at. It is visibly broken, and
+anyone can confirm it without a kernel, a licence, or the lane:
+
+```sh
+pdftotext docs/cosmology/evidence/tier1-20260907/ParticleSpectrographCTEG-rerun-20260909.pdf - \
+  | grep -c Indeterminate      # 296
+```
+
+Measured in that render: **296 `Indeterminate`**, **12 `$Failed`**, one unevaluated `Grid[`
+source expression, and PSALTer's own **"Demonstrably impossible"** unitarity verdict. Found by
+the I-REM session, which was not looking for it.
+
+This matters beyond confirmation. The key-by-key association diff and the rendered PDF are
+**two independent observables** of the same defect, and the second is legible to the author at
+a glance — which makes it the right thing to put in front of him on 11 September. It also
+shows the damage reaching the *physics* output (a unitarity verdict), not just the two keys
+Tier 1 compares.
+
+Licensing position is the same as the `.wxf` fixtures: this is a **data output** of running the
+author's published script, not "the Program". Flagged on #495 with the rest, and it is a
+position rather than a settled conclusion.
