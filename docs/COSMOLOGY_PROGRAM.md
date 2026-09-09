@@ -620,6 +620,13 @@ requiring another end-of-phase sweep:
 5. Merge; close issues with commit references; **update the wave board and the queue in
    the merge commit**; put a status header on the prompt file.
 
+   **Before closing an issue that instruction sites are conditioned on, run the expiry
+   grep** — `grep -rn 'EXPIRES-WITH: #<n>' docs/ scripts/` — and re-date or remove every
+   hit. Amendments written while a blocker is open are correct only while it is open;
+   #543 and #551 each carry an "On close, revisit" section naming this. A checklist, not
+   a mechanism: the trigger is a human act, and a test that goes red *because someone
+   fixed a bug* would teach everyone to ignore red.
+
    > **Never state a CI verdict without its run id and fetched conclusion.** Not another
    > reminder to check — a *format* requirement, because five rules did not fix this and a
    > sixth would not either. Write `CI <run-id>: <conclusion>`, which cannot be written
@@ -656,7 +663,7 @@ Status: `drafted → dispatched → reported → merged`.
 | 0 | I-524 — packaging, extras, CI lane | #524 | — | `pyproject.toml`, `.github/`, `tidalcosmo/__init__.py`, `tidalcosmo/cli/`, `cspell.json` | `cosmo/i524-packaging` | **merged** ✅ CI 34051208887 green on the merged SHA: 2885 passed, 39 skipped |
 | 0 | I-525 — freeze the legacy oracle | #525 | — | `scripts/oracles/`, `tests_cosmo/data/` | `cosmo/i525-oracles` | **merged** ✅ gate re-run independently: 185 fixtures current, regeneration byte-identical |
 | 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/{install-psalter.sh,verify-wolfram-setup.sh,psalter/}`, `tests_cosmo/fixtures/`, `.gitattributes` | `cosmo/i526-psalter` + `fix/i526-evidence-reverify` (#544) | **merged, install UNCERTIFIED** ⚠️ install works, all three probes answered; **Tier-1 MISMATCH** (#543, blocks *both* criteria). Evidence at `docs/cosmology/evidence/tier1-20260907/`, read-only via `summarize_diff.py`. **Re-run from scratch by the orchestrator 2026-09-09: same verdict, same tally, same per-entry outcomes, same bit-exact `WaveOperator`, 302 s — the mismatch is reproducible** (`stage1_measurements.md` §4.7). It was not done at the wave boundary and *could not* have been: the gate could not be run at all from 66 s after its only run (#549, fixed in `d6753631`). Resolution: **I-543** |
-| 0c | I-REM — instruction sites, docs index, tooling, oracle CI | #545 #546 #540 | — | design docs, `docs/README.md`, `handoffs/README.md`, `tidalcosmo/**/README.md`, `scripts/`, skills, `Makefile`, `.github/`, config | — | drafted — **merges first** |
+| 0c | I-REM — instruction sites, docs index, tooling, oracle CI | #545 #546 #540 | — | design docs, `docs/README.md`, `handoffs/README.md`, `tidalcosmo/**/README.md`, `scripts/`, skills, `Makefile`, `.github/`, config | `cosmo/irem-amendments` (#550) | **merged** ✅ CI 34393863566 + 34393863645 success on `1cde083d`. **`oracle.yml` proven in both directions**: CI 34393316535 failure on a corrupted fixture, CI 34392693815 success clean. Replaced the six-item exporter list with a rule + anchor + guard rather than a longer list. Found PSALTer's own README known-bug #1 (#543) |
 | 0c | I-533 — retire the M0 drop rows | #533 | — | `tidal/`, `tests/`, `examples/**/run.sh`, legacy `scripts/`, `docs/tex/` | — | drafted — merges second |
 | 0c | I-543 — resolve the Tier-1 gate | #543 #542 | **yes** | `scripts/psalter/repro_543.wl`, `docs/cosmology/psalter_543_*.md`, `stage1_measurements.md` §4.4–4.6, evidence dir | — | drafted — merges last |
 | 1 | I-532 — CAMB seam, background protocol, flag schema | #532 | — | `tidalcosmo/{background,spectator,validity}/` | — | planned |
