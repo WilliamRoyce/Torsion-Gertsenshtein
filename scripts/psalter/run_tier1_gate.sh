@@ -82,14 +82,28 @@ require_engine_idle() {
     fi
 }
 
+# Exit 2 from the verifier means "the install works, but a capability is
+# degraded" -- here, the two Wolfram Function Repository resources that cannot be
+# fetched in this container. The gate must run anyway: refusing on it made this
+# script permanently unrunnable from 58605f16 (2026-09-07 11:30:55) onward, one
+# minute after the run that produced the committed evidence, so the "re-run the
+# gate independently" step could never have been performed by anyone. The
+# degradation is recorded in the run manifest instead of being used to refuse.
+PSALTER_DEGRADED="false"
 require_psalter() {
     log_step "Verifying the PSALTer install"
-    if ! bash "${REPO_ROOT}/scripts/verify-wolfram-setup.sh" --require-psalter >/dev/null 2>&1; then
-        log_error "PSALTer verification failed"
-        log_error "  Run: bash scripts/verify-wolfram-setup.sh --require-psalter"
-        exit 1
-    fi
-    log_info "PSALTer install verified"
+    local rc=0
+    bash "${REPO_ROOT}/scripts/verify-wolfram-setup.sh" --require-psalter >/dev/null 2>&1 || rc=$?
+    case "$rc" in
+        0) log_info "PSALTer install verified" ;;
+        2) PSALTER_DEGRADED="true"
+           log_warn "PSALTer install verified, with degraded capabilities"
+           log_warn "  Recorded in the run manifest; see #542. Details:"
+           log_warn "  bash scripts/verify-wolfram-setup.sh --require-psalter" ;;
+        *) log_error "PSALTer verification failed"
+           log_error "  Run: bash scripts/verify-wolfram-setup.sh --require-psalter"
+           exit 1 ;;
+    esac
 }
 
 # The reference sources are fetched, never committed: PSALTer and the
@@ -240,6 +254,7 @@ run_spectrum() {
   "exit_status": ${rc},
   "timed_out": $([[ $rc -eq 124 ]] && echo true || echo false),
   "qt_qpa_platform": "offscreen",
+  "psalter_capabilities_degraded": ${PSALTER_DEGRADED},
   "script_sha256_before": "${before}",
   "script_sha256_after": "${after}",
   "script_unmodified": $([[ "$before" == "$after" ]] && echo true || echo false),
