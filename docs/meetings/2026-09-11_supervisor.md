@@ -8,11 +8,17 @@ reconstructed on the day; anything unresolved by the meeting stays here as an op
 
 ## Headline
 
-The cosmology programme is **design-complete and entering implementation**. Eight research
-handoffs (H1–H8) ran between 29 August and 4 September, producing eleven design documents;
-a coherence pass reconciled them, and a scientific review before dispatch
-(`docs/cosmology/scientific_review.md`) confirmed the architecture holds at every rung. The
-first implementation work is being delegated now.
+The cosmology programme is **design-complete, and the first implementation wave is merged**.
+Eight research handoffs (H1–H8) ran between 29 August and 4 September, producing thirteen
+design documents; a coherence pass reconciled them, and a scientific review before dispatch
+(`docs/cosmology/scientific_review.md`) confirmed the architecture holds at every rung.
+
+**The first wave delivered two of its three goals and caught the third failing.** The new
+package is installable with a CI lane that found a real defect on its first execution
+(2885 passed / 39 skipped); the legacy oracle is frozen as 185 committed fixtures before any
+porting; PSALTer is installed and three source questions are answered from a live install.
+**Its install gate does not pass** — see §3b, which is the one thing I would most like your
+view on after §1.
 
 **Settled since the last meeting:** the observable ladder's execution order
 (`O0 → O1 → O2 → O4a → O3 → O4b/V`), the integration target (our own solver chained to
@@ -90,6 +96,11 @@ than deferred behind it. Both are measured; a bake-off decides composition and h
 thresholds on real numbers, with an adaptive RK baseline as the control. No candidate is
 discounted on paper estimates.
 
+One honest caveat on evidence: the error bounds we would quote for the adiabatic method are
+still `[survey]`-tagged — taken from the Lorenz–Jahnke–Lubich paper at second hand and not yet
+re-derived against the primary source. They are the only quantitative accuracy claim the rung
+has, so they get verified at first use rather than cited as settled (#530).
+
 **Question:** does treating the matrix generalization as a publishable result in its own
 right match how you would want it framed?
 
@@ -110,10 +121,13 @@ complete algorithm — the same pattern we are using for the Schur-complement cr
 save us a literature search and, more importantly, make sure we implement the version you
 would recognize as complete.
 
-Related, and already acted on: we found that the released validator does **not** enforce
-coupling-linearity (`NonLinearCouplings` is defined but never thrown, and a bare numeric
-coefficient passes silently), so we are enforcing it on our side and treating that
-validator as load-bearing for correctness.
+Related, and already acted on: the released validator does **not** enforce coupling-linearity —
+**measured rather than read**, since the install emits ~23 ambient messages on any theory, so
+we diffed a control theory against one with a bare numeric coefficient and found the
+difference empty. `NonLinearCouplings` is defined but never thrown. A fourth check,
+`NonQuadraticFields`, *has* a throw site but is guarded by a `ResourceFunction` we cannot fetch here —
+`PolynomialDegree` — so it is inert here too. We enforce coupling-linearity
+on our side and treat the validator as load-bearing for correctness.
 
 ---
 
@@ -131,8 +145,34 @@ Ruled out by test rather than argument: the two missing Function Repository depe
 **Our leading hypothesis is the engine version** — your `.mx` header decodes to **14.2** and
 we run **14.3**, and everything symbolic agrees up to the point of the inverse.
 
-**Question:** does that ring true, and is 14.2 what you'd expect to be required? Testing it
-our end means installing an older engine, which we would rather not do speculatively.
+**Since drafting, we have narrowed it considerably** — and we are not asking you to debug it,
+only to say whether the conclusion sounds right:
+
+- **It reproduces.** An independent re-run on 9 September gave the same verdict, the same
+  per-entry tally and the same bit-exact `WaveOperator` — so it is a property of the
+  configuration, not of one session.
+- **It is not a PSALTer version difference.** Your oracle is contemporaneous with v2.0.0/2.0.1
+  and we run v2.0.2, but `git diff v2.0.1 v2.0.2` touches **nothing** under
+  `ConstructSaturatedPropagator/` or `ConstructSourceConstraints/`.
+- **It reproduces on a single scalar field in ~30 s**, not just on CTEG — so it is not about a
+  degenerate sector or a large computation, and it is cheap to bisect.
+- **Both symptoms sit on the same two built-ins.** `ConjectureInverse.m` calls `NullSpace`
+  three times, `Inverse` three times and `PseudoInverse` once; `SymbolicNullSpace.m` calls
+  `NullSpace` twice. One behavioral change in `NullSpace` on symbolic input would produce
+  *both* the empty source-constraint list and the singular inversion — and 14.3's own release
+  notes describe a push to "extend and streamline everything done with matrices".
+- Every diff entry is a **structural head mismatch** (`Integer` vs `Times`/`Plus`), i.e. zero
+  against a polynomial, not a numerical near-miss.
+
+**Questions:** does the `NullSpace`-behavior-change reading ring true, and is 14.2 what you
+would expect to be required? We are installing 14.2.1 alongside to confirm, and will send you
+a minimal reproduction either way — if it is a genuine 14.2/14.3 incompatibility it is worth an
+issue on the PSALTer repository, and we are happy to write it up.
+
+**Also worth knowing:** `Method` is inert on v2.0.2 — zero `OptionValue@Method` sites against
+five for `MaxLaurentDepth`, and `"Easy"`, `"Hard"` and a deliberately invalid value all return
+byte-identical results with identical timings. We report `ParticleSpectrum` wall time without a
+Method qualifier as a result.
 
 **Second, smaller:** PSALTer calls `ResourceFunction["PolynomialDegree"]` and
 `ResourceFunction["LinearlyIndependent"]` at five sites, and neither can be fetched in our
@@ -165,15 +205,21 @@ must-resolve-before-publication.
 
 ## 5. Status, briefly
 
-- **Design documents:** eleven, under `docs/cosmology/`, with `docs/COSMOLOGY_PROGRAM.md`
+- **Design documents:** thirteen, under `docs/cosmology/`, with `docs/COSMOLOGY_PROGRAM.md`
   as the operational record (decisions register, ladder, workstreams, wave board).
-- **Package:** `tidalcosmo/` scaffold beside legacy `tidal/`, strangler-fig migration; new
-  code never imports legacy, test-enforced.
-- **First implementation wave:** packaging and extras; freezing the legacy oracle as
-  committed data before any porting; installing PSALTer and passing its install gate.
-- **Approach to delegation:** self-contained handoff prompts to separate sessions, each
-  with quantitative success criteria stated before code, merged centrally against a
-  checklist.
+- **Package:** `tidalcosmo/` is now a real installable package beside legacy `tidal/` — two
+  console scripts, `camb`/`cobaya` extras, a CI lane on the integration branch. New code
+  never imports legacy, test-enforced. (That guard inverts into a blocker at the final
+  rename, which we found by asking what future change makes each guard wrong; it is
+  scheduled for deletion rather than adaptation.)
+- **First implementation wave — merged, one goal unmet:** packaging ✅; the legacy oracle
+  frozen as 185 fixtures before any porting ✅; PSALTer installed and its three live-source
+  questions answered ✅; **its Tier-1 install gate reports a mismatch** (§3b), so the install
+  is uncertified and we are resolving that before starting the next wave.
+- **Approach to delegation:** self-contained handoff prompts to separate sessions, each with
+  quantitative success criteria stated before code, merged centrally against a checklist.
+  Working well; the two things that bit us were a gate nobody could run and a verification
+  step promised in a prompt but never copied onto the checklist that gets executed.
 
 ---
 
@@ -185,4 +231,13 @@ must-resolve-before-publication.
 - The Chern–Simons couplings need **bare `A_μ`** handling, which the pipeline does not yet
   support — an unsolved problem rather than a configuration step.
 - Licensing for code derived from the PSALTer/supplementary sources: a release gate, not an
-  implementation one. Attribution to be settled at publication.
+  implementation one. Attribution to be settled at publication. Concretely, we have now
+  committed two small `.wxf` outputs from your supplementary materials (692 B and 2,874 B,
+  with provenance and hashes) so our reader can be tested without Wolfram installed. Our
+  position is that these are *data outputs of a computation* rather than "the Program" — but
+  it is a position, not a settled conclusion, and we would rather hear your view now than at
+  publication.
+- **A positive result on cost, since it answers our own go/no-go:** CTEG — your 21-generator
+  PGT — completes in **407 s** on our install, with ~72 % of that in field declaration and
+  decomposition. So adding couplings to an existing field content is far cheaper than adding
+  fields, and the "minutes, not hours" regime the design assumed holds.
