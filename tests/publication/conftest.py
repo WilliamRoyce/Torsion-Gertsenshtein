@@ -5,8 +5,12 @@ These tests validate the publication-figure infrastructure:
     - canonical benchmark JSON exists where the manifest expects it
     - figure/table scripts can be re-run and emit their declared outputs
 
-They are skipped by default in the main test lane (`uv run pytest tests/`).
-Run explicitly with `uv run pytest -m publication tests/publication/`.
+Select them with `uv run pytest -m publication`, or skip them with
+`-m "not publication"`.  They are *not* excluded from the default lane -- no
+`addopts`, `pytest_collection_modifyitems` or `collect_ignore` implements such
+an exclusion anywhere in the repo, and an earlier version of this docstring
+claimed otherwise (#540).  The one real guard is an environment probe:
+`skipif shutil.which("latex") is None`.
 """
 
 from __future__ import annotations
