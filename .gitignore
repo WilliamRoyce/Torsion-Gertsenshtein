@@ -31,6 +31,7 @@ phd-application-context.md
 importtime.log
 wolfram_test_output.txt
 .coverage
+.coverage.*
 
 .claude-memory-backup/
 .claude-plans-backup/
