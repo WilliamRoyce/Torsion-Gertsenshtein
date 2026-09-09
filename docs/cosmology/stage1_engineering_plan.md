@@ -443,9 +443,9 @@ the structure-harvesting pattern is modeled on `SupplementalMaterials-2607`
 `WolframLanguage/ParticleSpectroscopy/JuliaExport.m`, and that the coefficient-tensor and
 explicit-label export exist nowhere upstream.
 
-> **⚠ Amendment (I-526 live probe, 2026-09-07 — PSALTer `bb45adb0`). The
-> six-item list below is WRONG and must become eight.** It omits
-> `$LocalWaveOperator` and `$LocalPropagator`, on two implicit justifications that
+> **⚠ Amendment (I-526 live probe, 2026-09-07 — PSALTer `bb45adb0`; restated
+> I-REM, 2026-09-09). The six-item list that stood here was WRONG**, omitting
+> `$LocalWaveOperator` and `$LocalPropagator` on two implicit justifications that
 > both fail on the live install:
 >
 > | test | result |
@@ -453,17 +453,28 @@ explicit-label export exist nowhere upstream.
 > | `assoc[WaveOperator] === $LocalWaveOperator` | **False** — not redundant; omitting it discards information |
 > | `$LocalPropagator` populated under `ShowPropagator -> False` | **True** (35 leaves) — not display-only, and not suppressed |
 >
-> Measured with the propagator display both on and off, identically. The exporter
-> must read **all eight** globals named in §0.4. Evidence and transcript:
-> `stage1_measurements.md` §7; tracked on #523/#527.
+> Measured with the propagator display both on and off, identically. Evidence and
+> transcript: `stage1_measurements.md` §7; tracked on #523/#527.
+>
+> **The fix is not a longer list.** A copied enumeration is what went wrong here, and
+> a second copied enumeration would go wrong the same way at the next revision. The
+> instruction below is therefore stated as a rule with a source of truth, and the
+> count is recorded only as a dated measurement.
 
 **Input surface** (§0.4): the theory association (`<Name>@WaveOperator`,
-`@PseudoDeterminant`) plus the `xAct`PSALTer`Private`` globals `$LocalSourceConstraints`,
-`$LocalMasslessSpectrum`, `$LocalSpectrum`, `$LocalUnresolvedPoles`,
-`$LocalOverallUnitarity`, `$LocalSummaryOfTheory`. Read defensively — normalize keys, treat
-a bare unevaluated symbol as *absent*, and handle both the populated case and the
-degenerate one (`UnitarityConditions = Text["(Demonstrably impossible)"]` with an empty
-constraint matrix is a legal output).
+`@PseudoDeterminant`) plus **every** `xAct`PSALTer`Private`` global that
+`ParticleSpectrum` populates en route.
+
+**Enumerate them from the source, not from this document.** They are declared together at
+`ParticleSpectrum.m:74-81` in the installed tree; read that at the revision you are pinned
+to, and guard the resulting set with a fixture test that fails loudly if a name moves or one
+is added — §0.4 already requires exactly that, because the exporter reads private symbols and
+is therefore pinned to a PSALTer commit. **Measured 2026-09-09 on `bb45adb0`: eight**, which
+§0.4 enumerates. Expect that number to change with the revision; do not hard-code it.
+
+Read defensively — normalize keys, treat a bare unevaluated symbol as *absent*, and handle
+both the populated case and the degenerate one (`UnitarityConditions =
+Text["(Demonstrably impossible)"]` with an empty constraint matrix is a legal output).
 
 **Output: WXF**, one file per theory. Exact rationals survive, `wolframclient` decodes it,
 and it is the format Stage 2's ingest already speaks. Contents, per H6 §6.1:
@@ -517,6 +528,35 @@ comments ("Index 1 = spin-0+"). Four steps, in order:
    Vector theory whose two 1×1 blocks are published verbatim
    (`½[k²(Θ₂−Θ₁) − Θ₃]` and `½[−k²Θ₁ − Θ₃]`). The labeled rows must be exactly the
    non-zero ones.
+
+   > **⚠ Amendment (I-REM, 2026-09-09 — PSALTer v2.0.2 `bb45adb0`, Wolfram 14.3).
+   > `EXPIRES-WITH: #543`. Calibrate against the published values and the committed
+   > upstream `.wxf`; do NOT calibrate against what this install returns.**
+   >
+   > On this install the Vector theory's **result association** — the object the reader
+   > actually consumes — comes back as `{{-Def²Θ₁/2}}`: the `Θ₃` mass term and the `Θ₂`
+   > contribution are both **absent**, while the rendered spectrograph showed the published
+   > blocks. Measured on the published `VectorTheory.m`, identically with
+   > `ShowPropagator` on and off; **#542**.
+   >
+   > So the gate as originally written would fail against a *correct* install, or — worse —
+   > be quietly relaxed until it passed against degraded values, baking the defect into the
+   > contract. The oracles to gate on are the author's own artifacts: the published
+   > expressions, and `tests_cosmo/fixtures/psalter/ParticleSpectrographVectorTheory.wxf`,
+   > which exists precisely so the reader can be tested without Wolfram installed
+   > (`PROVENANCE.md`).
+   >
+   > **Open question this hands to #527, not for us to guess:** *which artifact carries the
+   > published values* — the association keys, or what `ConstructSpectrograph` renders. They
+   > are different objects and they disagree here. Settle it before specifying a gate
+   > against either.
+   >
+   > **Do not generalize from "the render looked right".** That contrast holds for this
+   > small probe only. The CTEG render on the same install is itself visibly broken —
+   > unevaluated `Grid[...]` source, `$Failed`, hundreds of `Indeterminate`, ending in
+   > "(Demonstrably impossible)"; artifact and counts at
+   > `docs/cosmology/evidence/tier1-20260907/`. A plausible-looking PDF is not evidence of a
+   > working install.
 4. Reproduce the `A23Theory` fixture's three `J`-blocks of dims 2/4/2
    (`2·1 + 4·3 + 2·5 = 24`) and label the `J=1` block's visible `2+2` split as `1⁺ ⊕ 1⁻`.
 
@@ -583,7 +623,7 @@ append-only; a handoff report is ephemeral; this needs to be a committed documen
 | install | committed script produces a clean `Needs["xAct`PSALTer`"]` on a fresh user base; version banner printed |
 | oracle T1 | our `CTEG` run's association matches the committed `.mx` key-by-key |
 | oracle T2/T3 | gauge-generator count exact; massive content with dictionary-exact `m²`; massless polarization count; `Reduce`-verified equivalence of unitarity conditions **including the massless one** |
-| reader | `A23` blocks are dims (2,4,2) with `2·1+4·3+2·5 = 24`; `Vector` blocks equal the published expressions exactly (symbolic difference simplifies to zero); placeholder/plural-key/degenerate cases unit-tested |
+| reader | `A23` blocks are dims (2,4,2) with `2·1+4·3+2·5 = 24`; `Vector` blocks equal the **published** expressions and the **committed upstream `.wxf`** exactly (symbolic difference simplifies to zero) — **not** values measured on this install, see the amendment below; placeholder/plural-key/degenerate cases unit-tested |
 | reject rule | a bare-numeric term errors with a hint naming the term; the legacy `theory.toml` Lagrangian is rejected |
 | exporter | in-kernel reconstruction `SameQ`; Python-side numeric agreement ≤ 1e-12 at 5 random rational coupling points; label calibration passes on ≥ 3 single-operator probes; `A[0]` vanishes **iff non-sampled constants are excluded from the coupling vector** — see the amendment below (coupling-linearity) |
 | emitted script | declares and machine-checks signature and `ε`; standalone; no repo-absolute paths |

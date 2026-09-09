@@ -450,7 +450,37 @@ we illustrate its use" (§ECSpectroscopy). Per `J` sector:
 **Caveats, all checkable:** `O_LL` must be invertible, so gauge modes are removed first
 (PSALTer's Moore–Penrose gauge fixing does this) — the method *relocates* the gauge problem
 into Stage 1 rather than removing it (§8), which is precisely what shrinks its per-sample
-burden. The massive/massless reordering is structural — a Stage-1 discovery, fixed-shape per
+burden.
+
+> **⚠ Amendment (I-REM, 2026-09-09 — PSALTer v2.0.2 `bb45adb0`, Wolfram 14.3).
+> `EXPIRES-WITH: #543`. On our install that gauge-mode removal does not happen, so
+> *both* spectrum criteria are blocked — not only the residue cross-check.**
+>
+> `ConstructSourceConstraints` returns `$LocalSourceConstraints = {}` — **zero rows**,
+> where CTEG's 21-generator formulation requires 21 (§3 measures the generator count as
+> exactly that row count). The Schur-complement criterion above does not invert the wave
+> operator, which is why it was first thought untouched; but it has a **second input**, this
+> very caveat, and that input is degraded. Measured by I-526 and reproduced independently by
+> the orchestrator on 2026-09-09; recorded on **#543**.
+>
+> **Evidence strength, stated honestly:** there is no committed fixture for that key, so this
+> is measured against a count in the *published formulation* rather than against a
+> byte-comparable artifact — weaker than the Tier-1 diff. 0-versus-21 is nonetheless not a
+> near miss.
+>
+> **A candidate upstream cause, offered as a hypothesis with its test named — not as a
+> diagnosis.** PSALTer's own `README.md` §"Known bugs" item 1 documents "a sporadic error
+> where some of the gauge symmetries are not identified", arising because "the algorithm uses
+> numerical methods to obtain the gauge symmetries, which involve random number generation at
+> runtime", and "can usually be fixed by re-running `ParticleSpectrum`". An empty constraint
+> list **is** that symptom, and the code path agrees —
+> `ConstructSourceConstraints/ConjectureNullSpace/` with a `MinimalExampleCase` helper is a
+> randomized, conjectural search. If that is the cause, this is upstream flakiness rather
+> than anything about our install, the fix is a re-run, and it is a **different failure** from
+> the deterministic `PseudoDeterminant` zeros — which reproduced identically across two
+> independent runs and therefore cannot be a sporadic error. **I-543 owns the test.**
+>
+> Until #543 resolves, treat neither spectrum criterion as certified on this install. The massive/massless reordering is structural — a Stage-1 discovery, fixed-shape per
 structure (§9). Chequer-Hermitian bookkeeping is a genuine trap: PSALTer's convention for the
 parity-violating SPOs differs from Karananas's by a factor of `i` (`app:PGT_comparison`;
 either is valid), and getting it wrong flips ghost verdicts — the published `K₀` below must be
