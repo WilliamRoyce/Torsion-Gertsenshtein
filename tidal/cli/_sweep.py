@@ -37,12 +37,17 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from tidal.measurement._run_stages import PointContext, RunStatus, run_point
+from tidal.measurement._run_stages import (
+    PointContext,
+    RunStatus,
+    init_worker,
+    measure_run,
+    run_point,
+)
 
 if TYPE_CHECKING:
     from argparse import Namespace
 
-    from tidal.measurement._io import SimulationData
     from tidal.measurement._sweep_results import SweepResults
     from tidal.symbolic.json_loader import EquationSystem
 
@@ -493,440 +498,6 @@ def _run_subdir_name(
 # ------------------------------------------------------------------
 
 
-def _build_sim_args(  # noqa: PLR0913
-    base_args: Namespace,
-    param_overrides: dict[str, float],
-    output_dir: Path | None,
-    grid_shape_override: int | None = None,
-    *,
-    replicate_seed: int | None = None,
-    ic_perturbation: float | None = None,
-) -> Namespace:
-    """Build a simulate-compatible Namespace for one run.
-
-    Copies all simulation flags from *base_args* and overrides
-    parameters and output path.
-
-    Parameters
-    ----------
-    output_dir : Path | None
-        Directory to write snapshots to.  Pass ``None`` for the in-memory
-        inference path (``run_inference_step``) — the returned Namespace
-        will have ``output=None`` and no disk-writer will be set up.
-    replicate_seed : int, optional
-        If set, overrides ``ic_noise_seed`` and ``ic_perturbation_seed``
-        for ensemble variation across replicates.
-    ic_perturbation : float, optional
-        If set, enables IC perturbation with this scale.
-    """
-    import copy
-
-    sim_args = copy.copy(base_args)
-
-    # Clear simulate-specific resume flags — sweep has its own boolean
-    # --resume (resume interrupted sweep), which must not leak into
-    # _simulate() where --resume expects a directory path string.
-    sim_args.resume = None
-    sim_args.snapshot = None
-    sim_args.t_additional = None
-
-    # Override parameters: merge base --param list with sweep overrides
-    base_params: list[str] = list(getattr(base_args, "param", []) or [])
-    for k, v in param_overrides.items():
-        # Remove any existing override for this key
-        base_params = [p for p in base_params if not p.startswith(f"{k}=")]
-        base_params.append(f"{k}={v}")
-    sim_args.param = base_params
-
-    if output_dir is None:
-        # In-memory path (inference): no disk writer, no plot.  _simulate
-        # sees output=None and skips both _setup_disk_writer_native and
-        # _generate_output (gated on in_memory_out is not None).
-        sim_args.output = None
-        sim_args.output_format = None
-        sim_args.no_plot = True
-    else:
-        # Output to subdirectory (force directory format for disk-backed streaming)
-        # Note: no_plot must be False because _infer_output_format checks it first
-        # and would return "summary" (skipping disk write). Instead, set
-        # output_format="directory" which gets checked after no_plot.
-        sim_args.output = str(output_dir)
-        sim_args.output_format = "directory"
-        sim_args.no_plot = False
-    sim_args.quiet = True
-
-    # Grid shape override for convergence mode
-    if grid_shape_override is not None:
-        sim_args.grid_shape = str(grid_shape_override)
-
-    # Ensemble seed injection — each replicate gets independent seeds for
-    # IC noise and IC perturbation via SeedSequence.spawn() to avoid
-    # correlated randomness when both are active simultaneously.
-    if replicate_seed is not None:
-        children = np.random.SeedSequence(replicate_seed).spawn(2)
-        sim_args.ic_noise_seed = int(children[0].generate_state(1)[0])
-        sim_args.ic_perturbation_seed = int(children[1].generate_state(1)[0])
-
-    # IC perturbation scale
-    if ic_perturbation is not None:
-        sim_args.ic_perturbation = ic_perturbation
-
-    return sim_args
-
-
-def simulate_run(  # noqa: PLR0913
-    base_args: Namespace,
-    spec_path: Path,
-    param_overrides: dict[str, float],
-    output_dir: Path,
-    grid_shape_override: int | None = None,
-    *,
-    replicate_seed: int | None = None,
-    ic_perturbation: float | None = None,
-    spec: EquationSystem | None = None,
-) -> tuple[int, float, EquationSystem]:
-    """Execute a single simulation and return (exit_code, wall_time_s, spec).
-
-    Returning the loaded ``EquationSystem`` allows callers to reuse it
-    for measurement without a redundant file read + JSON parse.
-    """
-    from tidal.cli._simulate import (
-        _parse_params,  # pyright: ignore[reportPrivateUsage]
-        _simulate,  # pyright: ignore[reportPrivateUsage]
-    )
-
-    sim_args = _build_sim_args(
-        base_args,
-        param_overrides,
-        output_dir,
-        grid_shape_override,
-        replicate_seed=replicate_seed,
-        ic_perturbation=ic_perturbation,
-    )
-    if spec is None:
-        from tidal.symbolic import load_equation_system
-
-        spec = load_equation_system(spec_path)
-    params = _parse_params(sim_args.param, spec)
-
-    # normalize_kinetic_coefficients band-aid removed: the modal solver
-    # now reads `kinetic_coefficient_symbolic` directly into the M
-    # diagonal (see tidal/solver/modal.py _build_evolution_matrices).
-    t0 = time.monotonic()
-    exit_code = _simulate(sim_args, spec, params)
-    wall_time = time.monotonic() - t0
-    return exit_code, wall_time, spec
-
-
-def run_inference_step(
-    base_args: Namespace,
-    spec_path: Path,
-    param_overrides: dict[str, float],
-    spec: EquationSystem | None = None,
-) -> SimulationData:
-    """Run one simulation in-memory for the inference likelihood path.
-
-    Same setup as :func:`simulate_run` but wires an
-    :class:`InMemoryAccumulator` (via ``_simulate(..., in_memory_out=...)``)
-    in place of the :class:`SnapshotWriter`, returning the resulting
-    ``SimulationData`` directly without any disk round-trip.  This skips
-    the ~600-800 ms/eval penalty documented in issue #269.
-
-    Raises
-    ------
-    RuntimeError
-        If the underlying ``_simulate`` call fails.
-    """
-    from tidal.cli._simulate import (
-        _parse_params,  # pyright: ignore[reportPrivateUsage]
-        _simulate,  # pyright: ignore[reportPrivateUsage]
-    )
-
-    # output_dir=None: _build_sim_args clears sim_args.output and disables
-    # both the disk writer and plot dispatch.  _simulate still sees
-    # in_memory_out != None and populates the SimulationData.
-    sim_args = _build_sim_args(base_args, param_overrides, output_dir=None)
-    if spec is None:
-        from tidal.symbolic import load_equation_system
-
-        spec = load_equation_system(spec_path)
-    params = _parse_params(sim_args.param, spec)
-
-    sim_data_out: list[SimulationData] = []
-    exit_code = _simulate(sim_args, spec, params, in_memory_out=sim_data_out)
-    if exit_code != 0 or not sim_data_out:
-        msg = f"in-memory simulate failed (exit code {exit_code})"
-        raise RuntimeError(msg)
-    return sim_data_out[0]
-
-
-def _measure_run(  # noqa: PLR0913, PLR0917
-    run_dir: Path,
-    spec_path: Path,
-    measurements: set[str],
-    source: tuple[str, ...] | None,
-    target: tuple[str, ...] | None,
-    threshold: float,
-    spec: EquationSystem | None = None,
-) -> dict[str, Any]:
-    """Run all requested measurements on an existing simulation output.
-
-    This is the single source of truth for measurement extraction in sweeps.
-    Called both after a fresh simulation and when resuming a completed run.
-
-    Returns a dict of scalar metrics.
-    """
-    from tidal.measurement._io import SimulationData
-
-    if spec is None:
-        from tidal.symbolic import load_equation_system
-
-        spec = load_equation_system(spec_path)
-    data = SimulationData.load(run_dir, spec)
-    return _measure_from_sim_data(data, measurements, source, target, threshold)
-
-
-def _measure_from_sim_data(  # noqa: C901, PLR0912, PLR0915
-    data: SimulationData,
-    measurements: set[str],
-    source: tuple[str, ...] | None,
-    target: tuple[str, ...] | None,
-    threshold: float,
-) -> dict[str, Any]:
-    """Dispatch measurement functions against an in-memory SimulationData.
-
-    Same logic as :func:`_measure_run` minus the disk load.  Used by the
-    Bayesian-inference likelihood path to skip the disk round-trip that
-    dominates per-evaluation wall time (see issue #269).
-    """
-    from tidal.cli._measure import (
-        _run_asymptotic,  # pyright: ignore[reportPrivateUsage]
-        _run_conservation,  # pyright: ignore[reportPrivateUsage]
-        _run_conversion,  # pyright: ignore[reportPrivateUsage]
-        _run_dispersion,  # pyright: ignore[reportPrivateUsage]
-        _run_effective_mass,  # pyright: ignore[reportPrivateUsage]
-        _run_energy,  # pyright: ignore[reportPrivateUsage]
-        _run_mixing,  # pyright: ignore[reportPrivateUsage]
-        _run_peak_conversion,  # pyright: ignore[reportPrivateUsage]
-        _run_resonance,  # pyright: ignore[reportPrivateUsage]
-        _run_spectrum,  # pyright: ignore[reportPrivateUsage]
-        _run_velocity,  # pyright: ignore[reportPrivateUsage]
-    )
-
-    metrics: dict[str, Any] = {}
-
-    if "conservation" in measurements or "summary" in measurements:
-        try:
-            cons = _run_conservation(data, threshold)
-            metrics["max_energy_error"] = cons["max_relative_error"]
-            metrics["energy_conserved"] = cons["is_conserved"]
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["max_energy_error"] = None
-            metrics["conservation_error"] = str(exc)
-
-    conv_result = None
-    if "conversion" in measurements or "summary" in measurements:
-        try:
-            conv = _run_conversion(data, source, target)
-            metrics["P_max"] = conv["peak_probability"]
-            metrics["P_max_time"] = conv["peak_time"]
-            result_obj = conv["_result_obj"]
-            metrics["P_final"] = float(result_obj.probability[-1])
-            conv_result = result_obj
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["P_max"] = None
-            metrics["conversion_error"] = str(exc)
-
-    if (
-        "mixing" in measurements or "summary" in measurements
-    ) and conv_result is not None:
-        try:
-            mix = _run_mixing(conv_result)
-            metrics["L_mix"] = mix["mixing_length"]
-            metrics["L_mix_uncertainty"] = mix["mixing_length_uncertainty"]
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["L_mix"] = None
-            metrics["mixing_error"] = str(exc)
-
-    if "energy" in measurements:
-        try:
-            eng = _run_energy(data)
-            metrics["E_total_final"] = eng["total"][-1]
-            metrics["E_total_initial"] = eng["total"][0]
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["energy_error"] = str(exc)
-
-    if "dispersion" in measurements:
-        try:
-            dyn = list(data.dynamical_fields)
-            disp = _run_dispersion(data, dyn)
-            result_obj = disp["_result_obj"]
-            wn: np.ndarray[Any, np.dtype[np.floating[Any]]] = result_obj.wavenumbers
-            freq: np.ndarray[Any, np.dtype[np.floating[Any]]] = (
-                result_obj.peak_frequencies
-            )
-            active = freq > 0.0
-            if np.any(active):
-                m2_vals: np.ndarray[Any, np.dtype[np.floating[Any]]] = (
-                    freq[active] ** 2 - wn[active] ** 2
-                )
-                metrics["m2_eff"] = float(np.median(m2_vals))
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["dispersion_error"] = str(exc)
-
-    if "effective_mass" in measurements:
-        try:
-            dyn = list(data.dynamical_fields)
-            em = _run_effective_mass(data, dyn)
-            metrics["m2_eff"] = em["m2_eff"]
-            metrics["m2_eff_std"] = em["m2_eff_std"]
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["effective_mass_error"] = str(exc)
-
-    if "asymptotic" in measurements:
-        try:
-            asym = _run_asymptotic(data, source, target)
-            metrics["P_asymptotic"] = asym["P_final"]
-            metrics["P_transmitted"] = asym["P_transmitted"]
-            metrics["P_reflected"] = asym["P_reflected"]
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["asymptotic_error"] = str(exc)
-
-    if "peak_conversion" in measurements:
-        try:
-            if conv_result is not None:
-                # Reuse conversion result already computed above
-                peak_idx = int(np.argmax(conv_result.probability))
-                metrics["P_max"] = float(conv_result.probability[peak_idx])
-                metrics["P_max_time"] = float(conv_result.times[peak_idx])
-                metrics["P_final"] = float(conv_result.probability[-1])
-            else:
-                pc = _run_peak_conversion(data, source, target)
-                metrics["P_max"] = pc["P_max"]
-                metrics["P_max_time"] = pc["P_max_time"]
-                metrics["P_final"] = pc["P_final"]
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["peak_conversion_error"] = str(exc)
-
-    if "velocity" in measurements:
-        try:
-            dyn = list(data.dynamical_fields)
-            vel = _run_velocity(data, dyn)
-            metrics["v_group_mean"] = vel["v_group_mean"]
-            metrics["v_phase_mean"] = vel["v_phase_mean"]
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["velocity_error"] = str(exc)
-
-    if "resonance" in measurements:
-        try:
-            res = _run_resonance(data, source, target)
-            metrics["n_resonant_modes"] = res["n_resonant_modes"]
-            metrics["conversion_bandwidth"] = res["conversion_bandwidth"]
-            metrics["peak_conversion_k"] = res["peak_conversion_k"]
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["resonance_error"] = str(exc)
-
-    if "spectrum" in measurements:
-        try:
-            spec_results = _run_spectrum(data)
-            # Aggregate scalars from spectrum of each field
-            for fname, field_spec in spec_results.items():
-                if isinstance(field_spec, dict) and "final" in field_spec:
-                    final = cast("dict[str, Any]", field_spec["final"])
-                    power_data: list[float] = final["power"]
-                    wn_data: list[float] = final["wavenumbers"]
-                    power = np.array(power_data)
-                    wn_arr = np.array(wn_data)
-                    if power.max() > 0:
-                        metrics[f"peak_k_{fname}"] = float(wn_arr[np.argmax(power)])
-                        metrics[f"peak_power_{fname}"] = float(power.max())
-                        threshold_val = 0.01 * power.max()
-                        metrics[f"n_active_modes_{fname}"] = int(
-                            np.sum(power > threshold_val),
-                        )
-        except (
-            ValueError,
-            TypeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            SystemExit,
-        ) as exc:
-            metrics["spectrum_error"] = str(exc)
-
-    return metrics
-
-
 def _run_single(  # noqa: PLR0913, PLR0917
     base_args: Namespace,
     spec_path: Path,
@@ -1024,7 +595,7 @@ def _measure_existing(  # noqa: PLR0913, PLR0917
     """Measure an existing run directory with error handling.
 
     Used by resume logic in sequential, parallel, and adaptive execution
-    paths. Wraps ``_measure_run()`` with status tracking and error capture.
+    paths. Wraps ``measure_run()`` with status tracking and error capture.
 
     Parameters
     ----------
@@ -1036,7 +607,7 @@ def _measure_existing(  # noqa: PLR0913, PLR0917
     ``solver_exit_code`` always set.
     """
     try:
-        metrics = _measure_run(
+        metrics = measure_run(
             run_dir,
             spec_path,
             measurements,
@@ -1389,7 +960,7 @@ def _execute_parallel(  # noqa: PLR0913, PLR0917
 
     if tasks:
         print(f"  Running {len(tasks)} simulations with {n_workers} workers...")
-        with Pool(processes=n_workers, initializer=_init_worker) as pool:
+        with Pool(processes=n_workers, initializer=init_worker) as pool:
             for result in pool.imap_unordered(_run_single_wrapper, tasks):
                 idx = result["index"]
                 metrics = result["metrics"]
@@ -2294,44 +1865,6 @@ def _report_convergence(  # noqa: C901
 # ------------------------------------------------------------------
 # Parallel execution
 # ------------------------------------------------------------------
-
-
-def _init_worker() -> None:
-    """Initialize a sweep worker process.
-
-    Runs once per worker at Pool creation.  Two responsibilities:
-
-    1. Set BLAS/LAPACK thread count to 1 — prevents thread oversubscription
-       when running N parallel simulations, each of which would otherwise
-       spawn its own BLAS thread pool.
-    2. Pre-import the heavy solver / measurement / spec-loader modules.
-       Without this, each worker pays a ~10 s cold-import cost on its first
-       task (profiled against a 90-point sweep on sapphire: 16 cold tasks
-       at 10 s each vs 74 warm tasks at 0.9 s each).  Paying the import
-       cost once at worker startup amortizes it into pool creation and
-       converts the sweep from ``16 cold + 74 warm / 16 workers ≈ 15 s
-       compute wall`` to ``90 warm / 16 workers ≈ 5 s compute wall``.
-    """
-    import os
-
-    for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
-        os.environ[var] = "1"
-
-    # Pre-import the full solver/measurement stack so the first task each
-    # worker picks up doesn't pay cold-import latency.  Imports intentionally
-    # kept inside the function so the initializer is picklable and so
-    # module-import side effects only fire in worker processes.
-    import tidal.cli._simulate  # noqa: F401  # type: ignore[reportUnusedImport]
-    import tidal.measurement._stability  # noqa: F401  # type: ignore[reportUnusedImport]
-    import tidal.solver.grid  # noqa: F401  # type: ignore[reportUnusedImport]
-    import tidal.solver.modal  # noqa: F401  # type: ignore[reportUnusedImport]
-    import tidal.symbolic.json_loader  # noqa: F401  # type: ignore[reportUnusedImport]
-
-
-# Backwards-compatibility alias: some older call sites may still reference
-# the pre-v0.30.3 name.  Kept as a one-liner so there's no behavioral
-# divergence.
-_set_single_thread_blas = _init_worker
 
 
 def _run_single_wrapper(task: dict[str, Any]) -> dict[str, Any]:

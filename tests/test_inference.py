@@ -781,8 +781,8 @@ class TestLikelihoodBackendEquivalence:
         finally:
             sys.argv = old_argv
 
-        from tidal.cli._sweep import (
-            _measure_from_sim_data,  # pyright: ignore[reportPrivateUsage]
+        from tidal.measurement._run_stages import (
+            measure_from_sim_data,
             run_inference_step,
         )
         from tidal.symbolic import load_equation_system
@@ -797,7 +797,7 @@ class TestLikelihoodBackendEquivalence:
         _PARSED_MATH_CACHE.clear()
         overrides = {"mA2": 0.42}
         sim_cold = run_inference_step(args, spec_path, overrides, spec=spec)
-        m_cold = _measure_from_sim_data(
+        m_cold = measure_from_sim_data(
             sim_cold,
             {"conversion", "peak_conversion"},
             ("h_5",),
@@ -808,7 +808,7 @@ class TestLikelihoodBackendEquivalence:
 
         # Warm run at same theta — must produce identical metrics.
         sim_warm = run_inference_step(args, spec_path, overrides, spec=spec)
-        m_warm = _measure_from_sim_data(
+        m_warm = measure_from_sim_data(
             sim_warm,
             {"conversion", "peak_conversion"},
             ("h_5",),
@@ -894,9 +894,9 @@ class TestLikelihoodBackendEquivalence:
         finally:
             sys.argv = old_argv
 
-        from tidal.cli._sweep import (
-            _measure_from_sim_data,  # pyright: ignore[reportPrivateUsage]
-            _measure_run,  # pyright: ignore[reportPrivateUsage]
+        from tidal.measurement._run_stages import (
+            measure_from_sim_data,
+            measure_run,
             run_inference_step,
             simulate_run,
         )
@@ -907,7 +907,7 @@ class TestLikelihoodBackendEquivalence:
 
         # Memory path
         sim_data = run_inference_step(args, spec_path, overrides, spec=spec)
-        mem_metrics = _measure_from_sim_data(
+        mem_metrics = measure_from_sim_data(
             sim_data,
             {"conversion", "peak_conversion"},
             ("h_5",),
@@ -920,7 +920,7 @@ class TestLikelihoodBackendEquivalence:
         disk_dir.mkdir()
         exit_code, _, _ = simulate_run(args, spec_path, overrides, disk_dir, spec=spec)
         assert exit_code == 0
-        disk_metrics = _measure_run(
+        disk_metrics = measure_run(
             disk_dir,
             spec_path,
             {"conversion", "peak_conversion"},

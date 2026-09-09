@@ -130,7 +130,7 @@ def _run_sim_snapshots(  # internal test helper, returns NDArray
     ),
 ):
     """Run one in-memory simulation and return the snapshot array."""
-    from tidal.cli._sweep import run_inference_step
+    from tidal.measurement._run_stages import run_inference_step
 
     prev = os.environ.get("TIDAL_MODAL_SPARSE_IC")
     os.environ["TIDAL_MODAL_SPARSE_IC"] = "1" if sparse_ic else "0"
@@ -294,7 +294,7 @@ def test_inference_eval_perf() -> None:
     A 200-ms budget here is ~3× the typical 75 ms median, leaving
     plenty of headroom for slow CI workers without flakiness.
     """
-    from tidal.cli._sweep import run_inference_step
+    from tidal.measurement._run_stages import run_inference_step
 
     os.environ["TIDAL_MODAL_SPARSE_IC"] = "1"
     overrides = {"delta1": 0.0}

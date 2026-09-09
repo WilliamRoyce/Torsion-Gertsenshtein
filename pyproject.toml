@@ -183,6 +183,11 @@ unfixable = ["T201"]
 "tidal/measurement/_stability.py" = ["N803", "N806", "PLC0415", "RUF001", "RUF003", "DOC501"]
 # Deliberate lazy imports: the seam must not pull tidal.cli in at import time.
 "tidal/measurement/_run_stages.py" = ["PLC0415"]
+# The two stage modules moved out of tidal/cli/_sweep.py when `tidal sweep` was
+# retired (#533).  Same rule: their tidal.cli imports stay function-local so
+# importing tidal.measurement never pulls tidal.cli in.
+"tidal/measurement/_simulate_stage.py" = ["PLC0415", "PLR0913"]
+"tidal/measurement/_measure_stage.py" = ["PLC0415", "C901", "PLR0912", "PLR0914", "PLR0915", "PLR0913", "PLR0917"]
 "tidal/measurement/_stability_cache.py" = ["N806", "PLC0415"]
 "tidal/symbolic/_spec_cache.py" = ["PLC0415"]
 "tidal/measurement/_posthoc_audit.py" = ["PLC0415", "C901", "PLR0912", "PLR0914", "PLR0913", "PLR0917"]
