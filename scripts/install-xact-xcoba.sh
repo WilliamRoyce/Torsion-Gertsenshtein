@@ -81,7 +81,11 @@ install_build_deps() {
     log_step "Installing build dependencies for xPerm binary compilation..."
     
     if command -v apt-get &> /dev/null; then
-        sudo apt-get update -qq
+        # A transient mirror failure must not abort the installer under `set -e` (#546): the
+        # cached package lists are usually good enough, and the `install` below is the step
+        # that actually has to succeed -- it stays fatal, and fails with a real message if the
+        # stale lists turn out to be insufficient.
+        sudo apt-get update -qq || log_warn "apt-get update failed; continuing with cached package lists"
         sudo apt-get install -y --no-install-recommends uuid-dev gcc build-essential
     else
         log_warn "Package manager not recognized. Ensure gcc, build-essential, and uuid-dev are installed"

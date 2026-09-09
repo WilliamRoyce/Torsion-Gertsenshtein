@@ -1,6 +1,7 @@
-.PHONY: test lint format typecheck docs clean install all help \
+.PHONY: test test-verbose test-coverage lint format format-check typecheck docs docs-clean \
+        clean install all help oracle-check \
         publication publication-benchmarks publication-figures \
-        publication-test
+        publication-test figC6-pull
 
 help:  ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -39,7 +40,7 @@ clean:  ## Remove build artifacts and caches
 	rm -rf .pytest_cache coverage.xml .ruff_cache
 
 install:  ## Install dependencies
-	uv sync --all-extras
+	uv sync --all-extras --locked
 
 all: lint typecheck test  ## Run all checks (lint, typecheck, test)
 

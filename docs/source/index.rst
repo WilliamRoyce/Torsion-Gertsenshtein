@@ -62,6 +62,7 @@ User Guide
    :caption: API Reference
 
    modules
+   modules_cosmo
 
 Indices and Tables
 ------------------

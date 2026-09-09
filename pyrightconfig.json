@@ -7,6 +7,14 @@
   "reportUnknownArgumentType": false,
   "reportUnknownVariableType": false,
   "reportMissingTypeStubs": false,
+  // NOTE: there is deliberately NO execution environment for "tests_cosmo".  It is in
+  // "include" above and therefore runs under the root strict settings, with
+  // reportPrivateUsage and reportImplicitOverride on -- which is the point: the new tree
+  // starts with a clean type baseline and does not inherit legacy's exemption surface
+  // (repo_reshape.md section 8).  tests_cosmo/__init__.py documents the house style that
+  // follows from it: test through the public surface, and use a targeted
+  // "# pyright: ignore[rule]  # reason" where something private genuinely needs testing.
+  // Adding a block here would quietly undo that.  (Recorded I-REM, 2026-09-09.)
   "executionEnvironments": [
     {
       "root": "tidal/inference",

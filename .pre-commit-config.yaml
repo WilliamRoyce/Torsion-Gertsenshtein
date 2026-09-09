@@ -51,7 +51,12 @@ repos:
       - id: mypy
         additional_dependencies: [types-all]
         args: [--ignore-missing-imports, --no-strict-optional]
-        exclude: ^(tests/|examples/)
+        # tidalcosmo/ and tests_cosmo/ are excluded on purpose: repo_reshape.md section 8
+        # makes *pyright strict* the type gate for the new tree, and pyrightconfig.json
+        # already covers both.  Running a second checker there with different settings and a
+        # different opinion buys nothing and guarantees a future argument about which verdict
+        # counts.  (Added I-REM, 2026-09-09.)
+        exclude: ^(tests/|examples/|tidalcosmo/|tests_cosmo/)
 
   - repo: local
     hooks:
