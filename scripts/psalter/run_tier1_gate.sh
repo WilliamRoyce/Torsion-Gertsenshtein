@@ -85,7 +85,7 @@ require_engine_idle() {
 # Exit 2 from the verifier means "the install works, but a capability is
 # degraded" -- here, the two Wolfram Function Repository resources that cannot be
 # fetched in this container. The gate must run anyway: refusing on it made this
-# script permanently unrunnable from 58605f16 (2026-09-07 11:30:55) onward, one
+# script permanently impossible to run from 58605f16 (2026-09-07 11:30:55) onward, one
 # minute after the run that produced the committed evidence, so the "re-run the
 # gate independently" step could never have been performed by anyone. The
 # degradation is recorded in the run manifest instead of being used to refuse.

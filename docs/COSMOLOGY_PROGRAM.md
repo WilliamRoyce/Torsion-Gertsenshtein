@@ -655,7 +655,7 @@ Status: `drafted → dispatched → reported → merged`.
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | I-524 — packaging, extras, CI lane | #524 | — | `pyproject.toml`, `.github/`, `tidalcosmo/__init__.py`, `tidalcosmo/cli/`, `cspell.json` | `cosmo/i524-packaging` | **merged** ✅ CI 34051208887 green on the merged SHA: 2885 passed, 39 skipped |
 | 0 | I-525 — freeze the legacy oracle | #525 | — | `scripts/oracles/`, `tests_cosmo/data/` | `cosmo/i525-oracles` | **merged** ✅ gate re-run independently: 185 fixtures current, regeneration byte-identical |
-| 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/{install-psalter.sh,verify-wolfram-setup.sh,psalter/}`, `tests_cosmo/fixtures/`, `.gitattributes` | `cosmo/i526-psalter` + `fix/i526-evidence-reverify` (#544) | **merged, install UNCERTIFIED** ⚠️ install works, all three probes answered; **Tier-1 MISMATCH** (#543, blocks *both* criteria). Evidence at `docs/cosmology/evidence/tier1-20260907/`, read-only via `summarize_diff.py`. **Re-run from scratch by the orchestrator 2026-09-09: same verdict, same tally, same per-entry outcomes, same bit-exact `WaveOperator`, 302 s — the mismatch is reproducible** (`stage1_measurements.md` §4.7). It was not done at the wave boundary and *could not* have been: the gate had been unrunnable since 66 s after its only run (#549, fixed in `d6753631`). Resolution: **I-543** |
+| 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/{install-psalter.sh,verify-wolfram-setup.sh,psalter/}`, `tests_cosmo/fixtures/`, `.gitattributes` | `cosmo/i526-psalter` + `fix/i526-evidence-reverify` (#544) | **merged, install UNCERTIFIED** ⚠️ install works, all three probes answered; **Tier-1 MISMATCH** (#543, blocks *both* criteria). Evidence at `docs/cosmology/evidence/tier1-20260907/`, read-only via `summarize_diff.py`. **Re-run from scratch by the orchestrator 2026-09-09: same verdict, same tally, same per-entry outcomes, same bit-exact `WaveOperator`, 302 s — the mismatch is reproducible** (`stage1_measurements.md` §4.7). It was not done at the wave boundary and *could not* have been: the gate could not be run at all from 66 s after its only run (#549, fixed in `d6753631`). Resolution: **I-543** |
 | 0c | I-REM — instruction sites, docs index, tooling, oracle CI | #545 #546 #540 | — | design docs, `docs/README.md`, `handoffs/README.md`, `tidalcosmo/**/README.md`, `scripts/`, skills, `Makefile`, `.github/`, config | — | drafted — **merges first** |
 | 0c | I-533 — retire the M0 drop rows | #533 | — | `tidal/`, `tests/`, `examples/**/run.sh`, legacy `scripts/`, `docs/tex/` | — | drafted — merges second |
 | 0c | I-543 — resolve the Tier-1 gate | #543 #542 | **yes** | `scripts/psalter/repro_543.wl`, `docs/cosmology/psalter_543_*.md`, `stage1_measurements.md` §4.4–4.6, evidence dir | — | drafted — merges last |
@@ -752,8 +752,8 @@ What the next planning session does *first*, before planning anything:
    run, by another session, from a clean run directory, makes it independent of that session's
    procedure and environment. (Wave 0: the orchestrator substituted `--diff-only` — which only
    re-compares the delegate's own artifacts, and destroyed them, #544 — then a read-only
-   summary. Attempting the real thing on 2026-09-09 found the gate had been *unrunnable* since
-   66 seconds after its only run, #549.)
+   summary. Attempting the real thing on 2026-09-09 found that the gate could not be run at
+   all, from 66 seconds after its only run, #549.)
 3. Read the delegates' reported discoveries and **route** each — amend at the site, open an
    issue, or fold into the next wave's scope.
 4. **Prune stale worktrees.** `git worktree list`; for each entry whose branch is an

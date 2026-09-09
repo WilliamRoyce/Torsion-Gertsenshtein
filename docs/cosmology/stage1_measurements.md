@@ -280,7 +280,7 @@ kept in the run directory. Recorded, explicitly **not** a gate.
 I-526's success criterion 2 required the orchestrator to re-run this gate **from scratch,
 before Wave 1 is dispatched**, and the Wolfram-lane rule requires the same before the next
 lane occupant starts. It was not done at the wave boundary, and **it could not have been**:
-the gate had been unrunnable since 66 seconds after the run recorded above (#549, fixed in
+the gate could not be run at all, from 66 seconds after the run recorded above (#549, fixed in
 `d6753631` — an unavailable optional resource was routed as a broken install). Attempting
 the re-run is what found that.
 

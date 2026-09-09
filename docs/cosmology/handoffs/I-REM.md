@@ -121,7 +121,7 @@ Add `.github/workflows/oracle.yml`:
 
 The path filter answers the cost objection (it will not run on most commits); the expiry
 answers the coupling objection. **I-533's deletions under `tidal/` are its first real
-trigger** — that is the intended behaviour, and `--check` must still report 185 current.
+trigger** — that is the intended behavior, and `--check` must still report 185 current.
 
 ## Commit 4 — `fix(tooling):` stop silently skipping the new suite, and the hygiene batch
 
@@ -237,7 +237,7 @@ trigger** — that is the intended behaviour, and `--check` must still report 18
 
 ## Working rules
 
-Worktree: `git worktree add /tmp/tidal-irem -b cosmo/irem-amendments feat/cosmology-program`.
+Worktree: `git worktree add /tmp/tidal-remediation -b cosmo/remediation-amendments feat/cosmology-program`.
 **Open a draft PR into `feat/cosmology-program` at your first commit** and report its number —
 a branch with no PR is never seen by CI, which is how two Wave-0 branches merged having never
 faced the gate. Never merge, never touch the shared working directory, never version-bump or

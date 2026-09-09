@@ -68,7 +68,7 @@ log_info() {
 # Function Repository dependencies cannot be fetched in this container at all, and
 # routing them through log_soft_fail made them hard failures under --require-psalter
 # -- which is what the Tier-1 gate calls, so the gate refused to start and became
-# permanently unrunnable one minute after it last ran. A degradation is reported
+# permanently impossible to run one minute after it last ran. A degradation is reported
 # loudly and carried in the exit code (2), but it does not claim the install cannot
 # be exercised. Anything demanding a certifiable install still refuses on 2.
 log_degraded() {
