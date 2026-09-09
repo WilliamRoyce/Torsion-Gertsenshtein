@@ -59,13 +59,6 @@ tidal measure ../data/coupled_scalars_output \
   --param kappa=1.0 --param B0=0.1 --param omegaP2=0.0 --param mg2=0.0
 
 # --- Run 1 plots ---
-tidal plot ../data/coupled_scalars_output --type heatmap --field h_0 \
-  --title "Graviton h (Gertsenshtein conversion)" --quiet
-tidal plot ../data/coupled_scalars_output --type heatmap --field a_0 \
-  --title "Photon a (converted from h)" --quiet
-tidal plot ../data/coupled_scalars_output --type amplitude --quiet
-tidal plot ../data/coupled_scalars_output --type energy --quiet
-tidal plot ../data/coupled_scalars_output --type conservation --quiet
 
 echo ""
 echo "=== Run complete ==="

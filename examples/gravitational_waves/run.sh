@@ -52,5 +52,3 @@ tidal simulate ../data/linearized_gravity.json \
   --output ../data/linearized_gravity_output
 
 # Visualize results (plots saved into the simulation output directory)
-tidal plot ../data/linearized_gravity_output --type snapshot --field h_4 --time-index 0 --quiet
-tidal plot ../data/linearized_gravity_output --type snapshot --field h_4 --time-index -1 --quiet

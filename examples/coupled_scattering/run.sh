@@ -54,44 +54,18 @@ tidal simulate ../data/coupled_scattering.json \
 
 # Spacetime heatmaps: phi_0 and chi_0 side by side
 # phi_0 shows the incident plane wave; chi_0 shows the generated wave
-tidal plot "$OUT1" --type heatmap --field phi_0 \
-  --title "phi (incident wave, resonant)" \
-  --output "$OUT1/heatmap_phi_0.png"
 
-tidal plot "$OUT1" --type heatmap --field chi_0 \
-  --title "chi (generated wave, resonant)" \
-  --output "$OUT1/heatmap_chi_0.png"
 
 # Peak amplitude vs time: shows energy flowing from phi to chi
-tidal plot "$OUT1" --type amplitude --fields phi_0,chi_0 \
-  --title "Amplitude evolution (resonant, mPhi2=mChi2=1)" \
-  --output "$OUT1/amplitude.png"
 
 # Profile snapshots showing wave structure at key times
-tidal plot "$OUT1" --type profile --field phi_0 \
-  --time-indices 0,25,50,75,100 \
-  --title "phi profile evolution (resonant)" \
-  --output "$OUT1/profile_phi_0.png"
 
-tidal plot "$OUT1" --type profile --field chi_0 \
-  --time-indices 0,25,50,75,100 \
-  --title "chi profile evolution (resonant)" \
-  --output "$OUT1/profile_chi_0.png"
 
 # Hamiltonian energy decomposition (kinetic + gradient + mass + coupling)
-tidal plot "$OUT1" --type hamiltonian --fields phi_0,chi_0 \
-  --title "Hamiltonian energy (resonant)" \
-  --output "$OUT1/hamiltonian.png"
 
 # Energy conservation (should be tight — tests position-dependent Hamiltonian)
-tidal plot "$OUT1" --type conservation \
-  --title "Energy conservation (resonant)" \
-  --output "$OUT1/conservation.png"
 
 # Initial vs final profile comparison
-tidal plot "$OUT1" --type compare --fields phi_0,chi_0 \
-  --title "Initial vs final (resonant)" \
-  --output "$OUT1/compare.png"
 
 # Conversion probability: P(t) = E_chi(t) / E_phi(0)
 tidal measure "$OUT1" \

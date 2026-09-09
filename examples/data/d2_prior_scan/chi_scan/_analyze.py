@@ -2,7 +2,7 @@ r"""Reproduce the χ-scan numbers cited in ``docs/tex/pgt_stability_priors.tex``
 
 Mirrors the structure of the δ₁ scan one directory up
 (``examples/data/d2_prior_scan/_analyze.py``) but uses the canonical
-probe directly — there is no ``tidal sweep`` step here because the
+probe directly — there is no parameter-sweep step here because the
 χ-stability question lives entirely in the pre-flight probe (the
 γ_eff = log‖expm(M·t_test) y₀‖/t_test reading), not in any actual
 simulation.  The probe is microseconds to milliseconds per call, so

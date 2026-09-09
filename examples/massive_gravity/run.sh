@@ -17,7 +17,6 @@
 #     --ic-component h_3 \
 #     --ic-formula "np.exp(-((x-25)**2+(y-25)**2)/50) * np.sin(2*np.pi*x/50)" \
 #     --t-end 2.0 --output ../data/massive_gravity_output
-#   tidal plot ../data/massive_gravity_output --type amplitude --quiet
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -50,10 +49,6 @@ tidal simulate ../data/massive_gravity_3d.json \
   --output ../data/massive_gravity_output
 
 # Visualize results (plots saved into the simulation output directory)
-tidal plot ../data/massive_gravity_output --type snapshot --field h_3 --time-index 0 --quiet
-tidal plot ../data/massive_gravity_output --type snapshot --field h_3 --time-index -1 --quiet
-tidal plot ../data/massive_gravity_output --type amplitude --overlay 'cos(sqrt(2)*t)*0.5' --quiet
-tidal plot ../data/massive_gravity_output --type profile --field h_3 --cross-section y=25.0 --quiet
 
 # For parameter sweep (vary mass):
 # for m2 in 0.5 1.0 2.0; do

@@ -74,18 +74,8 @@ echo ""
 
 # Step 5: Plots
 echo "--- Step 5: Plots ---"
-tidal plot "$OUT" --type heatmap --field h_7 \
-  --title "Graviton h_+ (plus polarization)" \
-  --output "$OUT/heatmap_h_7.png" --quiet
 
-tidal plot "$OUT" --type heatmap --field a_2 \
-  --title "Photon a_y (Gertsenshtein conversion)" \
-  --output "$OUT/heatmap_a_2.png" --quiet
 
-tidal plot "$OUT" --type amplitude \
-  --fields h_7,a_2 \
-  --title "Gertsenshtein h_+ → a_y conversion" \
-  --output "$OUT/amplitude.png" --quiet
 
 echo ""
 echo "=== Done ==="

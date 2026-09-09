@@ -15,7 +15,6 @@
 #     --grid-shape 64 --bounds 0:50 --periodic --ic gaussian \
 #     --ic-component A_1 --ic-width 5.0 --t-end 10.0 \
 #     --output ../data/chern_simons_output
-#   tidal plot ../data/chern_simons_output --type amplitude --quiet
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -42,10 +41,3 @@ tidal simulate ../data/chern_simons_3d.json \
   --output ../data/chern_simons_output
 
 # Visualize results — initial and final snapshots for each field
-tidal plot ../data/chern_simons_output --type snapshot --field A_0 --time-index 0 --quiet
-tidal plot ../data/chern_simons_output --type snapshot --field A_1 --time-index 0 --quiet
-tidal plot ../data/chern_simons_output --type snapshot --field A_2 --time-index 0 --quiet
-tidal plot ../data/chern_simons_output --type snapshot --field A_0 --time-index -1 --quiet
-tidal plot ../data/chern_simons_output --type snapshot --field A_1 --time-index -1 --quiet
-tidal plot ../data/chern_simons_output --type snapshot --field A_2 --time-index -1 --quiet
-tidal plot ../data/chern_simons_output --type amplitude --quiet

@@ -5,7 +5,6 @@
 # (C_0..C_3) via epsilon symmetry. Each component satisfies a massive
 # Klein-Gordon equation: ∂²C_i/∂t² = ∇²C_i - m²C_i.
 #
-# NOTE: 3D data — tidal plot is for 1D/2D only.
 #
 # Running this script:
 #   cd examples/massive_3form && bash run.sh
