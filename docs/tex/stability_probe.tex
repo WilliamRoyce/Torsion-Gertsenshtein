@@ -145,9 +145,9 @@ is retained in \texttt{RunStatus} as an archive-only value.
 
 \paragraph{How the two entry points diverged (GH~\#454).}  The v3
 permissive change (2026-05-10) rewrote the inference path and left the
-sweep path untouched, so for four months \texttt{tidal sweep} silently
+sweep path untouched, so for four months the sweep path silently
 returned \texttt{run\_status="tachyonic"} with \texttt{wall\_time\_s
-= 0} --- never simulating --- while \texttt{tidal sample} recorded the
+= 0} --- never simulating --- while the inference path recorded the
 same verdict as metadata and continued.  The mechanism was duplication:
 the probe preamble had been copy-pasted into the second call site
 instead of shared, so the policy change reached only one copy.  The
@@ -614,7 +614,8 @@ currently \texttt{"unit-ic-all-k-0.15"} post-\#341); bumping the probe is a
 public-API change.
 
 The post-hoc $t$-independence audit
-(\texttt{tidal analyze --posthoc-audit}) remains available as a debug
+(\texttt{tidal.measurement.\_posthoc\_audit}; its \texttt{analyze} CLI
+front-end was retired under GH \#533) remains available as a debug
 tool for chains that pre-date this architecture, and as a
 $2 \cdot t_{\text{base}}$ re-simulation cross-check for borderline
 samples.

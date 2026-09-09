@@ -9,12 +9,18 @@
 \textbf{Status:} Implemented (Monte Carlo + nested sampling via PolyChord) \\
 \textbf{Date:} 2026-04-02
 
-Parameter sweeps (\cref{sec:cli-reference}) explore a fixed grid, which scales
-exponentially with the number of parameters and does not produce posterior
-distributions or evidence estimates.  The \texttt{tidal sample} subcommand adds
-a proper Bayesian inference layer: it draws samples from prior distributions,
+A fixed parameter grid scales exponentially with the number of parameters and
+produces neither posterior distributions nor evidence estimates.  This module
+adds a Bayesian inference layer: it draws samples from prior distributions,
 evaluates each point by running a full PDE simulation, and returns weighted
 posterior samples together with Bayesian evidence.
+
+\textbf{Status (2026-09-09).} The subcommand that drove this module was retired
+after \texttt{v0.53.0} (GH \#533); under decision D9 inference moves into the
+Cobaya ecosystem, which ships PolyChord itself.  What follows documents
+\texttt{tidal.inference} as a \emph{Python library}, which is now the only way
+it is reached.  The package retires at M1b, once the Cobaya \texttt{Theory}
+class stands up.
 
 \subsection{Problem Statement}
 \label{sec:inference-problem}
@@ -205,8 +211,8 @@ $\log p(\theta) = \log\mathcal{L}(\theta) + \log\pi(\theta)$, histograms readily
 and parallelises trivially over samples.  Use it before committing to
 nested sampling.
 
-Parallel evaluation uses \texttt{multiprocessing.Pool} with the same
-picklable worker pattern as \texttt{tidal sweep --parallel}.
+Parallel evaluation uses \texttt{multiprocessing.Pool} with a picklable
+module-level worker.
 
 \subsubsection{Nested Sampling (\texttt{--method nested})}
 \label{sec:inference-nested}
@@ -315,58 +321,24 @@ anesthetic is installed, producing publication-quality corner plots with
 a matplotlib fallback produces a basic scatter corner plot.
 \texttt{plot\_trace()} always uses matplotlib.
 
-\subsection{CLI Reference}
-\label{sec:inference-cli}
-
-\begin{lstlisting}[style=bash]
-tidal sample <json_path> [options]
-\end{lstlisting}
-
-\begin{table}[htbp]
-\centering
-\caption{CLI flags for \texttt{tidal sample}.}
-\label{tab:sample-cli}
-\begin{tabular}{@{}llll@{}}
-\toprule
-Flag & Type & Default & Description \\
-\midrule
-\texttt{--prior SPEC}       & str (repeatable) & (required) & Prior specification \texttt{NAME=DIST:A:B} \\
-\texttt{--constraint EXPR}  & str (repeatable) & none       & Hard constraint expression \\
-\texttt{--likelihood SPEC}  & str              & (required) & Likelihood \texttt{METRIC:TYPE[:ARGS]} \\
-\texttt{--method}           & \texttt{\{mc,nested\}}    & \texttt{mc}    & Sampling method \\
-\texttt{--n-samples N}      & int              & 1000       & MC sample count \\
-\texttt{--nlive N}          & int              & 100        & Nested sampling live points \\
-\texttt{--dlogz F}          & float            & 0.01       & Evidence tolerance \\
-\texttt{--dynamic}          & flag             & off        & Dynamic nested sampling \\
-\texttt{--seed N}           & int              & 42         & RNG seed \\
-\texttt{--parallel N}       & int              & 1          & Parallel workers \\
-\texttt{--corner}           & flag             & off        & Generate corner plot \\
-\texttt{--trace}            & flag             & off        & Generate trace plot \\
-\texttt{--output DIR}       & path             & (required) & Output directory \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-All \texttt{tidal simulate} flags (\texttt{--param}, \texttt{--grid-shape},
-\texttt{--bounds}, \texttt{--ic}, \texttt{--t-end}, etc.)\ are accepted and
-passed through to each simulation run unchanged.
-
 \subsection{Integration with Existing Infrastructure}
 \label{sec:inference-integration}
 
-The inference pipeline reuses the sweep framework's simulation machinery
-with zero duplication:
+The inference pipeline reuses the shared run-point stages with zero
+duplication:
 
 \begin{itemize}
   \item \textbf{Simulation:} \texttt{SimulationLikelihood} in
-    \texttt{tidal/inference/\_likelihood.py} calls \texttt{\_simulate\_run()} and
-    \texttt{\_measure\_run()} directly from \texttt{tidal/cli/\_sweep.py}.
+    \texttt{tidal/inference/\_likelihood.py} reaches \texttt{simulate\_run()},
+    \texttt{run\_inference\_step()} and \texttt{measure\_run()} through
+    \texttt{tidal/measurement/\_run\_stages.py}.  Those stages lived in
+    \texttt{tidal/cli/\_sweep.py} until GH \#533 retired the sweep subcommand
+    and moved them into \texttt{tidal/measurement/}.
   \item \textbf{Output:} \texttt{InferenceResult.to\_sweep\_results()} converts
     posterior samples to a \texttt{SweepResults} object, enabling CSV/JSON
-    export via the same serialization path as \texttt{tidal sweep}.
-  \item \textbf{Parallelism:} The same picklable module-level worker pattern as
-    \texttt{\_sweep.py}'s \texttt{\_run\_single\_wrapper} is used for \texttt{Pool}-safe
-    likelihood evaluation.
+    export.
+  \item \textbf{Parallelism:} a picklable module-level worker is used for
+    \texttt{Pool}-safe likelihood evaluation.
 \end{itemize}
 
 Install the optional inference dependencies:
@@ -376,76 +348,6 @@ pip install "tidal[inference]"   # adds anesthetic >= 2.0
 # PolyChord is installed separately (needs gfortran):
 #   bash scripts/install_polychord.sh
 \end{lstlisting}
-
-\subsection{Usage Examples}
-\label{sec:inference-examples}
-
-\subsubsection{Exploratory Monte Carlo (no target)}
-
-\begin{lstlisting}[style=bash]
-tidal sample examples/data/coupled_scattering.json \
-  --prior "g0=uniform:0.01:0.9" \
-  --prior "mChi2=log_uniform:0.1:10.0" \
-  --likelihood "P_max:maximize" \
-  --method mc --n-samples 500 --parallel 4 \
-  --corner --output results_mc/
-\end{lstlisting}
-
-\subsubsection{Gaussian likelihood (comparison to target)}
-
-\begin{lstlisting}[style=bash]
-tidal sample examples/data/coupled_scattering.json \
-  --prior "g0=uniform:0.01:0.9" \
-  --likelihood "P_max:gaussian:0.5:0.05" \
-  --method mc --n-samples 1000 \
-  --output results_mc_gauss/
-\end{lstlisting}
-
-\subsubsection{Nested sampling with ghost-freedom constraints}
-
-\begin{lstlisting}[style=bash]
-tidal sample examples/data/torsion_dark_photon.json \
-  --prior "alpha=uniform:0.01:10" \
-  --prior "xi=log_uniform:0.001:1.0" \
-  --prior "deltam=arctan_uniform:0:0" \
-  --constraint "xi > 0" \
-  --constraint "deltam**2 < 2*alpha*xi" \
-  --likelihood "P_max:maximize" \
-  --method nested --nlive 200 --dlogz 0.01 \
-  --parallel 8 --corner \
-  --output results_nested/
-\end{lstlisting}
-
-Evidence and parameter constraints are written to
-\texttt{results\_nested/inference.json}.
-
-\subsubsection{Snapshot count for PolyChord/nested-sampling workloads}
-\label{sec:inference-snapshot-guidance}
-
-For PolyChord nested-sampling runs where the likelihood is
-\texttt{peak\_conversion} (or any measurement whose maximum occurs at
-$t = t_\mathrm{end}$ in the perturbative linear regime), pass
-\texttt{--snapshots=\$t\_end} to request exactly two snapshots
-(initial state + final state). The modal solver's Pad\'{e} path then
-applies $\exp(M \cdot t_\mathrm{end})$ in a single step, giving
-machine-precision at $t_\mathrm{end}$ and eliminating $N_\mathrm{snaps}-1$
-unnecessary IFFT reconstructions per likelihood call. This is also the
-most numerically clean configuration: no accumulated matvec roundoff
-(see \cref{sec:modal-snapshot-precision}).
-
-\begin{lstlisting}[style=bash]
-# 2-snapshot machine-precision inference (t_end=10)
-tidal sample spec.json \
-  --prior "zeta1=uniform:-0.05:0.05" \
-  --likelihood "P_max:maximize" \
-  --method nested --sampler polychord --nlive 400 \
-  --snapshots 10 \
-  --output results_polychord/
-\end{lstlisting}
-
-For visualization runs (\texttt{tidal simulate}, \texttt{tidal sweep}),
-the default of $t_\mathrm{end}/20$ snapshot interval (21 snapshots) is
-appropriate.
 
 \subsection{Parameter Importance via KL Divergence}
 \label{sec:inference-importance}
@@ -484,14 +386,9 @@ whose prior record was missing or did not match the samples.  A
 \texttt{importance.json} without this block predates v0.48.8 and its
 marginals must not be quoted.
 
-\textbf{Usage:}
-\begin{verbatim}
-# Inline after sampling:
-tidal sample spec.json --method nested --analyze ...
-
-# Post-hoc on saved results:
-tidal analyze ns_output/ --inference --importance
-\end{verbatim}
+\textbf{Usage.}  Both entry points were CLI flags on the retired
+\texttt{sample} and \texttt{analyze} subcommands (GH \#533); the computation is
+reached directly as \texttt{tidal.inference.\_importance}.
 
 Interpretation thresholds: $D_\mathrm{KL} > 1$~nat = strong,
 $0.1$--$1$~nat = moderate, $< 0.1$~nat = weak --- \emph{subject to the
