@@ -77,8 +77,12 @@ anyone can confirm it without a kernel, a licence, or the lane:
 
 ```sh
 pdftotext docs/cosmology/evidence/tier1-20260907/ParticleSpectrographCTEG-rerun-20260909.pdf - \
-  | grep -c Indeterminate      # 296
+  | grep -o Indeterminate | wc -l      # 296 occurrences, on 63 lines
 ```
+
+(`grep -c` counts *lines* and answers 63; the occurrence count is 296. Stated because a
+documented command whose output does not match the number beside it is the defect this
+directory exists to avoid.)
 
 Measured in that render: **296 `Indeterminate`**, **12 `$Failed`**, one unevaluated `Grid[`
 source expression, and PSALTer's own **"Demonstrably impossible"** unitarity verdict. Found by
