@@ -220,6 +220,30 @@ For verbose output with detailed information:
 bash .devcontainer/scripts/validate-setup.sh -v
 ```
 
+### If a PSALTer run hangs instead of failing
+
+**Set `QT_QPA_PLATFORM=offscreen`.** PSALTer exports a PDF through the Wolfram front end
+unconditionally and without a time limit, starting at the *first field declaration*
+(`DefField`) — seconds into any run. The front end needs a Qt **platform plugin** whose
+shared libraries are all present; when none can be initialized, Qt aborts the front-end
+process and the export **blocks indefinitely rather than erroring**. Measured: 20.001 s
+against a 20 s cap versus **3.8 s** with the variable set.
+
+```bash
+QT_QPA_PLATFORM=offscreen wolframscript -file your_script.wls
+```
+
+**Do not rely on Inkscape to fix this, even though it appears to.** Of the nine platform
+plugins Wolfram ships, `offscreen` was the only one with all its dependencies satisfied here;
+`xcb` is missing five libraries. Installing Inkscape pulls in **`libwayland-egl1`**, which
+makes the `wayland-egl` plugin loadable and fixes the hang *by accident*. That is luck:
+`--skip-inkscape`, a slimmer image or another distribution puts you straight back at the
+hang. PSALTer's own `$InkscapePath` is genuinely unused — it is only the dependency that
+matters.
+
+A hang is worse than an error here: it holds the single-license Wolfram lane indefinitely and
+looks exactly like a slow theory. See `docs/cosmology/stage1_measurements.md` §2.3–2.4.
+
 ### If WolframScript stops working:
 
 ```bash

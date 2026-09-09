@@ -80,16 +80,27 @@ its `True` default, since H6 §6.2 makes the massless sector load-bearing for us
 
 ### 0.2 PSALTer does not enforce the coupling-per-operator contract — we do (#522)
 
-`ValidateLagrangian.m` defines six messages but throws only four:
+`ValidateLagrangian.m` defines six messages and has throw sites for four — but only
+**three can fire on this install**, per the amendment below:
 
-| message | thrown? | fires on |
-| --- | --- | --- |
-| `Zero` | yes | `PossibleZeroQ` on the Lagrangian |
-| `UnknownCoupling` | yes | a symbol that is not a `ConstantSymbolQ` and not an `xTensorQ` |
-| `UnknownField` | yes | a tensor with no `xAct`PSALTer`<name>`` context — i.e. not `DefField`ed |
-| `NonQuadraticFields` | yes | `PolynomialDegree > 2` in the fields |
-| `NonLinearCouplings` | **never** | — (message defined at line 6, no throw site in the package) |
-| `ParityOdd` | **never** | — |
+| message | throw site? | fires here? | fires on |
+| --- | --- | --- | --- |
+| `Zero` | yes | yes | `PossibleZeroQ` on the Lagrangian |
+| `UnknownCoupling` | yes | yes | a symbol that is not a `ConstantSymbolQ` and not an `xTensorQ` |
+| `UnknownField` | yes | yes | a tensor with no `xAct`PSALTer`<name>`` context — i.e. not `DefField`ed |
+| `NonQuadraticFields` | yes | **no** | `PolynomialDegree > 2` in the fields — guard unavailable, see below |
+| `NonLinearCouplings` | **never** | no | — (message defined at line 6, no throw site in the package) |
+| `ParityOdd` | **never** | no | — |
+
+> **⚠ Amendment (I-REM, 2026-09-09 — PSALTer v2.0.2 `bb45adb0`).
+> `EXPIRES-WITH: #551`.** `NonQuadraticFields` has a throw site, but it is guarded by
+> `ResourceFunction["PolynomialDegree"]` (`ValidateLagrangian.m:38`), and the Wolfram
+> Function Repository cannot be reached from this container (#551). PSALTer emits
+> `ResourceObject::notfname` and **carries on**, so the check silently never runs. The
+> distinction that matters for anyone reading this table: *the source has four throw sites;
+> this environment fires three.* The fourth returns the moment the resource becomes
+> available. Counted with the other silently-absent validations in
+> `stage1_measurements.md` §6.
 
 So a bare numeric coefficient (`−¼F²` with no declared coupling) **passes silently**:
 numbers are not `Variables`, so nothing rejects them. H6 §4.1 says PSALTer "validates —
@@ -156,6 +167,14 @@ and guarded by a fixture test that fails loudly if a name moves; and the `.mx` d
 us a zero-cost second serialization of every run for free.
 
 ### 0.5 Both linearization architectures are author-documented; the single-session one is proven
+
+> **⚠ Amendment (I-REM, 2026-09-09) — this is the one §0.x finding Wave 0 did not test, and
+> it now has an owner.** `stage1_measurements.md` §8's scorecard records every §0.1–§0.6
+> finding as confirmed or overturned against the live install, except this one: "both
+> linearization architectures are documented — **not tested**, out of scope for Wave 0". It
+> remains a static source reading. **Owner: I-S1B** (the Stage-1 Wolfram-side handoff,
+> #495), which is the first session that will actually exercise a linearization
+> architecture and can therefore settle it as a by-product rather than as separate work.
 
 The plan going into this study assumed a two-session route (xAct session does the
 post-Riemannian expansion, PSALTer session does the spectroscopy) because PSALTer owns its
@@ -266,6 +285,37 @@ cross-check.
 | `.wxf` fixtures | **not in repo** | upstream only; 692 B and 2,874 B, sizes match H6's decode notes |
 | H6 decode scripts | **salvaged** | were in `/tmp`; now `scripts/research/psalter_stage1/wxf_decode/` |
 
+> **⚠ Amendment (I-REM, 2026-09-09) — three rows above are superseded, and two facts are
+> added. The table itself is left as written: it is a dated audit ("verified 2026-09-03")
+> and rewriting its rows would destroy the record of what was true when this plan was
+> drafted.**
+>
+> **Superseded rows**, all re-verified 2026-09-09:
+>
+> | row | as audited | now |
+> | --- | --- | --- |
+> | PSALTer | not installed | **v2.0.2 `bb45adb0`, installed and verified 2026-09-07** (#526) — but **UNCERTIFIED**, Tier 1 reports MISMATCH (#543) |
+> | Inkscape | not installed | **1.2.2-2+b1**, at `/usr/bin/inkscape` |
+> | `.wxf` fixtures | not in repo | **two are committed**, at `tests_cosmo/fixtures/psalter/` (`A23Theory`, `VectorTheory`), with `PROVENANCE.md`; flagged for the release-time license review on #495 |
+>
+> **Added — the Wolfram Cloud is unreachable from here** (`EXPIRES-WITH: #551`). 503 from
+> `www.wolframcloud.com` and 404 from the resource API, from **both `curl` and Wolfram**,
+> while GitHub returns 200 — so this is network-layer, **not** Wolfram authentication.
+> Consequence: `ResourceFunction[…]` downloads fail, PSALTer emits `ResourceObject::notfname`
+> and **carries on**, and the guarded checks silently never run (§0.2's table, and the
+> `LinearlyIndependent` sites under `ConstructSourceConstraints/`). **Function Repository
+> resources must therefore be supplied locally**, which I-526 did successfully on a throwaway
+> copy. The cause is **not diagnosed** — it is not established that it is impossible, only
+> that it does not work as configured — so this is tracked as **#551** rather than treated as
+> a standing constraint.
+>
+> **Added — Inkscape's *dependencies* are what make the headless export work**, which the
+> "not actually needed (§0.6)" note does not convey. Installing it pulls in
+> **`libwayland-egl1`**, which makes the `wayland-egl` Qt platform plugin loadable and fixes
+> the export hang by accident. §0.6 is right that PSALTer's own `$InkscapePath` is unused,
+> but `--skip-inkscape`, a slimmer image or another distribution reintroduces the hang.
+> `QT_QPA_PLATFORM=offscreen` (§4.4) is the fix to rely on; Inkscape is not.
+
 **Third-party discipline.** PSALTer and the supplemental materials are GPL-3.0-or-later and
 TIDAL is MIT; the trigger for the license question is *distribution*. We therefore commit
 **the route, not the payload**: `scripts/research/psalter_stage1/fetch_reference_sources.sh`
@@ -316,6 +366,36 @@ the install gate**, and Tier 3 substitutes for Tier 2 when TorC's ECT authoring 
 repository's committed `ParticleSpectrographCTEG.mx` and diff the two associations
 key-by-key. This tests the install against the author's own artifact with zero physics
 authored by us. It is the tetrad/PGT formulation (21 generators).
+
+> **⚠ Amendment (I-REM, 2026-09-09) — what a Tier-1 pass would certify, and what it
+> would not. This half carries NO expiry: it is a permanent property of a two-key
+> oracle, true whether the gate passes or fails.**
+>
+> Call it the **Tier-1 `.mx` oracle** rather than "the oracle" — this document and
+> `repo_reshape.md` §8 use that word for two unrelated artifacts, the other being the
+> **frozen legacy oracle** of the M0.5 milestone (185 committed files of `tidal` output).
+>
+> `ParticleSpectrographCTEG.mx` holds exactly **two** keys — `WaveOperator` and
+> `PseudoDeterminant` (§0.4, measured). Everything else `ParticleSpectrum` computes lives in
+> private globals the `.mx` never contains. So **a passing Tier 1 certifies field
+> declaration, decomposition, wave-operator construction and the pseudo-determinants, and
+> nothing else** — not source constraints, not the spectrum, not the unitarity conditions.
+> Tier 1 was never going to certify as much as its name suggests, which is why §3 calls
+> **Tier 2 the physics gate**.
+>
+> **Consequence, and a requirement on Tier 2:** the 0-versus-21 source-constraint defect
+> (#543) sits in exactly that uncovered region, and no fixture would have caught it — it was
+> found by reading the private global directly and comparing against a count in the
+> *published formulation* (the papers and PSALTer's own README and supplemental material),
+> which is human-readable published source rather than a byte-comparable artifact.
+> **Tier 2 must therefore add source-constraint coverage.** Its assertion 1 below already
+> names the mechanism — gauge generators = the count of `ConstructSourceConstraints` →
+> `SourceConstraintRows` — so this is a requirement to keep it, not to invent it.
+>
+> **Separately, and this half DOES expire — `EXPIRES-WITH: #543`:** Tier 1 currently
+> **fails** on this install. `WaveOperator` is bit-exact; `PseudoDeterminant` comes back all
+> zeros. Reproduced independently by the orchestrator on 2026-09-09. The gate was not relaxed
+> and no workaround was applied.
 
 **Tier 2 — the ECT reproduction (our formulation, the design's primary oracle).** Author
 the post-Riemannian run — fields `h`, `T`, `a`; 15 gauge generators — using the §0.5
@@ -435,6 +515,31 @@ imposing source constraints is PSALTer's job (H6 §4.5).
 project-wide, not per-session), per-run log capture, wall-clock timing, configurable
 timeout, strictly serial. Ported in shape from `tidal/cli/_derive.py::_run_wolframscript`
 (line ~6438). No parallelism anywhere in this subsystem, ever.
+
+> **⚠ Amendment (I-REM, 2026-09-09) — two measured requirements this driver inherits.**
+> Both were established by I-526 (`stage1_measurements.md` §2.3, §2.5, §10.2) and routed to
+> the orchestrator without landing anywhere. §1 of this document already points here
+> ("durable coverage belongs in `tidalcosmo/derive/wolfram_driver.py` (§4.4), beside the
+> engine-idle guard"); this is that coverage, stated.
+>
+> 1. **Never judge a `wolframscript` run by its exit status.** Wolfram 14.3 segfaults on
+>    shutdown intermittently — *after* the work completes and the results are correct. The
+>    CTEG Tier-1 gate run exited **143** having produced correct artifacts, and a trivial
+>    one-line command segfaulted once in three runs after printing the right answer.
+>    **Decide success from what was produced**: the expected file exists, the expected
+>    sentinel line is present. An exact capture of combined stdout+stderr is not reliable
+>    either. (This is also what #541 fixed in `verify-wolfram-setup.sh`.)
+>
+> 2. **Set `QT_QPA_PLATFORM=offscreen` on every launch**, beside the engine-idle guard.
+>    PSALTer exports a PDF through the Wolfram front end **unconditionally and without a time
+>    limit**, and `$NoExport` does not guard it. When no Qt platform plugin can be
+>    initialized, Qt aborts the front-end process and the export **blocks indefinitely rather
+>    than failing** — measured at 20.001 s against a 20 s cap, twice; with the variable set,
+>    3.8 s. **Exposure begins at `DefField`**, seconds into any run, not at
+>    `ParticleSpectrum`. A hang is the dangerous failure here: it consumes the single-license
+>    Wolfram lane indefinitely and is indistinguishable from "PSALTer is slow on this
+>    theory" — which is the very measurement the Wave-2 cost run exists to make. The
+>    variable belongs at this chokepoint deliberately, not container-wide.
 
 ## 5. The exporter
 
@@ -573,7 +678,7 @@ must be reported for what it is.
 
 - **Subject:** the roster-conformant PGT+EM theory — `theory_spectrum.toml`, EH + `α₁I1 +
   α₂I2 + α₃I3` + `cF·F²`, **no b5** — generated end to end by our own branch.
-**Instrumentation:** `AbsoluteTiming` around the whole call plus timestamped checkpoints
+- **Instrumentation:** `AbsoluteTiming` around the whole call plus timestamped checkpoints
   at PSALTer's own stage boundaries (`ConstructWaveOperator`, `ConstructSourceConstraints`,
   `ConstructSaturatedPropagator`, `ConstructMassiveAnalysis`, `ConstructMasslessAnalysis`,
   `ConstructUnitarityConditions`, `ConstructSpectrograph`). Partial timings localize the
@@ -621,7 +726,7 @@ append-only; a handoff report is ephemeral; this needs to be a committed documen
 | gate | criterion |
 | --- | --- |
 | install | committed script produces a clean `Needs["xAct`PSALTer`"]` on a fresh user base; version banner printed |
-| oracle T1 | our `CTEG` run's association matches the committed `.mx` key-by-key |
+| oracle T1 | our `CTEG` run's association matches the committed `.mx` key-by-key. **Currently FAILS (#543)**, and a pass would certify only those two keys — see §3 |
 | oracle T2/T3 | gauge-generator count exact; massive content with dictionary-exact `m²`; massless polarization count; `Reduce`-verified equivalence of unitarity conditions **including the massless one** |
 | reader | `A23` blocks are dims (2,4,2) with `2·1+4·3+2·5 = 24`; `Vector` blocks equal the **published** expressions and the **committed upstream `.wxf`** exactly (symbolic difference simplifies to zero) — **not** values measured on this install, see the amendment below; placeholder/plural-key/degenerate cases unit-tested |
 | reject rule | a bare-numeric term errors with a hint naming the term; the legacy `theory.toml` Lagrangian is rejected |
