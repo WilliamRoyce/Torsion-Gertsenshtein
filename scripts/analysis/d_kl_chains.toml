@@ -22,6 +22,11 @@
 # using the same syntax as the campaign --prior flags (provenance:
 # scripts/hpc_templates/*.sbatch). Names refer to param_names (i.e. the
 # relabeled column names, matched positionally to the recorded priors).
+#
+# The scripts/hpc_templates/polychord_intr*.sbatch templates cited below drove
+# `tidal sample` and were retired with it (#533). They are named as the
+# provenance of chains already recorded here, not as something to run;
+# recover one with `git show v0.53.0:scripts/hpc_templates/<name>.sbatch`.
 
 [[chain]]
 theory = "dark_photon_plasma"
