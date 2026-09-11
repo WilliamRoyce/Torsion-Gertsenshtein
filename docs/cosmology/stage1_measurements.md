@@ -193,24 +193,76 @@ pseudo-determinants.
 
 **Filed as #543. The gate was not relaxed and no workaround was applied.**
 
-### 4.4 What was ruled out, by test rather than by argument
+### 4.4 What was ruled out — and the ruling-out withdrawn (I-543, 2026-09-11)
 
-- **The two missing Wolfram Function Repository dependencies — refuted.** PSALTer
-  calls `ResourceFunction["PolynomialDegree"]` and
-  `ResourceFunction["LinearlyIndependent"]` at five sites and neither can be
-  fetched here. I supplied both locally, on a throwaway copy of the install, and
-  re-ran CTEG: **identical verdict, identical `Power::infy` cascade.** The
-  hypothesis was tested and discarded rather than reported as a cause.
+> **Amendment (I-543, 2026-09-11; PSALTer v2.0.2 @ `bb45adb0`, Wolfram 14.3.0).** The first
+> bullet below, as originally written, was wrong: the "test" did not discriminate. Its
+> `PolynomialDegree` substitute was `Exponent[expr, vars]`, which returns a *list* for a list of
+> variables, so `list > 2` stays unevaluated and `If` takes no branch — exactly what the missing
+> resource does (#556, executed: `Exponent[a^2 b, {a,b}]` → `{2,1}`; a cubic passes untouched).
+> Its `LinearlyIndependent` substitute lived in a master-side copy of the install, while
+> `IsNullVectorOfSpace` runs on subkernels that `ParallelNeeds` the pinned package from their
+> own `$Path`. "Identical verdict, identical cascade" was the expected outcome of a control that
+> changed nothing at either site. The hypothesis it claimed to discard is the cause.
+
+- ~~**The two missing Wolfram Function Repository dependencies — refuted.**~~ **They are the
+  cause.** PSALTer calls `ResourceFunction["LinearlyIndependent"]` at `SymbolicNullSpace.m:31`
+  (master) and `IsNullVectorOfSpace.m:6` (subkernels), and `ResourceFunction["PolynomialDegree"]`
+  at `ValidateLagrangian.m:38` and `UnresolvedPoleRow.m:11,21`. On this machine they never
+  resolved. An unresolved or `$Failed` `ResourceFunction` is not a Boolean, so `And[…]` never
+  becomes `True` and the `If` that appends to `CommonNullVectors` takes neither branch. Every
+  `SymbolicNullSpace` therefore returns `{}` — both CTEG runs' `checkpoints.json` show
+  `CommonNullVector` 53–58 calls and `IsNullVectorOfSpace` 434–480 calls (candidates existed)
+  with `CleanNullVector`/`EnsureLinearInCouplings`, which run only on *surviving* null vectors,
+  never called. `$LocalSourceConstraints` is then `{}` (§4.4a), and in `ConjectureInverse` the
+  same `{}` becomes the all-zero placeholder null space of `ManualPseudoInverse.m:27-31`, a zero
+  compensator, and `Det[TheInputMatrix + 0] = 0` for every gauge-singular block; the division
+  `AdjugateMatrix/DeterminantSymbolicValue` at `UnmakeSymbolic.m:75` is the first `Power::infy`
+  (+244.32 s in the 2026-09-09 log, between the last `ConsolidateUnmakeSymbolic` and the first
+  `ConsolidateFinalElement` trace lines), and every pseudo-determinant is `0`. One chain, both
+  symptoms. `PSALTer.m:18-20` silences `Message` on subkernels, which is why nothing announced it.
 - **Subkernel availability.** `LaunchKernels[2]` and `ParallelEvaluate` both work.
 - **Headless graphics.** Fixed and verified; the run completes and writes its `.mx`.
 
-**Leading remaining hypothesis: the Wolfram version.** The oracle `.mx` header
-decodes to **14.2**; we run **14.3**. Everything symbolic up to the wave operator
-agrees exactly and the first divergence is a `1/0` in the inverse path, which fits
-a behavioral change between releases. Testing it needs a 14.2 engine — an
-environment decision, not one #526 can settle.
+~~**Leading remaining hypothesis: the Wolfram version.**~~ **Withdrawn.** The handoff's
+version of it — "a behavioral change in built-in `NullSpace`/`Inverse`/`PseudoInverse`" — was a
+substring count of PSALTer's own `ConjectureNullSpace`/`ManualPseudoInverse`: the tree has **no**
+built-in `Inverse[]` or `PseudoInverse[]` and one built-in `NullSpace`
+(`MinimalExampleCaseNullSpace.m:5`, on integer-substituted matrices). Every link of the chain
+above was reproduced by execution independent of the engine. The engine is nevertheless
+*measured* rather than assumed: §4.8 records the same ladder and gate on 14.2.1, the author's
+tested version.
+
+**What the genuine functions are.** `LinearlyIndependent` (Function Repository v3.0.0) is a
+thin wrapper around `ResourceFunctionHelpers`LinearlyIndependent`, shipped by Wolfram in the
+`ResourceFunctionHelpers` paclet (1.3.34) already installed in the userbase — the author's real
+implementation was on this machine all along. `PolynomialDegree` (v1.0.0, Dennis M Schneider) is
+six lines, obtained as the repository's own definition notebook (`PolynomialDegree-1-0-0-definition.nb`,
+114,394 B, sha256 `c233e226d4c77de65ee19ddbc84c20c9724df467bb86c27f1a65f17fba89787c`) and
+evaluated verbatim, never retyped. On symbolic input the genuine `LinearlyIndependent` returns a
+`ConditionalExpression` (non-Boolean), but PSALTer never hands it one: `SymbolicNullSpace.m:8-23`
+substitutes integers 1–9 for every variable of the block, `Def` included, before `NullSpace`.
+
+**Resolution and its proof (behavior, not resolution — #556).** `scripts/psalter/register_resources.wl`
+registers both as plain local resource objects in the shared registry (`~/.Wolfram/Objects`),
+with the repository lookup disabled *inside that kernel only* so the local objects win the name
+lookup and the shared name cache records them; nothing on disk disables the repository, and the
+gate runs unmodified on the pinned install. Measured after registration: master and fresh
+subkernels with the normal repository address return `{True, False, "appended", 3, "fired"}` on
+PSALTer's call shapes; the **cubic control** (`scripts/psalter/repro_543.wl X`) makes
+`ParticleSpectrum::NonQuadraticFields` throw on a cubic Lagrangian, where the same run on an
+empty registry accepted it; **Maxwell** (`repro_543.wl G`, three runs) identifies its one source
+constraint every time (`Dimensions[$LocalSourceConstraints] = {3, 1}`) with the 1⁻
+pseudo-determinant `−Def²Θ₁/2`; the scalar, Proca and Fierz–Pauli rungs match their published
+results (§4.8). Two undocumented, silently degrading dependencies were the install defect; "a
+mismatch can only be the install" held as designed.
 
 ### 4.4a Does the failure spare the primary algorithm? Checked — no
+
+> **Amendment (I-543, 2026-09-11):** the mechanism behind the `{}` below is now known
+> (§4.4): it is the unresolved `LinearlyIndependent` on the subkernels, not a second defect. The
+> conclusion of this subsection stands — both criteria were affected — and the readback after
+> the resolution is in §4.8.
 
 The natural narrowing is that the broken stage is the one the design already
 demotes. `spectrum_design.md` §5 makes the Schur-complement criterion primary
@@ -257,23 +309,36 @@ Tier-1 *pass* would certify the wave operator and the pseudo-determinants and
 nothing else — not the source constraints, the spectrum, or the unitarity
 conditions. Those need Tier 2/3, which is why §3 calls Tier 2 the physics gate.
 
-### 4.5 A separate defect found on the way
+### 4.5 The two dependencies, and the cloud
 
-`PolynomialDegree` and `LinearlyIndependent` are downloaded from the Wolfram
-Function Repository on first use and are declared in **no** README or install
-instruction. When unavailable, PSALTer emits `ResourceObject::notfname` and
-**carries on**, so `ValidateLagrangian`'s `NonQuadraticFields` check silently never
-runs. `verify-wolfram-setup.sh` now checks both, so this is loud rather than
-silent. Directly relevant to #522 (§6), and worth carrying back to the author (D6).
+`PolynomialDegree` and `LinearlyIndependent` are downloaded from the Wolfram Function Repository
+on first use and are declared in **no** README or install instruction. When unavailable, PSALTer
+emits `ResourceObject::notfname` on the master (three times, for `PolynomialDegree`; the
+subkernel-side `LinearlyIndependent` failures are silenced) and **carries on** — see §4.4 for
+what that does to the spectrum. `verify-wolfram-setup.sh` check 10 now tests the two functions'
+*behavior* on the master **and on a fresh subkernel** and refuses under `--require-psalter` when
+they do not behave (the fix is one command, named in its message); the DEGRADED routing adopted
+for #549 applied while the functions were merely unavailable, and is reversed now that they are a
+certified leg of the configuration.
 
-The Wolfram Cloud is unreachable from this container — 503 from
-`www.wolframcloud.com` and 404 from the resource API, from both `curl` and Wolfram,
-while GitHub returns 200.
+The cloud, measured rather than inferred (#551): 2026-09-07 → 09-09 a **global Wolfram Cloud
+outage** — 503 with Wolfram's own maintenance page (`Retry-After: 3600`), identical from the host
+browser and from an external fetcher; nothing container-side. 2026-09-11, primary services
+restored, yet **the repository served no function definitions to anyone**: anonymous API
+requests `302 → j_spring_oauth_security_check?statusCode=401`; an authenticated local kernel
+(`$CloudConnected = True`) `ResourceFunction::lfail`, `DownloadedVersion -> None`; evaluation
+inside the Wolfram Cloud (15.0.1) the same `$Failed`; control functions and older versions
+identical; the resource system's own notebook download truncated (`libcurl error 18`). That is
+why the certified leg is local registration of the genuine code rather than acquisition, and why
+the registration must be re-run after a container rebuild (`~/.Wolfram/Objects` is not
+bind-mounted) — routed to the orchestrator for `install-psalter.sh`.
 
-### 4.6 The PDF eyeball check
+### 4.6 The rendered spectrograph
 
-Our `ParticleSpectrographCTEG.pdf` was produced (the headless export works), and is
-kept in the run directory. Recorded, explicitly **not** a gate.
+Before the resolution, the render carried **296 `Indeterminate`**, **12 `$Failed`** and PSALTer's
+"(Demonstrably impossible)" unitarity verdict (`pdftotext`, evidence README). After it — §4.8 —
+the render is checked the same way, as a second observable of the same defect; still explicitly
+**not** a gate.
 
 ### 4.7 Independent re-run — orchestrator, 2026-09-09
 
@@ -311,6 +376,65 @@ than a single run was. And the **shutdown segfault is intermittent**: the same g
 same verdict, exited 143 once and 0 the other time. That is the rule of §2.5 confirmed from
 the other side — a `wolframscript` run's exit status carries no information about whether it
 produced the right answer, in either direction.
+
+
+### 4.8 Resolution and certification — I-543, 2026-09-11
+
+With the two genuine functions registered (§4.4), the same gate, the same published script and
+the same oracle:
+
+| | 2026-09-07 / 09-09 (uncertified) | **2026-09-11, 14.3.0 (certified)** | 2026-09-11, 14.2.1 (cross-check) |
+|---|---|---|---|
+| verdict | `mismatch` | **`match`** — tally `{identical: 2}` (run `tier1-20260911T151115Z`, on the final registration) | **`match`** — tally `{identical: 2}` (component run `tier1-142-manual-20260911T155325Z`) |
+| `WaveOperator` | identical, 303 leaves | identical, 303 leaves | identical, 303 leaves |
+| `PseudoDeterminant` | all `0` | **identical to the oracle**, 3×2, 71 leaves | **identical to the oracle**, 3×2, 71 leaves |
+| `$LocalSourceConstraints` | `{}` (0 generators) | dims `{3, 7}`: seven irreducible rows with `2J+1 = {1, 1, 3, 3, 3, 5, 5}`, **21 generators** — the published count, now measured | identical: `{3, 7}`, `{1, 1, 3, 3, 3, 5, 5}`, 21 |
+| `Power::infy` in the run | at +321 s / +244 s | **none** | none in the readback run |
+| render (`pdftotext`) | 296 `Indeterminate`, 12 `$Failed`, "(Demonstrably impossible)" | **0, 0, a real "Resolved unitarity condition(s)" line** | no PDF: the 14.2.1 front end cannot start headlessly here (below) |
+| wall | 407 s / 302 s | 449 s | 409 s (readback 453 s) |
+| exit status | 143 / 0 | 0 | 0 |
+
+Ladder (`scripts/psalter/repro_543.wl`, 14.3.0): **X** cubic control PASS (throws
+`NonQuadraticFields`; the same rung on an empty registry accepted the cubic — the negative
+control); **G** Maxwell PASS ×3 (`{3, 1}` constraint rows, 1⁻ pseudo-determinant `−Def²Θ₁/2`);
+**A** scalar PASS (pole `Def² = Θ₂/Θ₁`); **B** Proca PASS (both keys = the published 0⁺/1⁻
+blocks — which also closes the #542 "missing mass term" note); **C** Fierz–Pauli PASS (`−3β²`,
+`β`, `β − αDef²/2`, as the author's own spectrograph).
+
+**Certified configuration:** engine 14.3.0 × PSALTer v2.0.2 @ `bb45adb0` × resource handling
+as in §4.4 (registered by `register_resources.wl`; checked by `verify-wolfram-setup.sh`
+check 10 on master and subkernel; `EXPECTED_WOLFRAM_VERSION=14.3.0`). Evidence:
+`docs/cosmology/evidence/tier1-20260911-pass/`. The registry lives in `~/.Wolfram/Objects`
+(container overlay, not bind-mounted): after a rebuild, run the registration once before the
+gate — routed to the orchestrator for `install-psalter.sh`.
+
+**14.2.1 cross-check (the author's tested version; installer needs `sudo`, contrary to the
+handoff's assertion; installed side by side at `~/.local/wolfram/engine/14.2`, selected per
+run with `WOLFRAMSCRIPT_KERNELPATH`; shared `mathpass` valid, xPerm's MathLink binary
+connects):** the same registration behaves on 14.2.1 under PSALTer on master and subkernels
+(`{True, False, "appended", 3}`; `{True, True, 3}`). **Ladder on 14.2.1: every rung PASS** —
+X (cubic control throws), G ×3 (`{3, 1}` rows every run), A, B, C with the same values as
+14.3.0. **CTEG readback on 14.2.1:** the same seven rows, the same multiplicities and 21
+generators, and pseudo-determinant expressions identical to 14.3.0 and to the oracle.
+
+**The 14.2.1 gate *wrapper* refuses, for a reason that is neither PSALTer nor physics:** on
+this side-by-side install the front end cannot start headlessly (`UsingFrontEnd[Export[…]]` →
+`$Failed` with no message, `$FrontEnd` → `$Failed`; the ladder rungs wrote no PDFs either), so
+`verify-wolfram-setup.sh` check 9 (the `DefField` headless-PDF smoke) hard-fails, and the
+gate's `require_psalter` step — which `--skip-preflight` does not bypass — exits 1. Check 9 did
+exactly its job. The engine mismatch itself is reported as DEGRADED, as designed; the resource
+check passes on master and subkernel under 14.2.1. The 14.2.1 cross-check was therefore made
+with the gate's own components run by hand — the published script unmodified under the 14.2.1
+kernel, `tier1_diff.wls` against the same oracle, `summarize_diff.py` — and is recorded in the
+column above as a component run, never as a wrapper run. **Its verdict: `match`, both keys
+identical to the oracle on 14.2.1 too** (script sha256 `2232a103…5825` before and after; no
+`Power::infy`; all twelve stages reached; 409 s). The same registration, the same published
+input and the same oracle give bit-identical results on the author's tested version and on
+14.3.0: the engine plays no role, now measured rather than inferred.
+
+**Tier 1 still certifies only the two keys.** The source-constraint count, the spectrum and
+the unitarity conditions are Tier 2/3 (§3); the readback above is a measurement, not a
+certification.
 
 ## 5. Probe #521 — `ParticleSpectrum` wall time, `Method` inert
 

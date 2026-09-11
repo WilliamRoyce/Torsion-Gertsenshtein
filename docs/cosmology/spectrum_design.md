@@ -457,8 +457,16 @@ into Stage 1 rather than removing it (§8), which is precisely what shrinks its 
 burden.
 
 > **⚠ Amendment (I-REM, 2026-09-09 — PSALTer v2.0.2 `bb45adb0`, Wolfram 14.3).
-> `EXPIRES-WITH: #543`. On our install that gauge-mode removal does not happen, so
-> *both* spectrum criteria are blocked — not only the residue cross-check.**
+> `EXPIRES-WITH: #543` → EXPIRED 2026-09-11 (I-543).** With PSALTer's two undocumented
+> Function Repository dependencies registered from genuine code
+> (`scripts/psalter/register_resources.wl`), the gauge-mode removal happens: CTEG's
+> `$LocalSourceConstraints` has seven irreducible rows with multiplicities
+> `2J+1 = {1, 1, 3, 3, 3, 5, 5}`, i.e. the **21 generators** of the formulation, on 14.3.0 and
+> on 14.2.1, and the Tier-1 gate passes. Both criteria are unblocked. What follows describes
+> the pre-resolution state and is kept for the record.
+>
+> ~~On our install that gauge-mode removal does not happen, so
+> *both* spectrum criteria are blocked — not only the residue cross-check.~~
 >
 > `ConstructSourceConstraints` returns `$LocalSourceConstraints = {}` — **zero rows**,
 > where CTEG's 21-generator formulation requires 21 (§3 measures the generator count as
