@@ -7,7 +7,7 @@ Symbolic physics pipeline: Lagrangian (xAct/Mathematica) -> JSON -> native PDE s
 - `tidal/wolfram/` -- Wolfram pipeline modules (EulerLagrange.wl, ComponentDecompose.wl, ExportJSON.wl, CommonUtilities.wl, GaugeFix.wl)
 - `tidal/solver/` -- PDE solver backends (ida.py, cvode.py, leapfrog.py, fields.py, operators.py, grid.py, coefficients.py, rhs.py, state.py, constraint_solve.py)
 - `tidal/symbolic/` -- Python symbolic pipeline (_derive.py, json_loader.py)
-- `tidal/cli/` -- CLI entry points (11 subcommands: derive, simulate, measure, inspect, list, validate, plot, sweep, analyze, sample, doctor)
+- `tidal/cli/` -- CLI entry points (7 subcommands: derive, simulate, measure, inspect, list, validate, doctor). `sweep`, `sample`, `analyze` and `plot` were retired after v0.53.0 (#533); each name still resolves, exits 2, and names its replacement
 - `tidal/inference/` -- Bayesian inference (priors, likelihood, constraints, MC, nested sampling via dynesty/PolyChord)
 - `tidal/measurement/` -- Physics measurements (energy, conversion, mixing, spectra)
 - `tidalcosmo/` -- the NEW package (Cobaya extension, #488). Written clean beside legacy; never imports it
@@ -24,8 +24,6 @@ Symbolic physics pipeline: Lagrangian (xAct/Mathematica) -> JSON -> native PDE s
 - `./scripts/full_test.sh` -- Full test suite (Python + Wolfram)
 - `uv run tidal derive examples/<name>/theory.toml` -- Derive PDEs from Lagrangian
 - `uv run tidal simulate examples/data/<name>.json` -- Run simulation
-- `uv run tidal sweep examples/data/<name>.json --sweep "param=start:stop:N" --measure conversion --output sweep_out` -- Run parameter sweep
-- `uv run tidal sample examples/data/<name>.json --prior "param=uniform:lo:hi" --likelihood "P_max:maximize" --method mc --n-samples 100 --output sample_out` -- Bayesian inference (MC or nested sampling)
 - `uv run ruff check` / `uv run ruff format` -- Lint / format
 - `uv run pyright` -- Type checking. **Requires `uv sync --all-extras` first.** Without the
   optional extras installed, pyright reports phantom unresolved-import errors for `jax` in
@@ -58,7 +56,7 @@ Symbolic physics pipeline: Lagrangian (xAct/Mathematica) -> JSON -> native PDE s
 - **After completing a feature/fix**, commit promptly with conventional format (feat:/fix:/refactor:/test:/docs:). No Co-Authored-By trailer. Separate unrelated changes into distinct commits.
 - **Fix lint/type/spell errors immediately** — `uv run ruff check --fix && uv run ruff format` after code changes. Fix pyright errors. Add domain terms to `cspell.json`, fix genuine typos.
 - **Wolfram pipeline integrity**: ALL symbolic processing stays in Wolfram — never post-process equations in Python. Never skip/bypass the canonical pipeline; fix root causes.
-- **Run long commands in background**: Use `run_in_background: true` on the Bash tool for any command that takes more than a few seconds — derivations (`tidal derive`), simulations (`tidal simulate`), sweeps (`tidal sweep`), and full test suites (`pytest tests/`). Continue other work while waiting; you'll be notified on completion. Do NOT poll or sleep.
+- **Run long commands in background**: Use `run_in_background: true` on the Bash tool for any command that takes more than a few seconds — derivations (`tidal derive`), simulations (`tidal simulate`), and full test suites (`uv run pytest`). Continue other work while waiting; you'll be notified on completion. Do NOT poll or sleep.
 - **Only ONE wolframscript at a time** — single engine license. NEVER run `tidal derive` in parallel.
 - **Use minimal test theories** (scalar_field, coupled_scalars) before expensive derivations.
 - **Negative energies** may be physical with (-,+,+,+) metric convention — don't "fix" without understanding the physics.
