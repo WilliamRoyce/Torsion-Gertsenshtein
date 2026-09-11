@@ -13,12 +13,12 @@ Eight research handoffs (H1–H8) ran between 29 August and 4 September, produci
 design documents; a coherence pass reconciled them, and a scientific review before dispatch
 (`docs/cosmology/scientific_review.md`) confirmed the architecture holds at every rung.
 
-**The first wave delivered two of its three goals and caught the third failing.** The new
-package is installable with a CI lane that found a real defect on its first execution
-(2885 passed / 39 skipped); the legacy oracle is frozen as 185 committed fixtures before any
-porting; PSALTer is installed and three source questions are answered from a live install.
-**Its install gate does not pass** — see §3b, which is the one thing I would most like your
-view on after §1.
+**The first wave delivered all three goals, and the third took a detour worth reporting.**
+The new package is installable with a CI lane that found a real defect on its first execution;
+the legacy oracle is frozen as 185 committed fixtures before any porting; PSALTer is installed,
+three source questions are answered from a live install, and **its install gate now passes** —
+but only after a fortnight's detour that ended in a finding about your package rather than
+about ours (§3b). We also retired four legacy subcommands the new design supersedes.
 
 **Settled since the last meeting:** the observable ladder's execution order
 (`O0 → O1 → O2 → O4a → O3 → O4b/V`), the integration target (our own solver chained to
@@ -131,80 +131,67 @@ coupling-linearity on our side and treat the validator as load-bearing for corre
 
 ---
 
-## 3b. For Wolfgang — two PSALTer findings from installing v2.0.2 (`bb45adb0`)
+## 3b. For Wolfgang — we found it, and it is two undocumented dependencies in PSALTer
 
-**The install reproduces your `CTEG` wave operator bit-exactly but not the pseudo-
-determinants.** Running `ParticleSpectrographCTEG.m` unmodified and diffing against the
-committed `.mx`: `WaveOperator` matches exactly (3 sectors, 303 leaves), while
-`PseudoDeterminant` comes back all zeros. The trace localizes it to a `Power::infy`
-(division by zero) at +321 s inside `ConstructSaturatedPropagator`, which becomes
-`0·ComplexInfinity` → `Indeterminate` and zeroes the determinants.
+**Resolved on 11 September, by execution.** The install now passes its gate: running your
+`ParticleSpectrographCTEG.m` unmodified reproduces your committed `.mx` exactly — both keys
+identical, `PseudoDeterminant` back to real polynomials where it had been all zeros.
 
-Ruled out by test rather than argument: subkernel availability and headless graphics. We
-also believed we had ruled out the two missing Function Repository dependencies the same way
-— supplied locally, identical failure — but see below: our substitute may not have restored
-the behavior it replaced, so that one is back open.
-**Our leading hypothesis is the engine version** — your `.mx` header decodes to **14.2** and
-we run **14.3**, and everything symbolic agrees up to the point of the inverse.
+**The cause is not the engine.** We suspected a 14.2-versus-14.3 difference, because your
+`.mx` header decodes to 14.2. That was wrong: we installed 14.2.1 alongside and it behaves
+identically. The actual cause is that `ParticleSpectrum` depends on two Wolfram Function
+Repository resources that are declared nowhere:
 
-**Since drafting, we have narrowed it considerably** — and we are not asking you to debug it,
-only to say whether the conclusion sounds right:
+- `ResourceFunction["LinearlyIndependent"]` — `SymbolicNullSpace.m:31` on the master kernel,
+  `IsNullVectorOfSpace.m:6` on subkernels
+- `ResourceFunction["PolynomialDegree"]` — `ValidateLagrangian.m:38`, `UnresolvedPoleRow.m:11,21`
 
-- **It reproduces.** An independent re-run on 9 September gave the same verdict, the same
-  per-entry tally and the same bit-exact `WaveOperator` — so it is a property of the
-  configuration, not of one session.
-- **It is not a PSALTer version difference.** Your oracle is contemporaneous with v2.0.0/2.0.1
-  and we run v2.0.2, but `git diff v2.0.1 v2.0.2` touches **nothing** under
-  `ConstructSaturatedPropagator/` or `ConstructSourceConstraints/`.
-- **It reproduces on a single scalar field in ~30 s**, not just on CTEG — so it is not about a
-  degenerate sector or a large computation, and it is cheap to bisect.
-- **Both symptoms sit on the same two built-ins.** `ConjectureInverse.m` calls `NullSpace`
-  three times, `Inverse` three times and `PseudoInverse` once; `SymbolicNullSpace.m` calls
-  `NullSpace` twice. One behavioral change in `NullSpace` on symbolic input would produce
-  *both* the empty source-constraint list and the singular inversion — and 14.3's own release
-  notes describe a push to "extend and streamline everything done with matrices".
-- Every diff entry is a **structural head mismatch** (`Integer` vs `Times`/`Plus`), i.e. zero
-  against a polynomial, not a numerical near-miss.
+When they cannot be resolved — no network, a repository outage, or any environment where
+`ResourceFunction` returns `$Failed` — **the run completes and writes its `.mx`, silently
+wrong**. An unresolved call is not a Boolean, so the `If` that appends to `CommonNullVectors`
+takes neither branch; every `SymbolicNullSpace` returns `{}`; no gauge symmetry is identified;
+the compensator is zero; `Det[…]` is identically zero for gauge-singular blocks; and
+`UnmakeSymbolic.m:75` divides by it. That is the first `Power::infy`, and every pseudo-
+determinant downstream is zero. `NonQuadraticFields` never fires either — a cubic Lagrangian
+is accepted.
 
-**Your README may already describe half of this, and we would not have thought to ask
-otherwise.** "Known bugs" item 1 is *"a sporadic error where some of the gauge symmetries are
-not identified … numerical methods … random number generation at runtime … usually fixed by
-re-running"*. Our empty source-constraint list is exactly that symptom — except it is not
-sporadic for us; it repeats.
+**We think this is a deterministic trigger for your "Known bugs" item 1** — *"a sporadic error
+where some of the gauge symmetries are not identified"*. An environment that cannot reach the
+repository loses gauge identification every time rather than occasionally, through exactly the
+code path that item describes.
 
-**A candidate deterministic trigger, offered as a question rather than a finding.** PSALTer
-calls `ResourceFunction["PolynomialDegree"]` and `ResourceFunction["LinearlyIndependent"]` at
-five sites, including inside `SymbolicNullSpace` — the gauge-identification path. Neither can
-be fetched from our container: the resource API returns 503 while GitHub returns 200, so it is
-network-layer rather than authentication. When they are unavailable PSALTer emits
-`ResourceObject::notfname` and **continues**, so `NonQuadraticFields` validation is silently
-inert here.
+**Why it is invisible.** `PSALTer.m:18-20` redefines `Message` to `Null` on subkernels, so the
+`ResourceObject::notfname` from the subkernel call site is never seen. On the master only three
+appear, and the run carries on.
 
-We tried to exclude this by substituting both functions locally and re-running — the verdict
-was identical, which we first read as excluding it. On re-reading our own substitute, we think
-at least one of them *reproduced* the disabled behavior rather than restoring it (our
-`PolynomialDegree` stand-in returns a list where yours returns a scalar, so the comparison it
-feeds never evaluates and the guard stays off either way). So the control may not have
-discriminated, and **we cannot yet exclude the missing resources.** We are checking that
-properly.
+**What we did about it, and what we did not.** We registered the genuine definitions locally —
+`LinearlyIndependent` from the `ResourceFunctionHelpers` paclet Wolfram itself ships, and
+`PolynomialDegree` from its repository notebook, hash-pinned. **No edit to PSALTer**, no
+workaround inside your code, and the pinned revision is untouched. With them present the same
+inputs give Booleans at both call sites, CTEG's source constraints come back carrying the
+formulation's 21 generators, and the spectrograph renders cleanly.
 
-**The one question only you can answer:** are those two Function Repository resources meant to
-be hard dependencies of PSALTer? If they are, an environment that cannot reach the repository
-would lose gauge identification silently, which would look exactly like known bug 1 — and it
-would be worth saying so in the README or failing loudly at load. If they are not, we are
-looking in the wrong place and would rather know now.
+**We have a draft issue written for your repository and have not filed it** — it is yours to
+look at first: `docs/cosmology/psalter_543_upstream_issue.md`, with the reproduction, the
+standalone shape of the failure, and a suggested fix (declare the two resources, or fail loudly
+at load rather than silently at runtime).
 
-**On the engine version:** 14.2-versus-14.3 remains our other candidate and we can install
-14.2.1 alongside to test it. Is 14.2 what you would expect to be required? We will send a
-minimal reproduction either way, and if it turns out to be a genuine incompatibility we are
-happy to write it up as an issue on the repository.
+**Questions:** are those two resources meant to be hard dependencies? And would you like the
+issue filed as written, adjusted, or not at all — it is your package, and we would rather you
+saw it before anyone else did.
+
+**One honest note on how we got here.** We first reported the resources as "ruled out by test",
+because an earlier session substituted both and got an identical verdict. Re-reading that
+substitute showed it reproduced the disabled behavior rather than restoring it — our stand-in
+returned a list where the real function returns a scalar, so the comparison it fed never
+evaluated and the guard stayed off either way. The control had not discriminated. That is worth
+saying because it is the kind of mistake that closes a question prematurely, and it cost us two
+days of chasing the engine.
 
 **Also worth knowing:** `Method` is inert on v2.0.2 — zero `OptionValue@Method` sites against
 five for `MaxLaurentDepth`, and `"Easy"`, `"Hard"` and a deliberately invalid value all return
 byte-identical results with identical timings. We report `ParticleSpectrum` wall time without a
 Method qualifier as a result.
-
----
 
 ## 4. The weakest link in the Gertsenshtein rung — the primordial magnetic field
 
@@ -238,8 +225,9 @@ must-resolve-before-publication.
   scheduled for deletion rather than adaptation.)
 - **First implementation wave — merged, one goal unmet:** packaging ✅; the legacy oracle
   frozen as 185 fixtures before any porting ✅; PSALTer installed and its three live-source
-  questions answered ✅; **its Tier-1 install gate reports a mismatch** (§3b), so the install
-  is uncertified and we are resolving that before starting the next wave.
+  questions answered ✅; **its Tier-1 install gate passes as of 11 September** (§3b) — the
+  install is certified on Wolfram 14.3.0 × PSALTer `bb45adb0` × local registration of the two
+  Function Repository resources. The second wave is planned from here.
 - **Approach to delegation:** self-contained handoff prompts to separate sessions, each with
   quantitative success criteria stated before code, merged centrally against a checklist.
   Working well; the two things that bit us were a gate nobody could run and a verification
