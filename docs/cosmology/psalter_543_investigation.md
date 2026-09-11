@@ -49,7 +49,7 @@ is written into the instruction sites. Wolfram 14.3.0 (`14.3.0 for Linux x86 (64
 | The genuine `LinearlyIndependent` returns `ConditionalExpression` on symbolic input | assertion | `ResourceFunctionHelpers`LinearlyIndependent[{{1,2,0},{3,x,0}}]` → `ConditionalExpression[True, -6 + x != 0]` |
 | PSALTer never hands it symbolic input | assertion | `SymbolicNullSpace.m:8-23` substitutes integers 1–9 for every variable (`Couplings = Variables[…]`, `Def` included); reproduced with the recipe on a symbolic block: candidates have `Variables = {}`, results `{True, False, False}` |
 | README known bug 1 is the same endpoint reached sporadically | **hypothesis** | test: `$DiagnosticMode` on a healthy configuration, compare `MinimalExampleCaseNullSpaces` across draws for residual `Def` dependence (the toy run shows a `Def`-dependent candidate differs per draw and is never "common") |
-| The engine version plays no role | assertion for the mechanism; **hypothesis** for output form | §6 records the same ladder and gate on 14.2.1 |
+| The engine version plays no role | assertion | §6: the same ladder passes and the same gate components give `match` with both keys identical on 14.2.1 |
 | The repository served no definitions during the session | assertion | anonymous: API `302 → j_spring_oauth_security_check?statusCode=401`; authenticated kernel: `ResourceFunction::lfail`, `DownloadedVersion -> None`; in-cloud evaluation (15.0.1): `$Failed`; controls `BinarySearch`, `Nullity` and older versions identical; the notebook download via the resource system: `libcurl error (18): end of response with 26010 bytes missing`; Wolfram support page (updated Sep 10, 5:30 pm CDT) listing services unavailable |
 
 ## 3. Timeline of the cloud, because it shaped the session
@@ -164,7 +164,7 @@ cubic-control run on that empty registry is kept as the **negative control** (cu
 | A scalar (non-zero quadratic, pole `±Θ₂/Θ₁`) | **PASS** — `(Def²Θ₁ − Θ₂)/2`, pole `Def² = Θ₂/Θ₁` | **PASS**, same |
 | B Proca (both keys = published 0⁺/1⁻ blocks) | **PASS** — `(Def²(Θ₂−Θ₁) − Θ₃)/2`, `(−Def²Θ₁ − Θ₃)/2` (closes #542's "missing mass term") | **PASS**, same |
 | C Fierz–Pauli (published sectors) | **PASS** — `{{−3β², 1}, {1, β}, {β − αDef²/2, 1}}` | **PASS**, same |
-| D CTEG gate (`summarize_diff.py`) | **MATCH** — tally `{identical: 2}` (run `tier1-20260911T151115Z` on the final registration; an earlier pass at `tier1-20260911T144346Z` used the reference-form registration); no `Power::infy`; render 0 `Indeterminate`, 0 `$Failed`, real unitarity line; 449 s, exit 0 | _see §6.1_ |
+| D CTEG gate (`summarize_diff.py`) | **MATCH** — tally `{identical: 2}` (run `tier1-20260911T151115Z` on the final registration; an earlier pass at `tier1-20260911T144346Z` used the reference-form registration); no `Power::infy`; render 0 `Indeterminate`, 0 `$Failed`, real unitarity line; 449 s, exit 0 | **MATCH** — `{identical: 2}`, component run (§6.1); no PDF (front end) |
 | D CTEG `$LocalSourceConstraints` | dims `{3, 7}`: seven irreducible rows, `2J+1 = {1, 1, 3, 3, 3, 5, 5}`, **21 generators** (the published count); pseudo-determinants identical to the oracle | identical: `{3, 7}`, `{1, 1, 3, 3, 3, 5, 5}`, 21; same expressions |
 
 PSALTer lists every spin sector as an even/odd parity pair and puts the literal `1` in a slot
@@ -183,6 +183,23 @@ copied from the 14.3 install. Selected per run with
 (the `WolframScript.conf` pin is overridden by the variable). The shared `mathpass` validated
 for 14.2.1 (`$LicenseType` Professional) with no activation; xPerm's MathLink binary built on
 14.3 connects ("Connection established"); PSALTer loads; `$MaxLicenseSubprocesses` 8.
+**Its front end cannot start headlessly in this container** (`UsingFrontEnd[…]` → `$Failed`,
+no message; the FE binary is present), so no PDF is ever exported under 14.2.1 and
+`verify-wolfram-setup.sh` check 9 hard-fails there; the gate wrapper's `require_psalter` step
+refuses in consequence (and `--skip-preflight` skips only the vector smoke, not that step).
+The 14.2.1 cross-check is therefore a **component run**: the published script unmodified under
+the 14.2.1 kernel, `tier1_diff.wls`, `summarize_diff.py` (§6.1).
+
+### 6.1 The 14.2.1 cross-check verdict
+
+Component run `third_party/psalter_runs/tier1-142-manual-20260911T155325Z` (gitignored):
+the published `ParticleSpectrographCTEG.m` unmodified (sha256 `2232a103…5825` before and
+after) under the 14.2.1 kernel, `tier1_diff.wls` against the same oracle
+(`07a8cd59…412b4`), `summarize_diff.py`: **`match`**, tally `{identical: 2}` —
+`PseudoDeterminant` identical (3×2, 71 leaves), `WaveOperator` identical (303 leaves);
+`used_simplify_fallback` `[]`; no `Power::infy`; all twelve stages reached; 409 s; exit 0;
+no PDF (front end). Together with the 14.3.0 gate this shows the engine plays no role in
+#543: the same registration gives bit-identical results on the author's tested version.
 
 ## 7. Registry and environment state after the session
 

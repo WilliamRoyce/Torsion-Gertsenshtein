@@ -385,14 +385,14 @@ the same oracle:
 
 | | 2026-09-07 / 09-09 (uncertified) | **2026-09-11, 14.3.0 (certified)** | 2026-09-11, 14.2.1 (cross-check) |
 |---|---|---|---|
-| verdict | `mismatch` | **`match`** — tally `{identical: 2}` (run `tier1-20260911T151115Z`, on the final registration) | _see below_ |
-| `WaveOperator` | identical, 303 leaves | identical, 303 leaves | _see below_ |
-| `PseudoDeterminant` | all `0` | **identical to the oracle**, 3×2, 71 leaves | the readback prints the same six expressions as 14.3.0 and the oracle |
+| verdict | `mismatch` | **`match`** — tally `{identical: 2}` (run `tier1-20260911T151115Z`, on the final registration) | **`match`** — tally `{identical: 2}` (component run `tier1-142-manual-20260911T155325Z`) |
+| `WaveOperator` | identical, 303 leaves | identical, 303 leaves | identical, 303 leaves |
+| `PseudoDeterminant` | all `0` | **identical to the oracle**, 3×2, 71 leaves | **identical to the oracle**, 3×2, 71 leaves |
 | `$LocalSourceConstraints` | `{}` (0 generators) | dims `{3, 7}`: seven irreducible rows with `2J+1 = {1, 1, 3, 3, 3, 5, 5}`, **21 generators** — the published count, now measured | identical: `{3, 7}`, `{1, 1, 3, 3, 3, 5, 5}`, 21 |
 | `Power::infy` in the run | at +321 s / +244 s | **none** | none in the readback run |
-| render (`pdftotext`) | 296 `Indeterminate`, 12 `$Failed`, "(Demonstrably impossible)" | **0, 0, a real "Resolved unitarity condition(s)" line** | _see below_ |
-| wall | 407 s / 302 s | 449 s | readback 453 s |
-| exit status | 143 / 0 | 0 | _see below_ |
+| render (`pdftotext`) | 296 `Indeterminate`, 12 `$Failed`, "(Demonstrably impossible)" | **0, 0, a real "Resolved unitarity condition(s)" line** | no PDF: the 14.2.1 front end cannot start headlessly here (below) |
+| wall | 407 s / 302 s | 449 s | 409 s (readback 453 s) |
+| exit status | 143 / 0 | 0 | 0 |
 
 Ladder (`scripts/psalter/repro_543.wl`, 14.3.0): **X** cubic control PASS (throws
 `NonQuadraticFields`; the same rung on an empty registry accepted the cubic — the negative
@@ -415,9 +415,22 @@ connects):** the same registration behaves on 14.2.1 under PSALTer on master and
 (`{True, False, "appended", 3}`; `{True, True, 3}`). **Ladder on 14.2.1: every rung PASS** —
 X (cubic control throws), G ×3 (`{3, 1}` rows every run), A, B, C with the same values as
 14.3.0. **CTEG readback on 14.2.1:** the same seven rows, the same multiplicities and 21
-generators, and pseudo-determinant expressions identical to 14.3.0 and to the oracle. The
-14.2.1 *gate* run is recorded separately below (its preflight is where the engines differ for
-our tooling, not the physics).
+generators, and pseudo-determinant expressions identical to 14.3.0 and to the oracle.
+
+**The 14.2.1 gate *wrapper* refuses, for a reason that is neither PSALTer nor physics:** on
+this side-by-side install the front end cannot start headlessly (`UsingFrontEnd[Export[…]]` →
+`$Failed` with no message, `$FrontEnd` → `$Failed`; the ladder rungs wrote no PDFs either), so
+`verify-wolfram-setup.sh` check 9 (the `DefField` headless-PDF smoke) hard-fails, and the
+gate's `require_psalter` step — which `--skip-preflight` does not bypass — exits 1. Check 9 did
+exactly its job. The engine mismatch itself is reported as DEGRADED, as designed; the resource
+check passes on master and subkernel under 14.2.1. The 14.2.1 cross-check was therefore made
+with the gate's own components run by hand — the published script unmodified under the 14.2.1
+kernel, `tier1_diff.wls` against the same oracle, `summarize_diff.py` — and is recorded in the
+column above as a component run, never as a wrapper run. **Its verdict: `match`, both keys
+identical to the oracle on 14.2.1 too** (script sha256 `2232a103…5825` before and after; no
+`Power::infy`; all twelve stages reached; 409 s). The same registration, the same published
+input and the same oracle give bit-identical results on the author's tested version and on
+14.3.0: the engine plays no role, now measured rather than inferred.
 
 **Tier 1 still certifies only the two keys.** The source-constraint count, the spectrum and
 the unitarity conditions are Tier 2/3 (§3); the readback above is a measurement, not a
