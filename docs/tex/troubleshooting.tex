@@ -348,7 +348,7 @@ The check uses a \emph{leak metric} = $(\text{rel\_jump}) \times (\text{boundary
 \begin{lstlisting}[style=python]
 Cannot evaluate symbolic coefficient '(2*alpha)/xi': float division by zero
 \end{lstlisting}
-when running \texttt{tidal simulate} or \texttt{tidal sweep} with a parameter set to
+when running \texttt{tidal simulate} with a parameter set to
 zero (commonly \texttt{xi=0} in the dark photon torsion model).
 
 \textbf{Root cause:} Old JSON files (pre-v0.24.3) had \texttt{ExportJSON.wl} divide

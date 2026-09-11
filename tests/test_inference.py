@@ -466,92 +466,6 @@ class TestInferenceResult:
 
 
 # ===================================================================
-# CLI help test
-# ===================================================================
-
-
-class TestSampleCLIHelp:
-    """Test that tidal sample --help works."""
-
-    def test_subparser_registered(self) -> None:
-        """Verify the sample subparser is registered."""
-        from tidal.cli import (
-            _build_parser as build_parser,  # pyright: ignore[reportPrivateUsage]
-        )
-
-        parser = build_parser()
-        # --help causes sys.exit, so just parse a minimal valid command
-        args = parser.parse_args(["sample", "spec.json", "--output", "/tmp/test"])
-        assert args.command == "sample"
-
-    def test_parse_basic_args(self) -> None:
-        """Verify basic argument parsing."""
-        from tidal.cli import (
-            _build_parser as build_parser,  # pyright: ignore[reportPrivateUsage]
-        )
-
-        parser = build_parser()
-        args = parser.parse_args(
-            [
-                "sample",
-                "spec.json",
-                "--prior",
-                "g0=uniform:0.01:0.5",
-                "--likelihood",
-                "P_max:maximize",
-                "--method",
-                "mc",
-                "--n-samples",
-                "10",
-                "--output",
-                "/tmp/test",
-            ],
-        )
-        assert args.command == "sample"
-        assert args.json_path == "spec.json"
-        assert args.prior == ["g0=uniform:0.01:0.5"]
-        assert args.likelihood == "P_max:maximize"
-        assert args.method == "mc"
-        assert args.n_samples == 10
-
-    def test_parse_new_flags(self) -> None:
-        """Verify new CLI flags (analyze, nlive-auto, importance, extremize)."""
-        from tidal.cli import (
-            _build_parser as build_parser,  # pyright: ignore[reportPrivateUsage]
-        )
-
-        parser = build_parser()
-        args = parser.parse_args(
-            [
-                "sample",
-                "spec.json",
-                "--prior",
-                "g0=uniform:0.01:0.5",
-                "--likelihood",
-                "P_max:extremize",
-                "--baseline-formula",
-                "sin(kappa * B0 * t_end / 2)**2",
-                "--method",
-                "nested",
-                "--sampler",
-                "polychord",
-                "--nlive-auto",
-                "production",
-                "--analyze",
-                "--importance",
-                "--output",
-                "/tmp/test",
-            ],
-        )
-        assert args.likelihood == "P_max:extremize"
-        assert args.baseline_formula == "sin(kappa * B0 * t_end / 2)**2"
-        assert args.sampler == "polychord"
-        assert args.nlive_auto == "production"
-        assert args.analyze is True
-        assert args.importance is True
-
-
-# ===================================================================
 # New likelihood types
 # ===================================================================
 
@@ -729,7 +643,7 @@ class TestLikelihoodBackendEquivalence:
 
         argv = [
             "tidal",
-            "sample",
+            "simulate",
             str(spec_path),
             "--param",
             "kappa=1.0",
@@ -741,14 +655,6 @@ class TestLikelihoodBackendEquivalence:
             "xi=1.0",
             "--param",
             "deltam=0.3",
-            "--prior",
-            "mA2=uniform:0.4:0.5",
-            "--likelihood",
-            "P_max:maximize",
-            "--method",
-            "nested",
-            "--sampler",
-            "polychord",
             "--grid-shape",
             "32",
             "--bounds",
@@ -762,10 +668,6 @@ class TestLikelihoodBackendEquivalence:
             "2.0",
             "--ic-amplitude",
             "1e-2",
-            "--source",
-            "h_5",
-            "--target",
-            "a_1",
             "--snapshots",
             "3",
             "--t-end",
@@ -781,8 +683,8 @@ class TestLikelihoodBackendEquivalence:
         finally:
             sys.argv = old_argv
 
-        from tidal.cli._sweep import (
-            _measure_from_sim_data,  # pyright: ignore[reportPrivateUsage]
+        from tidal.measurement._run_stages import (
+            measure_from_sim_data,
             run_inference_step,
         )
         from tidal.symbolic import load_equation_system
@@ -797,7 +699,7 @@ class TestLikelihoodBackendEquivalence:
         _PARSED_MATH_CACHE.clear()
         overrides = {"mA2": 0.42}
         sim_cold = run_inference_step(args, spec_path, overrides, spec=spec)
-        m_cold = _measure_from_sim_data(
+        m_cold = measure_from_sim_data(
             sim_cold,
             {"conversion", "peak_conversion"},
             ("h_5",),
@@ -808,7 +710,7 @@ class TestLikelihoodBackendEquivalence:
 
         # Warm run at same theta — must produce identical metrics.
         sim_warm = run_inference_step(args, spec_path, overrides, spec=spec)
-        m_warm = _measure_from_sim_data(
+        m_warm = measure_from_sim_data(
             sim_warm,
             {"conversion", "peak_conversion"},
             ("h_5",),
@@ -842,7 +744,7 @@ class TestLikelihoodBackendEquivalence:
 
         argv = [
             "tidal",
-            "sample",
+            "simulate",
             str(spec_path),
             "--param",
             "kappa=1.0",
@@ -854,14 +756,6 @@ class TestLikelihoodBackendEquivalence:
             "xi=1.0",
             "--param",
             "deltam=0.3",
-            "--prior",
-            "mA2=uniform:0.4:0.5",  # single point we evaluate manually
-            "--likelihood",
-            "P_max:maximize",
-            "--method",
-            "nested",
-            "--sampler",
-            "polychord",
             "--grid-shape",
             "32",
             "--bounds",
@@ -875,10 +769,6 @@ class TestLikelihoodBackendEquivalence:
             "2.0",
             "--ic-amplitude",
             "1e-2",
-            "--source",
-            "h_5",
-            "--target",
-            "a_1",
             "--snapshots",
             "3",
             "--t-end",
@@ -894,9 +784,9 @@ class TestLikelihoodBackendEquivalence:
         finally:
             sys.argv = old_argv
 
-        from tidal.cli._sweep import (
-            _measure_from_sim_data,  # pyright: ignore[reportPrivateUsage]
-            _measure_run,  # pyright: ignore[reportPrivateUsage]
+        from tidal.measurement._run_stages import (
+            measure_from_sim_data,
+            measure_run,
             run_inference_step,
             simulate_run,
         )
@@ -907,7 +797,7 @@ class TestLikelihoodBackendEquivalence:
 
         # Memory path
         sim_data = run_inference_step(args, spec_path, overrides, spec=spec)
-        mem_metrics = _measure_from_sim_data(
+        mem_metrics = measure_from_sim_data(
             sim_data,
             {"conversion", "peak_conversion"},
             ("h_5",),
@@ -920,7 +810,7 @@ class TestLikelihoodBackendEquivalence:
         disk_dir.mkdir()
         exit_code, _, _ = simulate_run(args, spec_path, overrides, disk_dir, spec=spec)
         assert exit_code == 0
-        disk_metrics = _measure_run(
+        disk_metrics = measure_run(
             disk_dir,
             spec_path,
             {"conversion", "peak_conversion"},
@@ -1724,7 +1614,7 @@ class TestMarginalDKLPriorTransforms:
     def test_plot_importance_floor_aware(self, tmp_path: Path) -> None:
         """The bar chart must visually distinguish floor-dominated bars
         (gray + hatched, floor line drawn) — it is the only artifact of
-        `tidal sample --importance` and previously carried zero caveats
+        the retired `--importance` report and previously carried zero caveats
         (#433 review gap).
         """
         pytest.importorskip("matplotlib")
@@ -2261,32 +2151,3 @@ class TestNestedSaveWithoutPriorsWarns:
         with caplog.at_level(logging.WARNING, logger="tidal.inference"):
             result.save(tmp_path)  # pyright: ignore[reportAttributeAccessIssue]
         assert "no priors metadata" not in caplog.text
-
-
-# ===================================================================
-# Analyze CLI (inference path)
-# ===================================================================
-
-
-class TestAnalyzeInference:
-    """Test tidal analyze --inference --importance."""
-
-    def test_parse_analyze_inference_flags(self) -> None:
-        from tidal.cli import (
-            _build_parser as build_parser,  # pyright: ignore[reportPrivateUsage]
-        )
-
-        parser = build_parser()
-        args = parser.parse_args(
-            [
-                "analyze",
-                "/tmp/test",
-                "--inference",
-                "--importance",
-                "--n-bootstrap",
-                "50",
-            ],
-        )
-        assert args.inference is True
-        assert args.importance is True
-        assert args.n_bootstrap_importance == 50

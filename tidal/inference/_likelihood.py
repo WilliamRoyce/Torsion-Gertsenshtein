@@ -572,7 +572,7 @@ def _evaluate_likelihood(
     # for CDT/PGT), a growing mode counts as tachyonic rather than risk a
     # false negative.  Cost: microseconds per evaluation.
     #
-    # The stage lives in tidal.measurement._stability because tidal sweep
+    # The stage lives in tidal.measurement._stability because the sweep path
     # runs the identical preamble; it used to be copy-pasted here, and the
     # copies drifted into two different policies (GH #454).
     outcome = run_point(
@@ -747,15 +747,14 @@ def _evaluate_likelihood(
 
 
 # Module-level wrapper for multiprocessing Pool.map
-# Follows the same pattern as _run_single_wrapper in _sweep.py
 _LIKELIHOOD_CONFIG: dict[str, Any] = {}
 
 
 def _likelihood_worker_init(config: dict[str, Any]) -> None:  # pyright: ignore[reportUnusedFunction]
     """Initialize worker process with likelihood config."""
-    from tidal.measurement._run_stages import set_single_thread_blas
+    from tidal.measurement._run_stages import init_worker
 
-    set_single_thread_blas()
+    init_worker()
     _LIKELIHOOD_CONFIG.update(config)
 
 

@@ -22,7 +22,6 @@
 #     --grid-shape 64 --bounds=-30:30,-30:30 --t-end 20.0 \
 #     --bc periodic,periodic \
 #     --output ../data/proca_background_output
-#   tidal plot ../data/proca_background_output --type amplitude --quiet
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -51,5 +50,3 @@ tidal measure ../data/proca_background_output \
   --source A_0,A_1,A_2 --target B_0,B_1,B_2
 
 # Step 5: Individual plots (saved into the simulation output directory)
-tidal plot ../data/proca_background_output --type amplitude --quiet
-tidal plot ../data/proca_background_output --type snapshot --field A_1 --time-index -1 --quiet

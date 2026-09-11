@@ -9,6 +9,7 @@ uniform background:
                             -- accounts for graviton effective-mass energy
                                the massless photon cannot absorb;
                                derivation in examples/gertsenshtein/sweep_B0.sh
+                               (retired #533; at `git show v0.53.0:<path>`)
                                and docs/tex/gertsenshtein_formula.tex eq. P-corrected
   (Raffelt-Stodolsky)
                  P_RS    = g^2/(g^2 + Delta^2) * sin^2(sqrt(g^2+Delta^2) D)

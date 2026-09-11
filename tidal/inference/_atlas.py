@@ -6,7 +6,7 @@ face-local cube coordinates ``chi_i^{k+/-}``.  See the module
 :class:`tidal.inference._prior.RadialAngularPrior` for the prior.
 
 A survey directory contains per-tile output subdirectories named
-``<face_label>_tile<sub_tile>/``, each written by ``tidal sample
+``<face_label>_tile<sub_tile>/``, each written by the retired sampler
 --joint-prior`` for one cell of the cubed-sphere.  The atlas pools
 tiles belonging to the same face and renders one filled-contour KDE
 per face, arranged in a grid (3x4 for N=6 -> 12 faces).
@@ -586,7 +586,7 @@ def plot_atlas(
     """Render the cubed-sphere atlas for a survey directory.
 
     The survey directory holds per-tile subdirectories named
-    ``<face_label>_tile<sub_tile>/``, each written by ``tidal sample
+    ``<face_label>_tile<sub_tile>/``, each written by the retired sampler
     --joint-prior``.  This routine pools tiles by face, recovers the
     face-local cube coordinates ``chi`` for each sample, and renders a
     lower-triangle 2D-histogram panel per face.  Diagonal panels are
@@ -604,7 +604,7 @@ def plot_atlas(
     ----------
     survey_dir : Path
         Directory containing one ``<face_label>_tile<sub>/`` subdir per
-        cell (output of ``tidal sample --joint-prior``).
+        cell (output of the retired ``--joint-prior`` sampler run).
     output_path : Path or None
         Where to write the PDF.  Defaults to ``survey_dir / atlas.pdf``.
     show : bool

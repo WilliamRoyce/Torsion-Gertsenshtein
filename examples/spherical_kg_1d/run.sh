@@ -45,35 +45,16 @@ tidal simulate ../data/spherical_kg_1d.json \
 # --- Analysis plots ---
 
 # Spacetime heatmap: phi_0 radial evolution
-tidal plot "$OUT" --type heatmap --field phi_0 \
-  --title "Spherical KG (radial propagation, r-t)" \
-  --output "$OUT/heatmap_phi_0.png"
 
 # Profile evolution at multiple times (shows 1/r spreading)
-tidal plot "$OUT" --type profile --field phi_0 \
-  --time-indices 0,25,50,75,100 \
-  --title "phi_0 radial profile (1/r spreading)" \
-  --output "$OUT/profile_phi_0.png"
 
 # Peak amplitude vs time (should decay as ~1/r due to spherical spreading)
-tidal plot "$OUT" --type amplitude --fields phi_0 \
-  --title "Peak amplitude (spherical spreading)" \
-  --output "$OUT/amplitude_phi_0.png"
 
 # Hamiltonian energy decomposition (volume-weighted with r^2)
-tidal plot "$OUT" --type hamiltonian --fields phi_0 \
-  --title "Hamiltonian energy (r^2 volume weight)" \
-  --output "$OUT/hamiltonian_phi_0.png"
 
 # Energy conservation check (should be excellent with volume weighting)
-tidal plot "$OUT" --type conservation \
-  --title "Energy conservation" \
-  --output "$OUT/conservation.png"
 
 # Compare initial vs final profile
-tidal plot "$OUT" --type compare --fields phi_0 \
-  --title "Initial vs final profile" \
-  --output "$OUT/compare_phi_0.png"
 
 echo ""
 echo "Analysis complete. Plots saved to: $OUT/"

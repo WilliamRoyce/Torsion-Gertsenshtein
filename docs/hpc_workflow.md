@@ -16,9 +16,21 @@
 >
 > **Reactivation condition.** When HPC work is explicitly authorized again, this file is
 > the operating manual: it can be consulted in place, or the block moved back into
-> `CLAUDE.md`. The supporting infrastructure is unchanged and still in the repo —
-> `scripts/hpc_shuttle.sh`, `scripts/hpc_templates/`, `scripts/hpc_install_polychord.sh`,
-> `scripts/hpc_refresh_venv_tar.sh`, `scripts/hpc_scaling_sweep.sh`.
+> `CLAUDE.md`.
+>
+> **Amended 2026-09-09 (#533).** The generic shuttle infrastructure is still in the
+> repo — `scripts/hpc_shuttle.sh`, `scripts/hpc_install_polychord.sh`,
+> `scripts/hpc_refresh_venv_tar.sh`, and the five non-PolyChord templates under
+> `scripts/hpc_templates/`. What is **gone** is everything whose only job was
+> driving a retired subcommand: `scripts/hpc_scaling_sweep.sh` (profiled
+> `tidal sweep --parallel`), the thirteen `polychord_intr*.sbatch` templates (ran
+> `tidal sample`; Cobaya ships its own PolyChord), `scripts/hpc_submit_drafts/`
+> and `scripts/campaign/`. Recover any of them with, e.g.,
+> `git show v0.53.0:scripts/hpc_templates/polychord_intr.sbatch`.
+>
+> **Every `tidal sweep` / `sample` / `analyze` / `plot` command below therefore no
+> longer runs.** They are preserved as the record of how the campaigns were driven;
+> a reactivated workflow needs new `--cmd` payloads built on the Cobaya pipeline.
 >
 > Also referenced by `docs/campaign_plan.md` and the V3 phase documents.
 

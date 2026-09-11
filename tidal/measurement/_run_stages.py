@@ -1,6 +1,6 @@
 """Shared stages for executing one parameter point.
 
-``tidal sweep`` and ``tidal sample`` both answer the same question --
+The sweep and inference entry points both answered the same question --
 "run the simulation at this point in parameter space and measure it" --
 through the same five stages: **resolve params -> probe -> simulate ->
 measure -> classify**.  They differ only in the *policy* applied to the
@@ -16,29 +16,44 @@ copy-pasted (the pre-flight probe) did -- see GH #454 and the comment it
 left behind at the copy site, ``# Pre-flight tachyonic guard -- mirrors
 _run_row_inner in _sweep.py``.
 
-Implementations of the simulate/measure stages currently live in
-:mod:`tidal.cli._sweep`, and were reached by
-:mod:`tidal.inference._likelihood` and
-:mod:`tidal.measurement._posthoc_audit` importing private names out of a
-CLI module.  This module is the seam that hides that: callers outside
-:mod:`tidal.cli` import from here.
+**Where the stages live.**  The simulate and measure stages are implemented
+in :mod:`tidal.measurement._simulate_stage` and
+:mod:`tidal.measurement._measure_stage`, and are re-exported here so that
+:func:`run_point` and every caller reach them through one name.
 
-**Why they have not simply been moved.**  The obvious next step --- relocate
-the ~450 lines of wrappers into this package (GH #480 step 4) --- does not
-buy what it looks like it buys.  The wrappers are not the dependency:
+They used to live in ``tidal.cli._sweep``, and this module existed as the
+seam that hid that from :mod:`tidal.inference._likelihood` and
+:mod:`tidal.measurement._posthoc_audit`, which were importing private
+names out of a CLI module.  An earlier revision of this docstring argued
+(GH #480 step 4) that relocating them would not buy what it looked like
+it bought, because the wrappers are not the dependency --- the driver and
+the dispatchers are --- and the lazy import would simply be issued from a
+different file.  **That reasoning was right about the coupling and wrong
+about the deadline.**  ``tidal sweep`` was retired under GH #533 and
+``_sweep.py`` deleted with it, so the wrappers had nowhere left to live;
+the choice was never "move them or leave them", it was "move them or lose
+them".  Recorded so the argument is not read as having been overturned on
+its merits.
 
-* ``simulate_run`` and ``run_inference_step`` call
-  ``tidal.cli._simulate._simulate``, the ~3000-line simulation driver.
-* ``measure_from_sim_data`` calls eleven private ``_run_*`` measurement
-  dispatchers in the ~1000-line :mod:`tidal.cli._measure`.
+**What is still inverted, and it is deliberate.**  :mod:`tidal.measurement`
+still reaches into :mod:`tidal.cli`:
 
-Moving the wrappers would relocate a large diff across the two hottest
-paths in the package and leave both couplings exactly where they are ---
-the lazy import would simply be issued from a different file.  The real
-work is relocating the *driver* and the *dispatchers* out of
-:mod:`tidal.cli`, which is a different and much larger project than
-GH #480 step 4 assumed.  Recorded on that issue so it is not re-attempted
-on the wrong premise.
+* ``_simulate_stage`` calls ``tidal.cli._simulate._simulate``, the
+  3,126-line simulation driver.
+* ``_measure_stage`` calls eleven private ``_run_*`` measurement
+  dispatchers in :mod:`tidal.cli._measure`.
+* ``parse_params`` / ``parse_grid_shape`` / ``parse_bounds`` below call
+  ``tidal.cli._simulate``'s own resolution helpers, so that anything
+  reasoning about a run describes the grid the simulation will actually
+  use (GH #479).
+
+Every one of these imports is function-local, so importing this module
+does not import :mod:`tidal.cli`.  Straightening the direction means
+moving the driver and the dispatchers out of :mod:`tidal.cli` --- the
+project GH #480 step 4 was never scoped for --- and belongs to the
+cosmology programme's M4/M5 (``docs/cosmology/repo_reshape.md`` section 7).
+The split into two stage modules is so that when it happens, exactly one
+file changes per coupling.
 
 Scope: the stages of *running a point*.  Expression evaluation
 (``FORMULA_NAMESPACE``, ``safe_formula_eval``) is a separate concern and
@@ -58,6 +73,12 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
+from tidal.measurement._measure_stage import measure_from_sim_data, measure_run
+from tidal.measurement._simulate_stage import (
+    init_worker,
+    run_inference_step,
+    simulate_run,
+)
 from tidal.measurement._stability import (
     PROBE_METADATA_KEYS,
     probe_for_run,
@@ -69,7 +90,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from tidal.measurement._io import SimulationData
     from tidal.symbolic.json_loader import EquationSystem
 
 __all__ = [
@@ -77,6 +97,7 @@ __all__ = [
     "PointContext",
     "PointOutcome",
     "RunStatus",
+    "init_worker",
     "measure_from_sim_data",
     "measure_run",
     "parse_bounds",
@@ -86,7 +107,6 @@ __all__ = [
     "probe_metadata",
     "run_inference_step",
     "run_point",
-    "set_single_thread_blas",
     "simulate_run",
 ]
 
@@ -138,10 +158,13 @@ class RunStatus(StrEnum):
     Same meaning as :attr:`SOLVER_ERROR` on the sweep path."""
 
     SOLVER_ERROR = "solver_error"
-    """The simulation subprocess exited non-zero.  Sweep path.
+    """The simulation subprocess exited non-zero.  The sweep path, retired
+    under GH #533.
 
     Same meaning as :attr:`SIMULATION_FAILED` on the inference path; the
-    two names are historical."""
+    two names are historical.  Nothing emits this now, but archived
+    ``results.csv`` files contain it, so it stays a readable value ---
+    :meth:`live` deliberately does not include it."""
 
     KINETIC_ERROR = "kinetic_error"
     """A ``kinetic_coefficient_symbolic`` could not be resolved
@@ -155,7 +178,8 @@ class RunStatus(StrEnum):
     ``except RuntimeError`` and recorded it as ``diverged``."""
 
     MEASUREMENT_ERROR = "measurement_error"
-    """The simulation ran but a measurement failed.  Sweep path."""
+    """The simulation ran but a measurement failed.  The sweep path,
+    retired under GH #533; retained for archived ``results.csv`` files."""
 
     METRIC_MISSING = "metric_missing"
     """The requested metric is absent from the simulation output.
@@ -282,93 +306,6 @@ def parse_bounds(raw: str | None, spatial_dim: int) -> list[tuple[float, float]]
     return _parse_bounds(raw, spatial_dim)
 
 
-def simulate_run(  # noqa: PLR0913
-    base_args: Namespace,
-    spec_path: Path,
-    param_overrides: dict[str, float],
-    output_dir: Path,
-    grid_shape_override: int | None = None,
-    *,
-    replicate_seed: int | None = None,
-    ic_perturbation: float | None = None,
-    spec: EquationSystem | None = None,
-) -> tuple[int, float, EquationSystem]:
-    """Run one simulation to disk. See ``tidal.cli._sweep.simulate_run``."""
-    from tidal.cli._sweep import simulate_run as _impl
-
-    return _impl(
-        base_args,
-        spec_path,
-        param_overrides,
-        output_dir,
-        grid_shape_override,
-        replicate_seed=replicate_seed,
-        ic_perturbation=ic_perturbation,
-        spec=spec,
-    )
-
-
-def measure_run(  # noqa: PLR0913, PLR0917
-    run_dir: Path,
-    spec_path: Path,
-    measurements: set[str],
-    source: tuple[str, ...] | None,
-    target: tuple[str, ...] | None,
-    threshold: float,
-    spec: EquationSystem | None = None,
-) -> dict[str, Any]:
-    """Measure a completed run directory. See ``tidal.cli._sweep._measure_run``."""
-    from tidal.cli._sweep import (
-        _measure_run,  # pyright: ignore[reportPrivateUsage]
-    )
-
-    return _measure_run(
-        run_dir, spec_path, measurements, source, target, threshold, spec
-    )
-
-
-def measure_from_sim_data(
-    data: SimulationData,
-    measurements: set[str],
-    source: tuple[str, ...] | None,
-    target: tuple[str, ...] | None,
-    threshold: float,
-) -> dict[str, Any]:
-    """Measure in-memory simulation output (no disk round-trip).
-
-    See ``tidal.cli._sweep._measure_from_sim_data``.
-    """
-    from tidal.cli._sweep import (
-        _measure_from_sim_data,  # pyright: ignore[reportPrivateUsage]
-    )
-
-    return _measure_from_sim_data(data, measurements, source, target, threshold)
-
-
-def run_inference_step(
-    base_args: Namespace,
-    spec_path: Path,
-    param_overrides: dict[str, float],
-    spec: EquationSystem | None = None,
-) -> SimulationData:
-    """Simulate one point in memory. See ``tidal.cli._sweep.run_inference_step``."""
-    from tidal.cli._sweep import run_inference_step as _run_inference_step
-
-    return _run_inference_step(base_args, spec_path, param_overrides, spec)
-
-
-def set_single_thread_blas() -> None:
-    """Pin BLAS to one thread in a worker process.
-
-    See ``tidal.cli._sweep._set_single_thread_blas``.
-    """
-    from tidal.cli._sweep import (
-        _set_single_thread_blas,  # pyright: ignore[reportPrivateUsage]
-    )
-
-    _set_single_thread_blas()
-
-
 # ---------------------------------------------------------------------------
 # Running one point
 # ---------------------------------------------------------------------------
@@ -451,8 +388,8 @@ class PointOutcome:
 def run_point(ctx: PointContext, *, backend: str = "disk") -> PointOutcome:
     """Run one parameter point: probe -> simulate -> measure -> classify.
 
-    The single definition of the sequence both ``tidal sweep`` and
-    ``tidal sample`` execute.  They used to hand-roll it separately, which
+    The single definition of the sequence the sweep and inference entry
+    points execute.  They used to hand-roll it separately, which
     is why a policy change to the probe stage reached only one of them for
     four months (GH #454) and why they emitted different metadata schemas
     and different status vocabularies (GH #480).

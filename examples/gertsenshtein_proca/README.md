@@ -19,11 +19,18 @@ P_max = (2·κ·B₀·k)² / [(2·κ·B₀·k)² + Δm²²]
 ## Quickstart
 
 ```bash
-bash reproduce_figures.sh              # default: reuse cached sweep data
-bash reproduce_figures.sh --fresh      # force rerun all sweeps (~25 min)
+bash run.sh    # single baseline run (smoke test)
 ```
 
-Produces three figures in `examples/data/gertsenshtein_proca_figures/`:
+> **The figure pipeline was retired on 2026-09-09 (#533).** `reproduce_figures.sh`
+> and the four `sweep_*.sh` scripts drove `tidal sweep` and `tidal plot`, which no
+> longer exist; parameter campaigns run through Cobaya's samplers now. The scripts
+> and the figures they produced remain at tag `v0.53.0` --- e.g.
+> `git show v0.53.0:examples/gertsenshtein_proca/reproduce_figures.sh`. The results
+> below are the record of what they produced, and are unaffected.
+
+The retired pipeline produced three figures in
+`examples/data/gertsenshtein_proca_figures/`:
 
 - **fig1_lorentzian_1d.png** — 1D Raffelt-Stodolsky Lorentzian at B₀=0.10
   with analytical overlay (40-point scan across mA² ∈ [0, 1.0])
@@ -32,9 +39,9 @@ Produces three figures in `examples/data/gertsenshtein_proca_figures/`:
 - **fig3_mA2_family.png** — P_max comparison at 6 discrete mA² values
   spanning on- to off-resonance at fixed B₀=0.10
 
-The script is **HPC-friendly**: sweeps may be outsourced to a cluster and
-the output directories copied back to a local checkout. `reproduce_figures.sh`
-without flags detects existing data and goes straight to plotting.
+It was **HPC-friendly**: sweeps could be outsourced to a cluster and the output
+directories copied back to a local checkout, and a re-run without flags detected
+existing data and went straight to plotting.
 
 ## Files
 
@@ -42,12 +49,17 @@ without flags detects existing data and goes straight to plotting.
 |------|---------|---------------------|
 | `theory.toml` | Einstein-Maxwell + perturbation-level Proca Lagrangian | `L = (1/κ²)R - (1/4)F² - (mA²/2)a·a` |
 | `run.sh` | Single baseline run (smoke test) | — |
+
+Retired at `v0.53.0` (#533), recoverable with `git show v0.53.0:<path>`:
+
+| File | Purpose | Formula / Reference |
+|------|---------|---------------------|
 | `sweep_B0_family.sh` | B₀ sweep at multiple mA² values | Raffelt-Stodolsky suppressed oscillation |
 | `sweep_detuning.sh` | Detuning scan | Raffelt-Stodolsky Lorentzian cross-section |
-| `sweep_resonance_1d.sh` | **1D resonance scan at B₀=0.10** (produces fig1) | `P_max = coupling²/(coupling²+Δm²²)` |
-| `sweep_resonance.sh` | **2D resonance map** (300 sims, produces fig2) | Predicted line `mA² = κ²B₀²/2` |
-| `sweep_mA2_family.sh` | **mA² family traces at B₀=0.10** (produces fig3) | On/off-resonance comparison |
-| `reproduce_figures.sh` | **Single-command figure reproduction** | Combines all three sweeps |
+| `sweep_resonance_1d.sh` | **1D resonance scan at B₀=0.10** (produced fig1) | `P_max = coupling²/(coupling²+Δm²²)` |
+| `sweep_resonance.sh` | **2D resonance map** (300 sims, produced fig2) | Predicted line `mA² = κ²B₀²/2` |
+| `sweep_mA2_family.sh` | **mA² family traces at B₀=0.10** (produced fig3) | On/off-resonance comparison |
+| `reproduce_figures.sh` | **Single-command figure reproduction** | Combined all three sweeps |
 
 ## Physics motivation
 

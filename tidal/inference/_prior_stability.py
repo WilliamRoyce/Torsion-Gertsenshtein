@@ -98,8 +98,8 @@ def run_prior_stability_sweep(
     # to read ``int(getattr(base_args, "grid_shape", 256))``, and since
     # ``--grid-shape`` defaults to None in every subparser the getattr
     # default never fired: it was ``int(None)``, a TypeError, caught by
-    # the caller at tidal/cli/_sample.py and reported as "Prior stability
-    # sweep skipped".  Every `tidal sample` run without an explicit
+    # the caller (the retired tidal/cli/_sample.py) and reported as "Prior
+    # stability sweep skipped".  Every such run without an explicit
     # --grid-shape therefore produced no _rejected_prior.csv and no
     # prior-stability overlay on its corner plot.
     spatial_dim = raw_spec.spatial_dimension

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # hpc_refresh_venv_tar.sh — regenerate $HOME/venv_site.tar on CSD3.
 #
-# The sbatch template at scripts/hpc_templates/polychord_intr.sbatch
-# extracts this tarball to /tmp per job because some CSD3 compute nodes
+# The sbatch template that consumed this tarball -- retired with `tidal sample`
+# (#533), recoverable at
+# `git show v0.53.0:scripts/hpc_templates/polychord_intr.sbatch` --
+# extracted it to /tmp per job because some CSD3 compute nodes
 # have broken Lustre OSTs that hang Python imports from /rds
 # (see scripts/hpc_install_polychord.sh and issue #269 session log).
 #

@@ -14,7 +14,6 @@
 #   tidal simulate ../data/navier_cauchy_2d.json --grid-shape 32 --bounds 0:10 \
 #     --periodic --ic gaussian --ic-component ux_0 --ic-width 1.0 --t-end 3.0 \
 #     --output ../data/elasticity_output
-#   tidal plot ../data/elasticity_output --type amplitude --quiet
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -40,11 +39,6 @@ tidal simulate ../data/navier_cauchy_2d.json \
   --output ../data/elasticity_output
 
 # Visualize results — snapshots of each displacement component
-tidal plot ../data/elasticity_output --type snapshot --field ux_0 --time-index -1 --quiet
-tidal plot ../data/elasticity_output --type snapshot --field uy_0 --time-index -1 --quiet
-tidal plot ../data/elasticity_output --type amplitude --quiet
-tidal plot ../data/elasticity_output --type hamiltonian --quiet
-tidal plot ../data/elasticity_output --type conservation --quiet
 
 echo ""
 echo "=== Run 1 (compression wave in ux) complete ==="
@@ -69,13 +63,6 @@ tidal simulate ../data/navier_cauchy_2d.json \
   --output ../data/elasticity_shear
 
 # Compare compression (Run 1) vs shear (Run 2) patterns
-tidal plot ../data/elasticity_shear --type snapshot --field ux_0 --time-index -1 \
-  --title "ux (shear excitation)" --quiet
-tidal plot ../data/elasticity_shear --type snapshot --field uy_0 --time-index -1 \
-  --title "uy (shear excitation)" --quiet
-tidal plot ../data/elasticity_shear --type amplitude \
-  --title "Shear wave amplitudes" --quiet
-tidal plot ../data/elasticity_shear --type conservation --quiet
 
 echo ""
 echo "=== Run 2 (shear wave) complete ==="

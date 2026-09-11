@@ -751,7 +751,6 @@ class TestSimulateCommand:
                 "m2=1.0",
                 "--t-end",
                 "1.0",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -759,50 +758,6 @@ class TestSimulateCommand:
         out = capsys.readouterr().out
         assert "Results:" in out
         assert "phi_0" in out
-
-    def test_simulate_png_output(self, inline_kg_1d_json: Path, tmp_path: Path) -> None:
-        output = tmp_path / "test_output.png"
-        ret = main(
-            [
-                "simulate",
-                str(inline_kg_1d_json),
-                "--param",
-                "m2=1.0",
-                "--t-end",
-                "0.5",
-                "--output",
-                str(output),
-            ],
-        )
-        assert ret == 0
-        assert output.exists()
-
-    def test_simulate_2d_plot_output(
-        self,
-        chern_simons_json: Path,
-        tmp_path: Path,
-    ) -> None:
-        """2D spec should produce a non-empty PNG file (exercises plot_2d path)."""
-        output = tmp_path / "cs_2d.png"
-        ret = main(
-            [
-                "simulate",
-                str(chern_simons_json),
-                "--grid-shape",
-                "8",
-                "--t-end",
-                "0.2",
-                "--param",
-                "kappa=1.0",
-                "--output",
-                str(output),
-            ],
-        )
-        assert ret == 0
-        assert output.exists()
-        assert output.stat().st_size > 0
-
-    # --- IC types (parametrized) ---
 
     @pytest.mark.parametrize("ic_type", ["gaussian", "plane-wave", "zero"])
     def test_simulate_ic_types(
@@ -821,7 +776,6 @@ class TestSimulateCommand:
                 ic_type,
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -845,7 +799,6 @@ class TestSimulateCommand:
                 "2.0",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -872,7 +825,6 @@ class TestSimulateCommand:
                 "3.0",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -896,7 +848,6 @@ class TestSimulateCommand:
                 "8",
                 "--param",
                 "kappa=1.0",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -912,7 +863,6 @@ class TestSimulateCommand:
                 str(inline_kg_1d_json),
                 "--param",
                 "bad_no_equals",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -926,13 +876,12 @@ class TestSimulateCommand:
                 "nonexistent_field",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 1
 
     def test_simulate_nonexistent_file(self) -> None:
-        ret = main(["simulate", "/nonexistent/file.json", "--no-plot"])
+        ret = main(["simulate", "/nonexistent/file.json"])
         assert ret == 1
 
     def test_simulate_custom_grid(
@@ -952,7 +901,6 @@ class TestSimulateCommand:
                 "0:20",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -974,7 +922,6 @@ class TestSimulateCommand:
                 "neumann",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -988,7 +935,6 @@ class TestSimulateCommand:
                 "invalid_bc",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -1002,7 +948,6 @@ class TestSimulateCommand:
                 "neumann,periodic",  # 2 values for 1D
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -1023,7 +968,6 @@ class TestSimulateCommand:
                 "dirichlet",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1047,7 +991,6 @@ class TestSimulateCommand:
                 "np.exp(-((x - 5)**2) / 2)",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1064,7 +1007,6 @@ class TestSimulateCommand:
                 "formula",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -1086,7 +1028,6 @@ class TestSimulateCommand:
                 "0.5",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1103,7 +1044,6 @@ class TestSimulateCommand:
                 "badvar * 2",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -1123,7 +1063,6 @@ class TestSimulateCommand:
                 "x.__class__.__name__",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -1149,7 +1088,6 @@ class TestSimulateCommand:
                 "gaussian",
                 "--ic-component",
                 "rho",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1174,7 +1112,6 @@ class TestSimulateCommand:
                 "0.01",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1193,7 +1130,6 @@ class TestSimulateCommand:
                 "m2=1.0",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1219,7 +1155,6 @@ class TestSimulateCommand:
                 "A_2",
                 "--t-end",
                 "0.1",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1242,7 +1177,6 @@ class TestSimulateCommand:
                 "ida",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1269,7 +1203,6 @@ class TestSimulateCommand:
                 "plane-wave",
                 "--t-end",
                 "1.0",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1292,7 +1225,6 @@ class TestSimulateCommand:
                 "0.5",
                 "--dt",
                 "0.01",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1316,7 +1248,6 @@ class TestSimulateCommand:
                 "0.25",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1360,7 +1291,6 @@ class TestSimulateCommand:
                 "--no-periodic",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1383,7 +1313,6 @@ class TestSimulateCommand:
                 "0.5",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1400,7 +1329,6 @@ class TestSimulateCommand:
                 "5.0,5.0",  # 2 values for 1D
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -1417,7 +1345,6 @@ class TestSimulateCommand:
                 "0",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -1434,7 +1361,6 @@ class TestSimulateCommand:
                 "-0.1",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -1449,7 +1375,6 @@ class TestSimulateCommand:
                 "m2=1.0",
                 "--t-end",
                 "0",
-                "--no-plot",
             ],
         )
         assert ret == 1
@@ -1470,7 +1395,6 @@ class TestSimulateCommand:
                 "m2=1.0",
                 "--t-end",
                 "0.5",
-                "--no-plot",
                 "--quiet",
             ],
         )
@@ -1497,7 +1421,6 @@ class TestSimulateCommand:
                 "m2=1.0",
                 "--t-end",
                 "0.5",
-                "--no-plot",
                 "-q",
             ],
         )
@@ -1526,7 +1449,6 @@ class TestZeroEvolutionWarning:
                 "A_2",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -1549,7 +1471,6 @@ class TestZeroEvolutionWarning:
                 "gaussian",
                 "--t-end",
                 "0.5",
-                "--no-plot",
             ],
         )
         assert ret == 0
@@ -5256,4 +5177,70 @@ kappa = 1.0
 path = "/tmp/collision_test.json"
 """)
         ret = main(["derive", str(config), "--dry-run"])
+        assert ret != 0
+
+
+# ============================================================
+# Retired subcommands (#533)
+# ============================================================
+
+
+class TestRetiredCommands:
+    """`sweep`, `sample`, `analyze` and `plot` were retired with the M0 drop rows.
+
+    These assertions are the reason no deleted driver script needed a tombstone
+    comment: the CLI itself is the tombstone, and it cannot go stale.
+    """
+
+    RETIRED: ClassVar[list[str]] = ["sweep", "sample", "analyze", "plot"]
+    ALIASES: ClassVar[list[str]] = ["sw", "samp"]
+
+    @pytest.mark.parametrize(
+        "name", ["sweep", "sample", "analyze", "plot", "sw", "samp"]
+    )
+    def test_refuses_with_a_clear_error(
+        self,
+        name: str,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Exits non-zero naming the retirement — not an argparse traceback."""
+        ret = main([name, "whatever.json"])
+        assert ret == 2
+        err = capsys.readouterr().err
+        assert "was retired" in err
+        assert "v0.53.0" in err, "must say where the implementation still lives"
+        assert "repo_reshape" in err, "must point at the rationale"
+
+    def test_refusal_survives_leading_flags(
+        self,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """A global flag before the subcommand must not hide it."""
+        assert main(["--no-banner", "sweep"]) == 2
+        assert "was retired" in capsys.readouterr().err
+
+    def test_help_does_not_advertise_them(
+        self,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        with pytest.raises(SystemExit, match="0"):
+            main(["--help"])
+        out = capsys.readouterr().out
+        for name in self.RETIRED:
+            assert f"    {name}" not in out, f"--help still lists {name}"
+
+    def test_simulate_refuses_an_image_output(self, inline_kg_1d_json: Path) -> None:
+        """In-package plotting went with them; an image --output must refuse."""
+        ret = main(
+            [
+                "simulate",
+                str(inline_kg_1d_json),
+                "--param",
+                "m2=1.0",
+                "--t-end",
+                "0.1",
+                "--output",
+                "out.png",
+            ],
+        )
         assert ret != 0

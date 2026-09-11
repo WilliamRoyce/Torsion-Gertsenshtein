@@ -82,20 +82,10 @@ echo ""
 echo "--- Step 3: Plots ---"
 
 # Spacetime heatmap: graviton h× (should show Rabi amplitude oscillation)
-tidal plot "${OUT}" --type heatmap --field h_5 \
-  --title "Graviton h× (h_5) — dark photon torsion model" \
-  --output "${OUT}/heatmap_h_5.png" --quiet
 
 # Spacetime heatmap: photon a_x (should show growth from zero)
-tidal plot "${OUT}" --type heatmap --field a_1 \
-  --title "Photon a_x (a_1) — Gertsenshtein + torsion conversion" \
-  --output "${OUT}/heatmap_a_1.png" --quiet
 
 # Amplitude vs time: shows energy transfer h_5 → a_1
-tidal plot "${OUT}" --type amplitude \
-  --fields h_5,a_1 \
-  --title "Dark photon torsion: h× → a_x conversion (B0=${B0})" \
-  --output "${OUT}/amplitude.png" --quiet
 
 echo ""
 echo "=== Done ==="

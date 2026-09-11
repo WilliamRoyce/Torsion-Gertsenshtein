@@ -76,18 +76,8 @@ echo ""
 
 # Step 5: Plots
 echo "--- Step 5: Plots ---"
-tidal plot "$OUT" --type heatmap --field h_7 \
-  --title "Graviton h_+ scattering through Gaussian B(z)" \
-  --output "$OUT/heatmap_h_7.png" --quiet
 
-tidal plot "$OUT" --type heatmap --field a_2 \
-  --title "Photon a_y (Gertsenshtein conversion, localized B)" \
-  --output "$OUT/heatmap_a_2.png" --quiet
 
-tidal plot "$OUT" --type amplitude \
-  --fields h_7,a_2 \
-  --title "Gertsenshtein h_+ → a_y (Gaussian B-field)" \
-  --output "$OUT/amplitude.png" --quiet
 
 echo ""
 echo "=== Done ==="

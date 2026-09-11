@@ -751,6 +751,29 @@ use*, not everything that exists.
 | `sweep`, `sample` | **drop** — superseded by Cobaya under D9 | none |
 | `analyze` | **drop** — chain analysis and the t-independence audit serve thesis-era campaign artifacts | none |
 
+> **A `drop` verdict here and a retire milestone in §7 answer different questions
+> (added 2026-09-09, #533).** This column says *"not ported into `tidalcosmo`"*. §7's
+> right-hand column says *"when the legacy code is deleted"*. They are independent, and
+> reading the first as implying the second costs a session's scope — which is exactly
+> what happened when #533 was drafted with `measure` in it.
+>
+> `measure` is **drop + M5**: never ported, and deleted in §7's M5 row together with
+> `cli/_simulate.py` and `tidal/measurement/` — not at M0. §7's M0 row names exactly four:
+> `sweep`, `sample`, `analyze`, `plot`. §10's instruction to record a decision for the
+> `drop` rows is about *stopping a re-port by reflex*; it sets no deletion date.
+>
+> **What #533 actually retired**, on 2026-09-09: those four subcommands, plus in-package
+> plotting — `cli/_plot.py`, `cli/_report.py`, `cli/_panels.py` and `simulate`'s
+> `--report` / `--output *.png` / `--format png` / `--no-plot` paths. That last group is
+> §5.3's own principle applied where it leads: *"a third implementation of a solved
+> problem is not worth maintaining ... anything genuinely bespoke belongs in a one-off
+> figure script, **not in the package**."* `cli/_plot.py` was never the `plot`
+> subcommand — it was `simulate`'s renderer, which is why it was missed the first time.
+>
+> **A consequence for M5.** The eleven private `_run_*` dispatchers in `cli/_measure.py`
+> now have a second caller: `tidal/measurement/_measure_stage.py`, which took over the
+> stage implementations when `cli/_sweep.py` was deleted. M5 must account for both.
+
 ### 5.2 The `derive` gate is not a byte diff
 
 The obvious gate would be `tidal inspect OLD --diff NEW` (exit 1 = a real physics change), which

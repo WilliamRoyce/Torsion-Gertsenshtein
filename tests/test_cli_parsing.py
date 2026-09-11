@@ -203,7 +203,6 @@ class TestParseParams:
 def _make_args(**kwargs: object) -> Namespace:
     """Create a Namespace with defaults for _infer_output_format."""
     defaults: dict[str, object] = {
-        "no_plot": False,
         "output_format": None,
         "output": None,
     }
@@ -212,38 +211,29 @@ def _make_args(**kwargs: object) -> Namespace:
 
 
 class TestInferOutputFormat:
-    def test_no_plot_returns_summary(self) -> None:
-        assert _infer_output_format(_make_args(no_plot=True)) == "summary"
-
     def test_explicit_format_wins(self) -> None:
-        assert _infer_output_format(_make_args(output_format="png")) == "png"
+        assert _infer_output_format(_make_args(output_format="summary")) == "summary"
 
     def test_npz_extension_raises(self) -> None:
         """NPZ format is no longer supported — must raise ValueError."""
         with pytest.raises(ValueError, match="no longer supported"):
             _infer_output_format(_make_args(output="foo.npz"))
 
-    def test_png_extension(self) -> None:
-        assert _infer_output_format(_make_args(output="foo.png")) == "png"
+    @pytest.mark.parametrize("ext", ["png", "svg", "pdf", "jpg"])
+    def test_image_extension_refuses(self, ext: str) -> None:
+        """Plot rendering was retired with `tidal plot` (#533).
 
-    def test_svg_extension(self) -> None:
-        assert _infer_output_format(_make_args(output="foo.svg")) == "svg"
+        An image --output used to select a renderer; there is none now, so it
+        must refuse loudly rather than silently writing nothing.
+        """
+        with pytest.raises(ValueError, match="no longer renders plots"):
+            _infer_output_format(_make_args(output=f"foo.{ext}"))
 
-    def test_pdf_extension(self) -> None:
-        assert _infer_output_format(_make_args(output="foo.pdf")) == "pdf"
+    def test_extensionless_output_is_a_directory(self) -> None:
+        assert _infer_output_format(_make_args(output="run_dir")) == "directory"
 
-    def test_jpg_extension(self) -> None:
-        assert _infer_output_format(_make_args(output="foo.jpg")) == "jpg"
-
-    def test_no_output_defaults_png(self) -> None:
-        assert _infer_output_format(_make_args()) == "png"
-
-    def test_no_plot_takes_priority(self) -> None:
-        """--no-plot should win even if --format or --output is given."""
-        assert (
-            _infer_output_format(_make_args(no_plot=True, output_format="png"))
-            == "summary"
-        )
+    def test_no_output_defaults_summary(self) -> None:
+        assert _infer_output_format(_make_args()) == "summary"
 
 
 class TestValidateFormulaAst:

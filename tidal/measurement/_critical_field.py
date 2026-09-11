@@ -12,8 +12,8 @@ where both are evaluated at the same threshold (full conversion, P ≈ 1).
 
 The output is a reduced ``SweepResults`` with the field-strength parameter
 collapsed, containing ``B_min``, ``inv_B_min``, and associated errors as
-metric columns.  This plugs directly into the existing ``tidal plot`` heatmap
-infrastructure.
+metric columns.  It fed the thesis-era heatmap plotting, retired under
+GH #533; the reduction itself is independent of any renderer.
 
 References
 ----------

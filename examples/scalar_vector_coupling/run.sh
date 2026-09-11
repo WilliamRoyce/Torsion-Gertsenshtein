@@ -87,7 +87,3 @@ tidal measure ../data/scalar_vector_coupling_output \
   --output ../data/scalar_vector_coupling_output/measurement.png
 
 # Step 7: Individual plots (saved into the simulation output directory)
-tidal plot ../data/scalar_vector_coupling_output --type snapshot --field phi_0 --time-index 0 --quiet
-tidal plot ../data/scalar_vector_coupling_output --type snapshot --field phi_0 --time-index -1 --quiet
-tidal plot ../data/scalar_vector_coupling_output --type amplitude --quiet
-tidal plot ../data/scalar_vector_coupling_output --type energy --quiet

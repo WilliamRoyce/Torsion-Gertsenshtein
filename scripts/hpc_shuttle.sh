@@ -3,7 +3,7 @@
 #
 # Never edit files on the remote directly. Never rebuild the dev environment
 # there. Never poll squeue/sinfo in a loop. Never retry on SSH auth failure
-# (Fail2Ban 20-min block). See docs: CLAUDE.md § HPC Workflow.
+# (Fail2Ban 20-min block). See docs: docs/hpc_workflow.md.
 
 set -euo pipefail
 
@@ -13,6 +13,11 @@ readonly REMOTE_ROOT="${HPC_ROOT:-/rds/user/wr286/hpc-work/tidal}"
 readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly JOBS_FILE="${REPO_ROOT}/scripts/.hpc_jobs"
 readonly TEMPLATE_DIR="${REPO_ROOT}/scripts/hpc_templates"
+
+# 2026-09-09: this is generic push/pull/submit plumbing and is unchanged, but
+# the four subcommands it used to ship workloads for were retired after
+# v0.53.0 (#533). Whatever --cmd you pass it now must be a command that still
+# exists; `tidal --help` lists them.
 
 # --- Helpers --------------------------------------------------------------
 die() { echo "error: $*" >&2; exit 1; }
@@ -168,10 +173,10 @@ cmd_submit() {
   [[ -n "$account" ]] || account="$(cmd_resolve_account)"
 
   # Default ntasks to 112 * nodes (sapphire cores/node) unless overridden.
-  # MPI templates (e.g. scripts/hpc_templates/polychord_intr.sbatch) need
-  # the caller to pass --ntasks N explicitly so ${MPIRUN_PREFIX} launches
-  # exactly N ranks.  tidal sweep uses multiprocessing.Pool
-  # (single-node shared-memory), so --nodes=1 is always correct for sweeps.
+  # MPI templates need the caller to pass --ntasks N explicitly so
+  # ${MPIRUN_PREFIX} launches exactly N ranks.  The thesis-era sweep driver
+  # used multiprocessing.Pool (single-node shared-memory), so --nodes=1 was
+  # always correct for it; a replacement must state its own requirement.
   if [[ -z "$ntasks" ]]; then
     ntasks=$(( nodes * 112 ))
   fi
@@ -195,8 +200,8 @@ cmd_submit() {
   # is given, {{CAMPAIGN_DIR_SETUP}} in the template becomes an export + mkdir
   # that sets CAMPAIGN_DIR to hpc_results/campaigns/NAME on the HPC.  Use
   # ${CAMPAIGN_DIR} in --cmd --output to share chains across rounds.
-  # PolyChord writes .resume checkpoints by default; the second round adds
-  # --read-resume to tidal sample to continue from the checkpoint.
+  # PolyChord writes .resume checkpoints by default; a second round passes
+  # its sampler's resume flag to continue from the checkpoint.
   local camp_setup
   if [[ -n "$campaign" ]]; then
     local camp_path="${REMOTE_ROOT}/hpc_results/campaigns/${campaign}"
@@ -325,8 +330,8 @@ cmd_pull() {
         END { printf "%s", rec }
       ' "$JOBS_FILE")"
       if [[ -n "$record" ]]; then
-        # Take the FIRST --output: chained commands (`tidal sample ... &&
-        # tidal plot ... --output .../corner.png`) put the run directory
+        # Take the FIRST --output: chained commands (a run followed by a
+        # figure step writing --output .../corner.png) put the run directory
         # first and a figure last, and pull wants the directory.  grep -o
         # rather than sed, because a greedy sed collapses to the last match
         # on each line.

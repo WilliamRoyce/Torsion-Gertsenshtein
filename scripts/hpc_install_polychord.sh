@@ -18,9 +18,13 @@
 # Usage:
 #   bash scripts/hpc_install_polychord.sh
 #
-# After this succeeds, jobs that use scripts/hpc_templates/polychord_intr.sbatch
-# still rebuild libchord.so per job (fast, ~10 s) but pick up the
-# installed Python package from the venv.
+# After this succeeds, PolyChord is importable from the HPC venv: a job still
+# rebuilds libchord.so per job (fast, ~10 s) but picks up the installed Python
+# package from the venv.
+#
+# The sbatch templates that consumed it drove `tidal sample` and were retired
+# with it (#533); recover one with
+# `git show v0.53.0:scripts/hpc_templates/polychord_intr.sbatch`.
 
 set -euo pipefail
 
