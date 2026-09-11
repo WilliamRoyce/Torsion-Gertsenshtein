@@ -20,7 +20,7 @@ Companion documents: `stage1_engineering_plan.md` (the design this tests),
 | RAM | 12 GB |
 | Kernel / distro | 6.6.87.2-microsoft-standard-WSL2 / Debian 12 (bookworm) |
 | Wolfram Engine | 14.3.0, `$SystemID` `Linux-x86-64`, `wolframscript` 1.13.0 |
-| xAct | 1.2.1 (xTensor, SymManipulator, xPerm, xCore, xTras, xCoba all present) |
+| xAct | xAct **1.3.0** bundle (xCore 0.6.10, xPerm 1.2.4, xTensor 1.3.0 of 2025-12-29, xCoba 0.8.6 — measured from the installed `.m` headers 2026-09-11; the earlier "1.2.1" was a label copied from `install-xact-xcoba.sh`'s default and was wrong); SymManipulator, xTras also present |
 | PSALTer | v2.0.2 at `bb45adb0fa21e467dbd88d4dc36ef21b84abbe6d` |
 | Inkscape | 1.2.2 — installed by the optional step; **not required** (see §2.4) |
 | `QT_QPA_PLATFORM` | `offscreen`, set by every script here (see §2.3) |

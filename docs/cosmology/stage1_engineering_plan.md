@@ -285,7 +285,7 @@ cross-check.
 | component | state | note |
 | --- | --- | --- |
 | Wolfram Engine | **14.3.0 installed and activated** | `wolframscript` 1.13.0; licensing present under both `~/.Mathematica` and `~/.WolframEngine`. PSALTer requires 14.0+ |
-| xAct | **1.2.1 installed** in the Wolfram user base | PSALTer requires 1.2.0+; xTensor, xPerm, xCoba, xPert, xTras, SymManipulator all present |
+| xAct | **1.3.0 bundle installed** in the Wolfram user base (corrected 2026-09-11 — the "1.2.1" audited here was the install script's default, not a measurement; xTensor 1.3.0 / xPerm 1.2.4 / xCore 0.6.10 / xCoba 0.8.6) | PSALTer requires 1.2.0+; xTensor, xPerm, xCoba, xPert, xTras, SymManipulator all present |
 | PSALTer | **not installed** | v2.0.2, GPL-3.0-or-later |
 | Inkscape | **not installed** | not actually needed (§0.6) |
 | `sudo -n` | works | apt install is feasible |
@@ -302,7 +302,7 @@ cross-check.
 >
 > | row | as audited | now |
 > | --- | --- | --- |
-> | PSALTer | not installed | **v2.0.2 `bb45adb0`, installed and verified 2026-09-07** (#526) — but **UNCERTIFIED**, Tier 1 reports MISMATCH (#543) |
+> | PSALTer | not installed | **v2.0.2 `bb45adb0`, installed and verified 2026-09-07** (#526) — **certified 2026-09-11** (I-543, #557): Tier 1 `VERDICT: MATCH` once the two undeclared Function Repository resources are registered locally; the mismatch this row recorded on 09-09 is the failing evidence at `evidence/tier1-20260907/` |
 > | Inkscape | not installed | **1.2.2-2+b1**, at `/usr/bin/inkscape` |
 > | `.wxf` fixtures | not in repo | **two are committed**, at `tests_cosmo/fixtures/psalter/` (`A23Theory`, `VectorTheory`), with `PROVENANCE.md`; flagged for the release-time license review on #495 |
 >
@@ -321,7 +321,7 @@ cross-check.
 > and getting an identical verdict, but recorded only *that* it supplied them, never *how* —
 > and the sites are reached partly through `NewParallelSubmit`, so a definition present only
 > on the master kernel would not exist on the subkernels. **Whether that stand-in was ever
-> live is being re-verified by I-543; do not cite the refutation as settled** (#543).
+> live was re-verified by I-543 and the refutation was **invalid**: the stand-in reproduced the disabled behavior (#556, closed), so the missing resources were the cause all along (#543, closed 2026-09-11).
 > Why it is unreachable is **not diagnosed** — it is not established that it is impossible, only
 > that it does not work as configured — so this is tracked as **#551** rather than treated as
 > a standing constraint.
@@ -755,9 +755,9 @@ append-only; a handoff report is ephemeral; this needs to be a committed documen
 | gate | criterion |
 | --- | --- |
 | install | committed script produces a clean `Needs["xAct`PSALTer`"]` on a fresh user base; version banner printed |
-| oracle T1 | our `CTEG` run's association matches the committed `.mx` key-by-key. **Currently FAILS (#543)**, and a pass would certify only those two keys — see §3 |
+| oracle T1 | our `CTEG` run's association matches the committed `.mx` key-by-key. **PASSES since 2026-09-11** (`evidence/tier1-20260911-pass/`, `VERDICT: MATCH`; it failed until the two undeclared Function Repository resources were registered — #543), and a pass certifies only those two keys — see §3 |
 | oracle T2/T3 | gauge-generator count exact; massive content with dictionary-exact `m²`; massless polarization count; `Reduce`-verified equivalence of unitarity conditions **including the massless one** |
-| reader | `A23` blocks are dims (2,4,2) with `2·1+4·3+2·5 = 24`; `Vector` blocks equal the **published** expressions and the **committed upstream `.wxf`** exactly (symbolic difference simplifies to zero) — **not** values measured on this install, see the amendment below; placeholder/plural-key/degenerate cases unit-tested |
+| reader | `A23` blocks are dims (2,4,2) with `2·1+4·3+2·5 = 24`; `Vector` blocks equal the **published** expressions and the **committed upstream `.wxf`** exactly (symbolic difference simplifies to zero) — published values and the `.wxf` remain the *reference*; the 2026-09-09 prohibition on this install's own output is **lifted since certification** (2026-09-11, see the amendment below), and one open question survives: which artifact carries the published values — the association keys, or the `ConstructSpectrograph` render (§8, handed to I-S1A); placeholder/plural-key/degenerate cases unit-tested |
 | reject rule | a bare-numeric term errors with a hint naming the term; the legacy `theory.toml` Lagrangian is rejected |
 | exporter | in-kernel reconstruction `SameQ`; Python-side numeric agreement ≤ 1e-12 at 5 random rational coupling points; label calibration passes on ≥ 3 single-operator probes; `A[0]` vanishes **iff non-sampled constants are excluded from the coupling vector** — see the amendment below (coupling-linearity) |
 | emitted script | declares and machine-checks signature and `ε`; standalone; no repo-absolute paths |

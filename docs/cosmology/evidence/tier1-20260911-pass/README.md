@@ -23,7 +23,7 @@ gate on the configuration below.
 | --- | --- |
 | engine | Wolfram Engine **14.3.0** for Linux x86 (64-bit), July 31, 2025 (`tier1_diff.json` → `environment`) |
 | PSALTer | v2.0.2 @ `bb45adb0fa21e467dbd88d4dc36ef21b84abbe6d` (`INSTALLED_COMMIT`, unchanged) |
-| xAct | 1.2.1 (xTensor 1.3.0, xPerm 1.2.4) |
+| xAct | xAct **1.3.0** bundle (xCore 0.6.10, xPerm 1.2.4, xTensor 1.3.0 of 2025-12-29, xCoba 0.8.6 — measured from the installed `.m` headers 2026-09-11; the earlier "1.2.1" was a label copied from `install-xact-xcoba.sh`'s default and was wrong) |
 | oracle | `SupplementalMaterials-2506b` @ `37c86a5d`, `ParticleSpectrographCTEG.mx` sha256 `07a8cd59…412b4`; the published `.m` run unmodified (sha256 `2232a103…5825` before and after) |
 | **resource handling** | PSALTer's two undocumented Function Repository dependencies registered locally from genuine code by `scripts/psalter/register_resources.wl`: `LinearlyIndependent` = Wolfram's `ResourceFunctionHelpers` paclet file (1.3.34; `Kernel/LinearlyIndependent.wl` sha256 `7bc228a2…b817`) loaded verbatim under a private package name so the object carries the full definition; `PolynomialDegree` = the author's definition evaluated verbatim from the repository's definition notebook (sha256 `c233e226…787c`). Registered UUIDs at certification: `d40a8dd6-658c-47d2-8719-2f5fc8e1f83d`, `2f89f2e6-7bc8-4491-84bf-d8e13c69addb`. Resolved on the master and on subkernels; checked by `verify-wolfram-setup.sh` check 10 on both. |
 | headless | `QT_QPA_PLATFORM=offscreen` |
