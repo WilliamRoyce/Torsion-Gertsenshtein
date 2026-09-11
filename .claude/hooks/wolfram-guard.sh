@@ -4,8 +4,41 @@
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
-# Only check commands that actually invoke wolframscript
-echo "$COMMAND" | grep -qE '(wolframscript|uv run tidal derive)' || exit 0
+# Only check commands that can actually invoke wolframscript.
+#
+# This filter gates everything below it, including the pgrep check that is the
+# actual enforcement -- so anything it does not match is ALLOWED. It therefore
+# has to catch every spelling that reaches a kernel, not the two we happened to
+# write down (GH #555, found when a delegate ran `bash run.sh` while another
+# session held the lane; the complement of #400, which fixed the opposite
+# direction).
+#
+#   wolframscript -f x.wls       matched below
+#   uv run tidal derive t.toml   matched below
+#   tidal derive theory.toml     MISSED before #555 -- and this bare form is
+#                                what all 12 examples/*/run.sh actually use
+#   bash run.sh                  MISSED before #555 -- indirect; resolved below
+DERIVE_RE='(wolframscript|(^|[[:space:]/])tidal[[:space:]]+derive)'
+
+if ! echo "$COMMAND" | grep -qE "$DERIVE_RE"; then
+  # Not a direct invocation. It may still be a wrapper script that runs one, so
+  # resolve any shell script named on the command line and look inside it. A
+  # fence that names a tool cannot see a step that names a script.
+  INDIRECT=""
+  for TOKEN in $COMMAND; do
+    case "$TOKEN" in
+      *.sh|*.bash)
+        CANDIDATE="$TOKEN"
+        [ -f "$CANDIDATE" ] || CANDIDATE="${CLAUDE_PROJECT_DIR:-.}/$TOKEN"
+        if [ -f "$CANDIDATE" ] && grep -qE "$DERIVE_RE" "$CANDIDATE" 2>/dev/null; then
+          INDIRECT="$CANDIDATE"
+          break
+        fi
+        ;;
+    esac
+  done
+  [ -n "$INDIRECT" ] || exit 0
+fi
 
 # --- False-positive exclusions (GH #400) ---------------------------------
 # The match above is on command TEXT, so it also catches commands that merely
@@ -44,7 +77,11 @@ echo "$COMMAND" | grep -qE '(^|[[:space:]])--(dry-run|help)([[:space:]]|$)' && e
 # checked — so the guard fired spuriously on commands that were only talking
 # about wolframscript.  See GH #400.
 if pgrep -x wolframscript > /dev/null 2>&1 || pgrep -x WolframKernel > /dev/null 2>&1; then
+  if [ -n "${INDIRECT:-}" ]; then
+  echo "BLOCKED: $INDIRECT invokes a Wolfram derivation, and wolframscript is already running (single Wolfram Engine license)." >&2
+else
   echo "BLOCKED: wolframscript already running (single Wolfram Engine license). Wait for it to finish or kill it first." >&2
+fi
   exit 2
 fi
 exit 0
