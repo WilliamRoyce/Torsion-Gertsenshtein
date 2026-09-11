@@ -88,6 +88,30 @@ fetch "${SM6}/ParticleSpectroscopy/ParticleSpectroscopy/PoincareGaugeTheory/Mode
 fetch "${SM6}/ParticleSpectroscopy/ParticleSpectrographCTEG.mx" \
       "${OUT_DIR}/sm2506b/ParticleSpectrographCTEG.mx"
 
+# ---- The two Function Repository definitions PSALTer needs but never declares --
+# PSALTer calls ResourceFunction["LinearlyIndependent"] and ["PolynomialDegree"]
+# at five sites (#543). LinearlyIndependent ships in Wolfram's own
+# ResourceFunctionHelpers paclet, so only PolynomialDegree needs fetching, and it
+# is pinned by digest like every other reference source here: when the repository
+# is unreachable -- which is how #543 was found -- an unresolved ResourceFunction
+# is not a Boolean, and PSALTer writes a silently wrong .mx rather than failing.
+PD_URL="https://www.wolframcloud.com/download/c64bf854-fcd3-40f3-9aa2-4ec399411d8f?extension=always&filename=PolynomialDegree-1-0-0-definition"
+PD_SHA="c233e226d4c77de65ee19ddbc84c20c9724df467bb86c27f1a65f17fba89787c"
+PD_DEST="${REPO_ROOT}/third_party/psalter_resources/PolynomialDegree-1-0-0-definition.nb"
+
+log "Fetching the PolynomialDegree definition notebook (pinned by sha256)"
+if [[ -f "${PD_DEST}" ]] && [[ "$(sha256sum "${PD_DEST}" | cut -d' ' -f1)" == "${PD_SHA}" ]]; then
+    log "  ok  already present and matching"
+elif fetch "${PD_URL}" "${PD_DEST}"; then
+    got="$(sha256sum "${PD_DEST}" | cut -d' ' -f1)"
+    if [[ "${got}" != "${PD_SHA}" ]]; then
+        log "  FAILED digest mismatch: got ${got}"
+        log "         expected ${PD_SHA}"
+        rm -f "${PD_DEST}"
+        log "  removed the mismatching file rather than leaving it to be registered"
+    fi
+fi
+
 log "Fetching SupplementalMaterials-2607 (numerical polology)"
 fetch "${SM7}/WolframLanguage/ParticleSpectroscopy.m" \
       "${OUT_DIR}/sm2607/ParticleSpectroscopy.m"

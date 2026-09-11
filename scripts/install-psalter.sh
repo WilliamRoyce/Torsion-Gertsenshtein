@@ -325,6 +325,31 @@ install_inkscape() {
 #
 # Run from a throwaway directory because PSALTer freezes $WorkingDirectory to the
 # process's current directory at load time (PSALTer.m:49-55) and writes there.
+# Register the two Function Repository resources PSALTer depends on and never
+# declares (#543). Without them an unresolved ResourceFunction is not a Boolean,
+# so no gauge symmetry is identified and every pseudo-determinant is zero -- and
+# the run still completes and writes its .mx. The registry lives in the container
+# overlay, so this must run again after every rebuild, which is why it is here
+# rather than in a one-off setup note.
+#
+# Idempotent, takes the Wolfram lane for about a minute. Never edits PSALTer.
+register_resources() {
+    local script="${SCRIPT_DIR}/psalter/register_resources.wl"
+    [[ -f "$script" ]] || { log_warn "register_resources.wl not found -- skipping"; return 1; }
+
+    log_step "Registering the Function Repository resources PSALTer needs (#543)"
+    if QT_QPA_PLATFORM=offscreen timeout 300 wolframscript -file "$script" 2>&1 | tail -5; then
+        log_info "Resources registered"
+    else
+        log_warn "Registration did not complete. PSALTer will still load and run, but it"
+        log_warn "will produce a SILENTLY WRONG spectrum: empty source constraints and"
+        log_warn "zero pseudo-determinants. Run it by hand before trusting any result:"
+        log_warn "  wolframscript -file scripts/psalter/register_resources.wl"
+        log_warn "Then confirm with: bash scripts/verify-wolfram-setup.sh --require-psalter"
+        return 1
+    fi
+}
+
 verify_installation() {
     log_step "Verifying installation (timeout ${PSALTER_VERIFY_TIMEOUT}s)"
 
@@ -419,6 +444,7 @@ main() {
     install_tree
     write_installed_commit
     install_inkscape || true
+    register_resources || true
 
     if [[ "$NO_VERIFY" == "true" ]]; then
         log_warn "Skipping verification (--no-verify)"

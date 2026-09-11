@@ -78,6 +78,11 @@ Wolfram lane open forever. Every script here sets the variable itself.
 
 ## Files
 
+> **Before any run on a fresh container:** `wolframscript -file scripts/psalter/register_resources.wl`.
+> Without it PSALTer does not fail — it completes and writes a **silently wrong** spectrum
+> (empty source constraints, zero pseudo-determinants), which is what #543 turned out to be.
+> `bash scripts/verify-wolfram-setup.sh --require-psalter` exits 2 when they are missing.
+
 | file | what it does |
 | --- | --- |
 | `run_tier1_gate.sh` | the one command; orchestrates everything below |
@@ -89,6 +94,8 @@ Wolfram lane open forever. Every script here sets the variable itself.
 | `probe_521_method.wls` | is `Method` inert? (#521) |
 | `probe_522_couplings.wls` | is a bare numeric coefficient rejected? (#522) |
 | `probe_523_harvest.wls` | what must the exporter read? (#523) |
+| `register_resources.wl` | registers the two Function Repository resources PSALTer needs and never declares (#543). **Required before the gate, and again after every container rebuild** — the registry lives in the container overlay. Idempotent; takes the lane for ~1 min; never edits PSALTer |
+| `repro_543.wl` | the known-answer ladder behind #543 — scalar, Proca, Fierz–Pauli, CTEG — each rung's expected result stated in the file, so a failure is decidable without an oracle |
 
 The probes need only a working install, not a passing gate, and each writes a
 transcript prefixed `PROBE5xx` for the measurements record.
