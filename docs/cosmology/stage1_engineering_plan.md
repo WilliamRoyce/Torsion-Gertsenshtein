@@ -96,7 +96,12 @@ The first column is the one that matters when reading this table on a live insta
 comes first; the second records what the *package* would do given its dependencies.
 
 > **⚠ Amendment (I-REM, 2026-09-09 — PSALTer v2.0.2 `bb45adb0`).
-> `EXPIRES-WITH: #551`.** `NonQuadraticFields` has a throw site, but it is guarded by
+> `EXPIRES-WITH: #551` → EXPIRED 2026-09-11: in the certified configuration this guard
+> FIRES.** `scripts/psalter/register_resources.wl` supplies the resource locally, and a cubic
+> control now throws where an unregistered install accepted it. What follows describes an
+> **unregistered** install — still the state of any fresh container until the registration is
+> re-run, which is why `install-psalter.sh` now does it. `NonQuadraticFields` has a throw site,
+> but it is guarded by
 > `ResourceFunction["PolynomialDegree"]` (`ValidateLagrangian.m:38`), and the Wolfram
 > Function Repository cannot be reached from this container (#551). PSALTer emits
 > `ResourceObject::notfname` and **carries on**, so the check silently never runs. The
@@ -301,7 +306,12 @@ cross-check.
 > | Inkscape | not installed | **1.2.2-2+b1**, at `/usr/bin/inkscape` |
 > | `.wxf` fixtures | not in repo | **two are committed**, at `tests_cosmo/fixtures/psalter/` (`A23Theory`, `VectorTheory`), with `PROVENANCE.md`; flagged for the release-time license review on #495 |
 >
-> **Added — the Wolfram Cloud is unreachable from here** (`EXPIRES-WITH: #551`). 503 from
+> **Added — the Wolfram Cloud is unreachable from here** (`EXPIRES-WITH: #551` → **still
+> true 2026-09-11, and NOT what was fixed**). The site itself recovered — it answered 503 on
+> 09-09 and 200/302 on 09-11 — but the repository served **no definitions to anyone** during
+> I-543's session, including to an authenticated login and to in-cloud evaluation. #543 was
+> resolved by registering the genuine definitions locally, **not** by restoring reachability,
+> so anything needing a *new* resource still hits this. Measured 09-09: 503 from
 > `www.wolframcloud.com` and 404 from the resource API, from **both `curl` and Wolfram**,
 > while GitHub returns 200 — so this is network-layer, **not** Wolfram authentication.
 > Consequence: `ResourceFunction[…]` downloads fail, PSALTer emits `ResourceObject::notfname`

@@ -250,7 +250,9 @@ definition of the theory space the method operates on. Contract rules:
   > **`NonQuadraticFields` cannot fire on our install**: its guard is
   > `ResourceFunction["PolynomialDegree"]` (`ValidateLagrangian.m:38`) and the Function
   > Repository is unreachable here, so PSALTer emits `ResourceObject::notfname` and carries on
-  > (I-REM, 2026-09-09; **#551**, `EXPIRES-WITH: #551`). A bare numeric coefficient is
+  > (I-REM, 2026-09-09; **#551**, `EXPIRES-WITH: #551` → EXPIRED 2026-09-11: with
+  > `register_resources.wl` the guard fires; the sentence above describes an unregistered
+  > install). A bare numeric coefficient is
   > not a `Variable`, so nothing rejects it. `EnsureLinearInCouplings.m` exists, but under
   > `ConstructSourceConstraints/ConjectureNullSpace/`, clearing denominators in a null vector
   > — it is not a Lagrangian validator. The live check is still worth running, to confirm the
