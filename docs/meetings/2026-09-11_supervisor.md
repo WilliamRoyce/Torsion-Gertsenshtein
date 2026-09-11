@@ -140,8 +140,10 @@ committed `.mx`: `WaveOperator` matches exactly (3 sectors, 303 leaves), while
 (division by zero) at +321 s inside `ConstructSaturatedPropagator`, which becomes
 `0·ComplexInfinity` → `Indeterminate` and zeroes the determinants.
 
-Ruled out by test rather than argument: the two missing Function Repository dependencies
-(supplied locally — identical failure), subkernel availability, and headless graphics.
+Ruled out by test rather than argument: subkernel availability and headless graphics. We
+also believed we had ruled out the two missing Function Repository dependencies the same way
+— supplied locally, identical failure — but see below: our substitute may not have restored
+the behavior it replaced, so that one is back open.
 **Our leading hypothesis is the engine version** — your `.mx` header decodes to **14.2** and
 we run **14.3**, and everything symbolic agrees up to the point of the inverse.
 
@@ -164,21 +166,43 @@ only to say whether the conclusion sounds right:
 - Every diff entry is a **structural head mismatch** (`Integer` vs `Times`/`Plus`), i.e. zero
   against a polynomial, not a numerical near-miss.
 
-**Questions:** does the `NullSpace`-behavior-change reading ring true, and is 14.2 what you
-would expect to be required? We are installing 14.2.1 alongside to confirm, and will send you
-a minimal reproduction either way — if it is a genuine 14.2/14.3 incompatibility it is worth an
-issue on the PSALTer repository, and we are happy to write it up.
+**Your README may already describe half of this, and we would not have thought to ask
+otherwise.** "Known bugs" item 1 is *"a sporadic error where some of the gauge symmetries are
+not identified … numerical methods … random number generation at runtime … usually fixed by
+re-running"*. Our empty source-constraint list is exactly that symptom — except it is not
+sporadic for us; it repeats.
+
+**A candidate deterministic trigger, offered as a question rather than a finding.** PSALTer
+calls `ResourceFunction["PolynomialDegree"]` and `ResourceFunction["LinearlyIndependent"]` at
+five sites, including inside `SymbolicNullSpace` — the gauge-identification path. Neither can
+be fetched from our container: the resource API returns 503 while GitHub returns 200, so it is
+network-layer rather than authentication. When they are unavailable PSALTer emits
+`ResourceObject::notfname` and **continues**, so `NonQuadraticFields` validation is silently
+inert here.
+
+We tried to exclude this by substituting both functions locally and re-running — the verdict
+was identical, which we first read as excluding it. On re-reading our own substitute, we think
+at least one of them *reproduced* the disabled behavior rather than restoring it (our
+`PolynomialDegree` stand-in returns a list where yours returns a scalar, so the comparison it
+feeds never evaluates and the guard stays off either way). So the control may not have
+discriminated, and **we cannot yet exclude the missing resources.** We are checking that
+properly.
+
+**The one question only you can answer:** are those two Function Repository resources meant to
+be hard dependencies of PSALTer? If they are, an environment that cannot reach the repository
+would lose gauge identification silently, which would look exactly like known bug 1 — and it
+would be worth saying so in the README or failing loudly at load. If they are not, we are
+looking in the wrong place and would rather know now.
+
+**On the engine version:** 14.2-versus-14.3 remains our other candidate and we can install
+14.2.1 alongside to test it. Is 14.2 what you would expect to be required? We will send a
+minimal reproduction either way, and if it turns out to be a genuine incompatibility we are
+happy to write it up as an issue on the repository.
 
 **Also worth knowing:** `Method` is inert on v2.0.2 — zero `OptionValue@Method` sites against
 five for `MaxLaurentDepth`, and `"Easy"`, `"Hard"` and a deliberately invalid value all return
 byte-identical results with identical timings. We report `ParticleSpectrum` wall time without a
 Method qualifier as a result.
-
-**Second, smaller:** PSALTer calls `ResourceFunction["PolynomialDegree"]` and
-`ResourceFunction["LinearlyIndependent"]` at five sites, and neither can be fetched in our
-environment — **they fail silently**, so `NonQuadraticFields` validation is inert here as a
-side effect. Worth knowing as an undocumented dependency, since a user without Function
-Repository access loses a validator without being told.
 
 ---
 
