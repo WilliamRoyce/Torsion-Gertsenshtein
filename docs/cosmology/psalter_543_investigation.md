@@ -203,9 +203,15 @@ no PDF (front end). Together with the 14.3.0 gate this shows the engine plays no
 
 ## 7. Registry and environment state after the session
 
-Certified resource-handling leg: see §5 and the evidence README. `~/.Wolfram/Objects` is
-container overlay (not bind-mounted): the registration must be re-run after a container rebuild —
-routed to the orchestrator for `install-psalter.sh`/devcontainer. Under the pinned userbase
+The shared registry `~/.Wolfram/Objects/Resources` now holds exactly the certified
+registration — `LinearlyIndependent` `d40a8dd6-658c-47d2-8719-2f5fc8e1f83d` and
+`PolynomialDegree` `2f89f2e6-7bc8-4491-84bf-d8e13c69addb` (plus Wolfram's own `wordlength`
+entry that predates the session); everything the probes had written earlier was removed by
+the script's own cleanup. `~/.Wolfram/Objects` is container overlay (not bind-mounted): the
+registration must be re-run after a container rebuild — routed to the orchestrator for
+`install-psalter.sh`/devcontainer. A second engine, 14.2.1, is installed at
+`~/.local/wolfram/engine/14.2` (6.8 GB, overlay), selected per run with
+`WOLFRAMSCRIPT_KERNELPATH`; the default kernel is unchanged (14.3.0). Under the pinned userbase
 nothing in `Applications/`, `Licensing/` or `INSTALLED_COMMIT` changed; kernel runs rewrote the
 usual runtime caches (`FrontEnd/14.3_Caches/…`, `Paclets/Configuration/*.pmd*`). The Wolfram-ID
 cloud login persists in fresh kernels; undo with `CloudDisconnect[]` / removing the stored
