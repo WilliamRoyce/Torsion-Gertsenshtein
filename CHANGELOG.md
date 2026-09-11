@@ -14,6 +14,53 @@ retroactively covered; see `git log` for the full history.
 
 ### Added
 
+- **Cosmology program, Wave 0 and its completion wave (#488)**. The new
+  `tidalcosmo` package is installable beside legacy `tidal` with `camb`,
+  `cobaya` and `all` extras, two console scripts and a CI lane on the
+  integration branch (#524). The legacy oracle is frozen as **185 committed
+  fixtures** over 46 theories, with a path-filtered `oracle.yml` workflow that
+  re-checks them whenever `tidal/` or `examples/data/` changes (#525, #546) —
+  proved in both directions before landing, red on a corrupted fixture and green
+  clean.
+- **PSALTer v2.0.2 installed and its Tier-1 install gate passing (#526, #543)**.
+  Certified configuration: **Wolfram 14.3.0 × PSALTer `bb45adb0` × local
+  registration of two Function Repository resources**. The gate compares our run
+  of the author's published CTEG input against his committed result: both keys
+  identical.
+
+### Fixed
+
+- **PSALTer produced a silently wrong spectrum on any machine that cannot reach
+  the Wolfram Function Repository (#543)**. `ParticleSpectrum` calls
+  `ResourceFunction["LinearlyIndependent"]` and `["PolynomialDegree"]` at five
+  sites and declares neither. Unresolved, they are not Booleans, so no gauge
+  symmetry is identified, every pseudo-determinant is zero — and the run still
+  completes and writes its `.mx`. Fixed by registering the genuine definitions
+  locally, with no edit to PSALTer; an upstream issue is drafted at
+  `docs/cosmology/psalter_543_upstream_issue.md`. An earlier engine-version
+  hypothesis was refuted by execution: 14.2.1 behaves identically.
+- **The Wolfram lane guard failed open on the form every `run.sh` uses (#555)**.
+  Its trigger matched two literal spellings, so bare `tidal derive` and
+  `bash run.sh` bypassed the enforcement entirely. It now matches any spelling
+  and resolves wrapper scripts to look inside them.
+- **The Tier-1 gate could not be run at all for two days (#549)**, because an
+  unavailable optional resource was routed through the same severity as a broken
+  install. Capability degradation is now a third outcome (exit 2) rather than a
+  refusal.
+- `tidal inspect --detail` (#535), `verify-wolfram-setup.sh` activation flakiness
+  (#541), and Sphinx API docs that covered only the legacy package (#545).
+
+### Removed
+
+- **The M0 `drop` rows: `sweep`, `sample`, `analyze` and `plot`** and the
+  in-package plotting they drove (#533) — −26,727 lines. Cobaya supersedes the
+  inference path (D9) and GetDist/anesthetic cover the plotting. Each retired
+  name still resolves, exits 2, and names both its replacement and a
+  `git show v0.53.0:<path>` recovery route. `measure` is deliberately **kept**:
+  its ledger verdict is `drop`, but its retirement milestone is M5.
+
+### Added
+
 - **Research record: two closed attempts at a general fix for the
   localized implicit-dynamical class (#473, #477)**. Both are preserved
   under `scripts/research/` with READMEs carrying every measured table;
