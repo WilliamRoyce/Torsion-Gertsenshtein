@@ -399,10 +399,14 @@ authored by us. It is the tetrad/PGT formulation (21 generators).
 > names the mechanism — gauge generators = the count of `ConstructSourceConstraints` →
 > `SourceConstraintRows` — so this is a requirement to keep it, not to invent it.
 >
-> **Separately, and this half DOES expire — `EXPIRES-WITH: #543`:** Tier 1 currently
-> **fails** on this install. `WaveOperator` is bit-exact; `PseudoDeterminant` comes back all
-> zeros. Reproduced independently by the orchestrator on 2026-09-09. The gate was not relaxed
-> and no workaround was applied.
+> **Separately, and this half DOES expire — `EXPIRES-WITH: #543` → EXPIRED 2026-09-11:** Tier 1
+> ~~currently **fails** on this install~~ **now passes** (`MATCH`, both keys identical) on
+> Wolfram 14.3.0 × PSALTer v2.0.2 `bb45adb0`, with PSALTer's two undocumented Function
+> Repository dependencies registered from genuine code (`scripts/psalter/register_resources.wl`).
+> The 2026-09-07/09 failure — `WaveOperator` bit-exact, `PseudoDeterminant` all zeros, reproduced
+> independently — was those missing dependencies, not the engine; the gate was never relaxed and
+> no workaround was applied. Record: `stage1_measurements.md` §4.4/§4.8, evidence
+> `docs/cosmology/evidence/tier1-20260911-pass/`, `psalter_543_investigation.md`.
 
 **Tier 2 — the ECT reproduction (our formulation, the design's primary oracle).** Author
 the post-Riemannian run — fields `h`, `T`, `a`; 15 gauge generators — using the §0.5
@@ -642,8 +646,16 @@ comments ("Index 1 = spin-0+"). Four steps, in order:
    non-zero ones.
 
    > **⚠ Amendment (I-REM, 2026-09-09 — PSALTer v2.0.2 `bb45adb0`, Wolfram 14.3).
-   > `EXPIRES-WITH: #543`. Calibrate against the published values and the committed
-   > upstream `.wxf`; do NOT calibrate against what this install returns.**
+   > `EXPIRES-WITH: #543` → EXPIRED 2026-09-11 (I-543).** Calibrating against the published
+   > values and the committed upstream `.wxf` remains the right practice; the prohibition on
+   > this install's output is lifted: with the two Function Repository dependencies registered
+   > (`scripts/psalter/register_resources.wl`), the Vector theory's result association carries
+   > both published blocks in both keys (`repro_543.wl B`: `½[Def²(Θ₂−Θ₁)−Θ₃]`, `½[−Def²Θ₁−Θ₃]`),
+   > on 14.3.0 and on 14.2.1. What follows describes the pre-resolution state and is kept for
+   > the record.
+   >
+   > ~~Calibrate against the published values and the committed
+   > upstream `.wxf`; do NOT calibrate against what this install returns.~~
    >
    > On this install the Vector theory's **result association** — the object the reader
    > actually consumes — comes back as `{{-Def²Θ₁/2}}`: the `Θ₃` mass term and the `Θ₂`
