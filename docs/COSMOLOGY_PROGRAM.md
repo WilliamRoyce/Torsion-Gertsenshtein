@@ -665,7 +665,7 @@ Status: `drafted → dispatched → reported → merged`.
 | 0 | I-526 — install PSALTer, Tier-1 gate | #526 | **yes** | `scripts/{install-psalter.sh,verify-wolfram-setup.sh,psalter/}`, `tests_cosmo/fixtures/`, `.gitattributes` | `cosmo/i526-psalter` + `fix/i526-evidence-reverify` (#544) | **merged, install UNCERTIFIED** ⚠️ install works, all three probes answered; **Tier-1 MISMATCH** (#543, blocks *both* criteria). Evidence at `docs/cosmology/evidence/tier1-20260907/`, read-only via `summarize_diff.py`. **Re-run from scratch by the orchestrator 2026-09-09: same verdict, same tally, same per-entry outcomes, same bit-exact `WaveOperator`, 302 s — the mismatch is reproducible** (`stage1_measurements.md` §4.7). It was not done at the wave boundary and *could not* have been: the gate could not be run at all from 66 s after its only run (#549, fixed in `d6753631`). Resolution: **I-543** |
 | 0c | I-REM — instruction sites, docs index, tooling, oracle CI | #545 #546 #540 | — | design docs, `docs/README.md`, `handoffs/README.md`, `tidalcosmo/**/README.md`, `scripts/`, skills, `Makefile`, `.github/`, config | `cosmo/irem-amendments` (#550) | **merged** ✅ CI 34393863566 + 34393863645 success on `1cde083d`. **`oracle.yml` proven in both directions**: CI 34393316535 failure on a corrupted fixture, CI 34392693815 success clean. Replaced the six-item exporter list with a rule + anchor + guard rather than a longer list. Found PSALTer's own README known-bug #1 (#543) |
 | 0c | I-533 — retire the M0 drop rows | #533 | — | `tidal/`, `tests/`, `examples/**/run.sh`, legacy `scripts/`, `docs/tex/` | `cosmo/i533-retire-drop-rows` (#552) | **merged** ✅ CI 34401167660 + 34401167568 success on `f8d4001a`. `sweep`/`sample`/`analyze`/`plot` gone with their in-package plotting, +1182/−26727; each name exits 2 naming a `git show v0.53.0:` recovery path, handler probed. **`measure` deliberately kept** — a `drop` verdict is not a retire milestone; it is drop **+ M5**, amended at the site. Orphan inventory #553, spec drift #554 |
-| 0c | I-543 — resolve the Tier-1 gate | #543 #542 | **yes** | `scripts/psalter/repro_543.wl`, `docs/cosmology/psalter_543_*.md`, `stage1_measurements.md` §4.4–4.6, evidence dir | — | drafted — merges last |
+| 0c | I-543 — resolve the Tier-1 gate | #543 #542 #556 #551 | **yes** | `scripts/psalter/`, `docs/cosmology/psalter_543_*.md`, `evidence/tier1-20260911-pass/` | `cosmo/i543-psalter-gate` (#557) | **merged** ✅ CI 34619683909 success on `4a2c38fd`. **GATE PASSES — `VERDICT: MATCH`**, both keys identical. Cause: two undocumented PSALTer Function Repository dependencies, **not** the engine (14.2.1 behaves identically). Certified: 14.3.0 × `bb45adb0` × local registration. Upstream issue drafted, not filed |
 | 1 | I-532 — CAMB seam, background protocol, flag schema | #532 | — | `tidalcosmo/{background,spectator,validity}/` | — | planned |
 | 1 | I-503 — per-operator dispersion + zero-mode scope | #503 | — | `research/lagrangian_enumeration/`, `docs/` | — | planned |
 | 1 | I-S1A — Stage-1 Python side | #527 | — | `tidalcosmo/{config,derive}/` (Python only), `tidalcosmo/spectrum/` | — | planned |
@@ -674,6 +674,24 @@ Status: `drafted → dispatched → reported → merged`.
 | 2 | M2/O1 — CAMB fork re-apply | #498 | — | fork repo + `tidalcosmo/background/` | — | outline |
 
 ### Decision on #543 — the Tier-1 mismatch (orchestrator, 2026-09-07)
+
+> **RESOLVED 2026-09-11 — the gate passes and the install is certified** (#557, `7286ae94`).
+> The cause was **two undocumented PSALTer Function Repository dependencies**, not the engine
+> version this section spends its length on: `LinearlyIndependent` (`SymbolicNullSpace.m:31`
+> master, `IsNullVectorOfSpace.m:6` subkernels) and `PolynomialDegree`. Unresolved, they are
+> not Booleans, so no gauge symmetry is identified and every pseudo-determinant is zero — and
+> the run still writes its `.mx`. 14.2.1 behaves identically to 14.3.0, so the engine
+> hypothesis is refuted by execution. **Certified configuration: Wolfram 14.3.0 × PSALTer
+> `bb45adb0` × local registration** (`scripts/psalter/register_resources.wl`, no edit to
+> PSALTer). Evidence: `docs/cosmology/evidence/tier1-20260911-pass/` (`VERDICT: MATCH`), with
+> the failing 2026-09-07 run kept beside it.
+>
+> **The reasoning below is left standing because it was wrong in an instructive way.** It
+> reads as a careful elimination, and its two named hypotheses were both wrong: the engine
+> version, and "the resources are ruled out by test" — the latter because the substitute that
+> tested it reproduced the disabled behavior instead of restoring it (#556). An elimination is
+> only as good as whether its controls discriminate.
+
 
 **The gate stays as written and the install stays uncertified.** A gate whose whole
 justification is *"a mismatch can only be the install"* is not relaxed the first time it
@@ -786,58 +804,38 @@ What the next planning session does *first*, before planning anything:
 The program is **design-complete**, has passed the pre-implementation scientific review
 (`docs/cosmology/scientific_review.md`), and is in implementation.
 
-> **State, 2026-09-09.** **Wave 0 is merged but not complete**, and a **completion wave**
-> (I-REM ∥ I-533 ∥ I-543) is running before Wave 1 is planned. What is done: #524 M0
-> packaging and the CI lane (`654b627a`), #525 M0.5 with 185 frozen fixtures (`e310e125`),
-> #526 PSALTer installed and its three probes answered (`c8c57251`), plus #544. What is not:
-> **the Tier-1 install gate reports MISMATCH, so the install is uncertified and both
-> spectrum criteria are blocked** (#543) — I-543 resolves it rather than documenting it; the
-> **M0 retire clause** was deferred on a rejected reason — I-533 does it; and the
-> instruction sites, docs index and tooling Wave 0 left inconsistent — I-REM.
+> **State, 2026-09-11. Wave 0 and its completion wave are COMPLETE.** All six prompts merged:
+> #524 M0 packaging (`654b627a`), #525 M0.5 with 185 frozen fixtures (`e310e125`), #526
+> PSALTer installed (`c8c57251`), then I-REM instruction sites and the oracle CI gate
+> (`32d21a3b`), I-533 retiring the drop rows (`df206443`), and I-543 resolving the Tier-1
+> gate (`7286ae94`).
+>
+> **The PSALTer install is certified**: Wolfram 14.3.0 × PSALTer `bb45adb0` × local
+> registration of two Function Repository resources the package depends on but never declares.
+> `VERDICT: MATCH` on the author's own published input. **Nothing is blocked.**
 >
 > **Wave 1 is planned by a fresh planning session, which the user initiates** — this
-> orchestrator never starts it. Its composition is settled and recorded below so that
-> session begins from committed state: **#532 (M1a) ∥ #503 ∥ I-S1A (#527)**. **No Wave-1
-> prompt exists yet; writing them is that session's first task.**
-
-The original dependency order, for reference:
-
-1. **#524 (M0)** — packaging: second console script, extras, YAML package-data, the CI lane.
-   The verification gates themselves are already live (`8b54fe6e`, `7b6f7a17`).
-2. **#525 (M0.5)** — freeze the legacy oracle as committed data, **before any porting
-   begins**. This is what decouples port order from deletion order and makes retiring
-   `tidal/inference/` at M1b safe.
-3. **#532 / M1a → O0 (seam half)** — `background/protocol.py` (defined by investigating
-   CAMB's API; it is the session's first deliverable), `background/camb_seam.py`,
-   `spectator/` pass-through, `validity/flags.py` with **both flag severities** defined.
-   Gate: **machine-precision identity** on the pass-through path, seam-product spot checks,
-   a gauge-mismatch refusal test, flag-schema unit tests.
-
-   > *Amended 2026-09-06.* This step pointed at **#491**, which is the WS2 **symbolic**
-   > tracker — a session dispatched against it would pull Wolfram work into a non-lane
-   > slot. M1 now splits into M1a/M1b (#532 is the new M1a issue; M1 had none). Its old
-   > gate, "sub-percent agreement with CAMB", was **circular**: a pass-through returns
-   > CAMB's own arrays, so it passes by construction while staying loose enough to hide a
-   > unit or `ℓ(ℓ+1)/2π` slip.
-4. **M1b → O0 (inference half)** — the Cobaya `Theory` class and packaging. Gate: our
-   pass-through Theory's ΛCDM posterior ≡ a plain-CAMB Cobaya run within sampling noise,
-   plus #515's duplicated-compute benchmark. Retires `tidal/inference/`.
-5. **#498 / M2 → O1** — the CAMB fork first (re-apply off `2.0.3`), then `TabulatedBackground`.
-
-**~~In parallel, unblocked by the above:~~ #526 — DONE 2026-09-07** (`c8c57251`): PSALTer is
-installed and #521/#522/#523 are closed, but **the Tier-1 gate did not pass** and the install
-is uncertified — see #543 and the completion-wave note above. WS6 (#495) is buildable after
-M0 on the Python side; its Wolfram side waits on the certified configuration.
-
-**Also parallel, and it gates the settled rung order:** **#503** — the per-operator photon
-dispersion relations. Whether O4a is the cheap rung depends on its answer — though note
-#503 settles only *half* the precondition (the frequency exponent `n`); "`β` constant over
-recombination" is a property of the torsion zero-mode's evolution and needs its own owner.
-
-**Open physics question, tracked and scoped:** **#531** — whether an FRW background solves
-the PGT field equations. The thesis proves `T̄ = 0` exact on *flat Minkowski*; FRW is open.
-Handled by scoping admissible theories, testing the background-EOM residual per theory
-(#501), and surveying the research rather than attempting to settle it.
+> orchestrator never starts it. Composition is settled and recorded so that session begins
+> from committed state: **#532 (M1a) ∥ #503 ∥ I-S1A (#527)**. **No Wave-1 prompt exists yet;
+> writing them is that session's first task.** Read the wave board above, then the
+> wave-boundary checklist, then plan.
+>
+> **What Wave 1 inherits that the original outline did not:**
+>
+> - The Stage-1 exporter must **enumerate the private globals from
+>   `ParticleSpectrum.m:74-81` at the pinned revision** and guard the set with a fixture test
+>   — not hard-code a count, which is how the six-item list came to be wrong.
+> - **Two Function Repository resources are load-bearing and undeclared.** Any environment
+>   running PSALTer needs `scripts/psalter/register_resources.wl`, and re-running it after a
+>   container rebuild is required before the gate.
+> - **A Tier-1 pass certifies two keys and nothing else** — not source constraints, spectrum,
+>   or unitarity conditions. Tier 2 is the physics gate.
+> - `A[0]` is answered by **I-S1B** (it needs a real export); I-S1A represents both forms and
+>   carries it as a named unknown.
+> - The `§5.2` legacy↔new mapping is designed **with the symbolic stage (M3)**, not at M0.5.
+> - Deferred with owners: #553 (M1b/M5 orphan inventory), #554 (spec drift, needs the lane),
+>   #534 (port manifest at M3), #535/#536 (M3 `inspect`/`validate` requirements), #537 (M7),
+>   #529 (WS3 O2 contract, blocks the O2 handoff not Wave 1), #530 (survey tags at WS3).
 
 ## Verification gates
 
