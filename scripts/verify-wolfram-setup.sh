@@ -19,6 +19,7 @@
 #
 # Exit Codes:
 #   0 - All checks passed
+#   2 - Install works but a capability is degraded (not certifiable)
 #   1 - One or more checks failed
 #
 # ==============================================================================
@@ -44,6 +45,11 @@ PSALTER_PRESENT="false"
 PSALTER_LOAD_TIMEOUT="${PSALTER_LOAD_TIMEOUT:-900}"
 PSALTER_SMOKE_TIMEOUT="${PSALTER_SMOKE_TIMEOUT:-900}"
 PSALTER_COMMIT="${PSALTER_COMMIT:-bb45adb0fa21e467dbd88d4dc36ef21b84abbe6d}"
+# The engine the Tier-1 gate was certified on (GH #543). A different engine is not a
+# broken install -- the gate can still be run on it to reproduce or cross-check -- but
+# the result is not certifiable, so a mismatch is reported as DEGRADED (exit 2).
+# Override with EXPECTED_WOLFRAM_VERSION=<major.minor.release> when certifying anew.
+EXPECTED_WOLFRAM_VERSION="${EXPECTED_WOLFRAM_VERSION:-14.3.0}"
 
 log_pass() {
     echo -e "${GREEN}[PASS]${NC} $1"
@@ -117,8 +123,14 @@ check_wolfram_activation() {
             
             # Get version info
             local version
-            version=$(wolframscript -code '$VersionNumber' 2>/dev/null || echo "unknown")
+            version=$(wolframscript -code 'ToString[$VersionNumber] <> "." <> ToString[$ReleaseNumber]' 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+            version="${version:-unknown}"
             log_info "  Version: ${version}"
+            if [[ "$version" == "$EXPECTED_WOLFRAM_VERSION" ]]; then
+                log_pass "  Engine matches the certified version (${EXPECTED_WOLFRAM_VERSION})"
+            else
+                log_degraded "  Engine ${version} is not the certified ${EXPECTED_WOLFRAM_VERSION} (GH #543): runs are possible, not certifiable"
+            fi
             
             local license
             license=$(wolframscript -code '$LicenseType' 2>/dev/null || echo "unknown")
@@ -408,16 +420,23 @@ check_psalter_deffield_smoke() {
 #
 # PSALTer calls ResourceFunction["PolynomialDegree"] and
 # ResourceFunction["LinearlyIndependent"] -- five call sites across
-# ValidateLagrangian, UnresolvedPoleRow and the source-constraint null-space code.
-# Neither is declared anywhere in its README or install instructions, and both are
-# downloaded from the Wolfram Function Repository on first use.
+# ValidateLagrangian, UnresolvedPoleRow and the source-constraint null-space code
+# (the latter on SUBKERNELS). Neither is declared anywhere in its README or install
+# instructions. When either does not resolve, PSALTer does not stop: the result is
+# non-Boolean, no null vector is ever appended, every source constraint is lost and
+# every pseudo-determinant comes out zero -- the Tier-1 MISMATCH of GH #543 -- while
+# the run completes and writes its .mx. That is why this check tests BEHAVIOR
+# (values on the exact call shapes), on the master and on a fresh subkernel, and
+# not merely whether a ResourceObject can be looked up.
 #
-# When they cannot be fetched, PSALTer does not stop: it emits
-# ResourceObject::notfname and CONTINUES, so the NonQuadraticFields validation
-# silently never runs. That is a silent-degradation failure mode, which is why
-# this is checked at verification time rather than discovered mid-run.
+# The genuine functions are supplied by scripts/psalter/register_resources.wl
+# (GH #543); they are part of the certified configuration, so their absence is a
+# hard failure under --require-psalter (the gate would otherwise produce a
+# known-wrong answer) and a warning otherwise. This reverses the DEGRADED routing
+# adopted for GH #549, when the resources were merely unavailable rather than a
+# certified leg; the fix is one command, named in the message.
 check_psalter_resources() {
-    log_info "Checking PSALTer's Wolfram Function Repository dependencies..."
+    log_info "Checking PSALTer's Wolfram Function Repository dependencies (behavior, master + subkernel)..."
 
     if [[ "$PSALTER_PRESENT" != "true" ]]; then
         log_info "  Skipped (PSALTer not installed)"
@@ -425,9 +444,15 @@ check_psalter_resources() {
     fi
 
     local test_code='
-    Do[Print["RESOURCE=", r, " obtainable=",
-         Quiet@Check[Head[ResourceObject[r]] === ResourceObject, False]],
-       {r, {"PolynomialDegree", "LinearlyIndependent"}}];
+    ok[expr_] := Quiet@Check[expr, $Failed];
+    shapes := {ResourceFunction["LinearlyIndependent"][{{1, 0}, {0, 1}}],
+               ResourceFunction["LinearlyIndependent"][{{1, 0}, {2, 0}}],
+               ResourceFunction["PolynomialDegree"][rx^2 ry, {rx, ry}]};
+    Print["RESOURCE_MASTER=", ToString[ok[shapes], InputForm]];
+    Print["RESOURCE_UUIDS=", ToString[ok[{ResourceObject["LinearlyIndependent"]["UUID"], ResourceObject["PolynomialDegree"]["UUID"]}], InputForm]];
+    Quiet@LaunchKernels[1];
+    Print["RESOURCE_SUBKERNEL=", ToString[ok[First[ParallelEvaluate[{ResourceFunction["LinearlyIndependent"][{{1, 0}, {0, 1}}], ResourceFunction["LinearlyIndependent"][{{1, 0}, {2, 0}}], ResourceFunction["PolynomialDegree"][rx^2 ry, {rx, ry}]}]]], InputForm]];
+    CloseKernels[];
     Print["RESOURCE_CHECK_DONE"];
     '
     local tmp result
@@ -442,21 +467,21 @@ check_psalter_resources() {
         return 0
     fi
 
-    local missing=0 r
-    for r in PolynomialDegree LinearlyIndependent; do
-        if echo "$result" | grep -q "RESOURCE=${r} obtainable=True"; then
-            log_pass "  ResourceFunction ${r} available"
+    local expected='{True, False, 3}' bad=0 side
+    for side in MASTER SUBKERNEL; do
+        if echo "$result" | grep -qF "RESOURCE_${side}=${expected}"; then
+            log_pass "  LinearlyIndependent / PolynomialDegree behave on the ${side,,}"
         else
-            log_degraded "  ResourceFunction ${r} NOT available"
-            missing=1
+            log_soft_fail "  LinearlyIndependent / PolynomialDegree do NOT behave on the ${side,,}: $(echo "$result" | grep -o "RESOURCE_${side}=.*" | head -1)"
+            bad=1
         fi
     done
+    log_info "  Resolved to: $(echo "$result" | grep -o 'RESOURCE_UUIDS=.*' | head -1)"
 
-    if [[ $missing -eq 1 ]]; then
-        log_info "  PSALTer downloads these from the Wolfram Function Repository on"
-        log_info "  first use and CONTINUES WITHOUT THEM, so results degrade silently."
-        log_info "  Needs network access to the Wolfram Cloud, or the resources"
-        log_info "  registered locally with ResourceRegister."
+    if [[ $bad -eq 1 ]]; then
+        log_info "  PSALTer continues WITHOUT these and silently produces a wrong spectrum"
+        log_info "  (GH #543). Register the genuine code with:"
+        log_info "    wolframscript -file scripts/psalter/register_resources.wl"
         return 1
     fi
     return 0
