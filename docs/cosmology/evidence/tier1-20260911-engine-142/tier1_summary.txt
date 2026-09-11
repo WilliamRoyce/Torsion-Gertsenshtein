@@ -1,0 +1,19 @@
+======================================================================
+PSALTer Tier-1 install gate
+======================================================================
+  theory        : CTEG
+  wolfram       : 14.2 on Linux-x86-64
+  generated     : 2026-09-11T19:52:01Z
+
+  keys (ours)   : ['xAct`PSALTer`WaveOperator', 'xAct`PSALTer`PseudoDeterminant']
+  keys (oracle) : ['xAct`PSALTer`WaveOperator', 'xAct`PSALTer`PseudoDeterminant']
+
+  per-key comparison
+  ------------------------------------------------------------------
+  ok   PseudoDeterminant            identical            dims=[3, 2] leaves=71
+  ok   WaveOperator                 identical            dims=[3] leaves=303
+
+  tally         : {'identical': 2}
+  VERDICT       : MATCH
+  reason        : 2 key(s) compared; every entry proved equal
+======================================================================

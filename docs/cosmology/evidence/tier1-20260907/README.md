@@ -5,7 +5,10 @@ The measurements behind the **MISMATCH** verdict recorded in
 `docs/COSMOLOGY_PROGRAM.md` §"Decision on #543".
 
 Committed because this verdict is the basis of a live decision — it is going to the
-11 September supervisor conversation, and it blocks certification of the PSALTer install.
+11 September supervisor conversation, and it blocked certification of the PSALTer install
+until `../tier1-20260911-pass/` (**`VERDICT: MATCH`**, the same input once the two undeclared
+Function Repository resources were registered locally, #543/#557). This directory is the
+*failing* half of that record and stays as the evidence that the gate reported honestly.
 It was produced in a delegate worktree under a **gitignored** path, so removing that
 worktree would have destroyed the evidence behind a conclusion the programme is carrying.
 26 KB is a cheap price for that not being true.
@@ -73,7 +76,7 @@ successful re-run — a read-back path never recomputes (#544).
 
 `ParticleSpectrographCTEG-rerun-20260909.pdf` is the spectrograph PSALTer rendered during the
 2026-09-09 re-run — the artifact the author would actually look at. It is visibly broken, and
-anyone can confirm it without a kernel, a licence, or the lane:
+anyone can confirm it without a kernel, a license, or the lane:
 
 ```sh
 pdftotext docs/cosmology/evidence/tier1-20260907/ParticleSpectrographCTEG-rerun-20260909.pdf - \
