@@ -49,7 +49,14 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 # Step 1: Derive equations from Lagrangian (requires wolframscript)
-tidal derive theory.toml
+# The committed spec under ../data/ is the frozen legacy oracle (tests_cosmo/data/oracles,
+# #525/#554): re-deriving in place overwrites it with the current generator's output.
+# Opt in explicitly.  FORCE_DERIVE=1 ./run.sh
+if [[ "${FORCE_DERIVE:-0}" == "1" ]]; then
+    tidal derive theory.toml
+else
+    echo "skipping 'tidal derive theory.toml' -- the committed spec is the oracle; FORCE_DERIVE=1 to re-derive in place"
+fi
 
 # Step 2: Inspect the equation system (phi_0 + A_0, A_1, A_2)
 tidal inspect ../data/scalar_vector_coupling.json

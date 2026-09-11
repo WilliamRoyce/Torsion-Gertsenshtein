@@ -22,7 +22,14 @@ cd "$(dirname "$0")"
 ### De Sitter Klein-Gordon (2+1D, expanding universe) ###
 
 # Derive equations from Lagrangian (requires wolframscript)
-tidal derive de_sitter.toml
+# The committed spec under ../data/ is the frozen legacy oracle (tests_cosmo/data/oracles,
+# #525/#554): re-deriving in place overwrites it with the current generator's output.
+# Opt in explicitly.  FORCE_DERIVE=1 ./run.sh
+if [[ "${FORCE_DERIVE:-0}" == "1" ]]; then
+    tidal derive de_sitter.toml
+else
+    echo "skipping 'tidal derive de_sitter.toml' -- the committed spec is the oracle; FORCE_DERIVE=1 to re-derive in place"
+fi
 
 # Inspect the equation system
 tidal inspect ../data/de_sitter_kg.json
@@ -43,7 +50,14 @@ tidal simulate ../data/de_sitter_kg.json \
 ### Conformal Static Klein-Gordon (1+1D, constant conformal factor) ###
 
 # Derive equations from Lagrangian (requires wolframscript)
-tidal derive conformal_static.toml
+# The committed spec under ../data/ is the frozen legacy oracle (tests_cosmo/data/oracles,
+# #525/#554): re-deriving in place overwrites it with the current generator's output.
+# Opt in explicitly.  FORCE_DERIVE=1 ./run.sh
+if [[ "${FORCE_DERIVE:-0}" == "1" ]]; then
+    tidal derive conformal_static.toml
+else
+    echo "skipping 'tidal derive conformal_static.toml' -- the committed spec is the oracle; FORCE_DERIVE=1 to re-derive in place"
+fi
 
 # Inspect the equation system
 tidal inspect ../data/conformal_kg_static.json

@@ -24,6 +24,12 @@ name: Frozen Legacy Oracle
 # theories x 4 legacy invocations, serial), and it runs only on commits that can actually
 # invalidate the freeze.  oracle.yml lists itself deliberately -- a gate that does not re-run
 # when its own definition changes is one you can edit blind.
+#
+# uv.lock is in the filter because a dependency-pin change can alter legacy output. A
+# version bump also rewrites uv.lock (its own `version =` line), which cannot alter legacy
+# output, so every bump costs one ~4-minute run it did not need. Accepted 2026-09-11:
+# bumps happen once per wave, and a filter that could tell the two apart would need to
+# read the diff, which is more machinery than the false run costs.
 on:
   push:
     branches:

@@ -62,6 +62,41 @@ They are copied because **a copy is a pin and a reference is a moving target**:
    would leave the frozen verdicts below describing specs that no longer produce them — an
    oracle silently inconsistent with itself, which is the worst failure mode a gate has.
 
+### What this oracle is the oracle *for*, and three drift classes it carries (2026-09-11)
+
+The frozen spec is **legacy as committed** — a pin of what the derivation produced when each
+file was last derived — not "legacy as of the version that froze it". The corpus is
+**mixed-vintage** by construction (files last derived between v0.31 and v0.53), and
+`--check` compares fresh `inspect`/`validate` runs **over the committed spec** against the
+committed reports: it detects an edited spec or a changed reader, and it is **structurally
+blind** to "the committed spec is older than what `derive` would produce today" (#554).
+That blind spot has a license-free detector (`derivation_hash` against the hash of
+`tidal derive --dry-run`'s generated script — see `scripts/oracles/README.md`), and it is
+why re-deriving in place from `examples/*/run.sh` now needs `FORCE_DERIVE=1`.
+
+Three drift classes are known and are **representational, not physical**. The §5.2 mapping
+must not treat their absence in the new package as a regression, and a port that reproduces
+the *physics* while dropping them is correct:
+
+1. **#397 — 18 specs carry the stale `a_0` sign** (the section below). A defect the port must
+   not carry forward; their frozen verdict is a specification, not a target.
+2. **The `coupling` block is present in 46/46 frozen specs and is no longer emitted.**
+   `efd18a5b` (#403/#404, 2026-08-17) deleted `ExportJSON.wl`'s `coupling` output as
+   write-only dead data — nothing in `tidal/` reads it (`git grep '\["coupling"\]'` → zero) —
+   and verified the loaded model byte-identical with and without it. A fresh derive omits
+   it; the committed files keep it. `coupled_scalars` is the case #554 noticed.
+3. **`component_metadata` (`tensor_head`/`tensor_rank`/`tensor_indices` on `fields[]`) is
+   absent from 11/46** that predate `78374c1`: `conformal_kg_static`, `navier_cauchy_2d`,
+   `graviton_torsion`, `massive_3form`, `scalar_vector_coupling`, and six
+   `torsion_gertsenshtein*` variants. The port's field metadata is richer than these by
+   design.
+
+**A full re-freeze was considered and rejected (2026-09-11).** It would take `--stability`
+coverage from 6/46 to 1/46 — five of the six passes depend on `metadata.parameters`, which
+#232 stopped injecting — three theories cannot be re-derived at all on the current pipeline
+(#321 ×2 including the main thesis theory, #402 ×1), and it costs 8–12 hours of the single
+kernel to strip data nothing reads. The pin stays; the classes above are the contract.
+
 Cost: 7.0 MB raw, ~0.3 MB compressed, which is what git stores.
 
 **Considered and rejected:** recording each spec's git blob SHA instead of copying. It

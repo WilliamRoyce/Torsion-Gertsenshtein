@@ -29,7 +29,14 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 # Derive TT gauge-fixed linearized Einstein equations
-tidal derive theory.toml
+# The committed spec under ../data/ is the frozen legacy oracle (tests_cosmo/data/oracles,
+# #525/#554): re-deriving in place overwrites it with the current generator's output.
+# Opt in explicitly.  FORCE_DERIVE=1 ./run.sh
+if [[ "${FORCE_DERIVE:-0}" == "1" ]]; then
+    tidal derive theory.toml
+else
+    echo "skipping 'tidal derive theory.toml' -- the committed spec is the oracle; FORCE_DERIVE=1 to re-derive in place"
+fi
 tidal inspect ../data/linearized_gravity.json
 
 # Simulate with h_plus (h_4 = h_xx) initial condition

@@ -39,7 +39,14 @@ echo ""
 
 # Step 1: Derive coupled equations from Einstein-Maxwell Lagrangian
 echo "--- Step 1: Derive ---"
-tidal derive theory.toml
+# The committed spec under ../data/ is the frozen legacy oracle (tests_cosmo/data/oracles,
+# #525/#554): re-deriving in place overwrites it with the current generator's output.
+# Opt in explicitly.  FORCE_DERIVE=1 ./run.sh
+if [[ "${FORCE_DERIVE:-0}" == "1" ]]; then
+    tidal derive theory.toml
+else
+    echo "skipping 'tidal derive theory.toml' -- the committed spec is the oracle; FORCE_DERIVE=1 to re-derive in place"
+fi
 echo ""
 
 # Step 2: Inspect the derived JSON (expect 6 fields after elimination)
