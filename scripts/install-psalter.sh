@@ -114,10 +114,23 @@ show_help() {
 
 # Check if Wolfram Engine is available and activated
 check_wolfram() {
+    # The mounted kernel, not `command -v wolframscript`: the devcontainer image
+    # ships its own client at /usr/bin/wolframscript -> /opt/Wolfram/..., so
+    # `command -v` succeeds with no engine installed and every later call becomes
+    # a cloud evaluation. Same defect class as #559 in ensure_registered.sh and
+    # verify-wolfram-setup.sh, found by enumerating the pattern rather than
+    # fixing the one site that bit.
+    local expected_version="${EXPECTED_WOLFRAM_VERSION:-14.3.0}"
+    local engine_dir="${EXPECTED_ENGINE_DIR:-${HOME}/.local/wolfram/engine/${expected_version%.*}}"
+    if [[ ! -x "${engine_dir}/Executables/WolframKernel" ]]; then
+        log_error "No Wolfram kernel at ${engine_dir}/Executables/WolframKernel"
+        log_error "The engine is not installed in its mount. Setup path:"
+        log_error "  .devcontainer/docs/WOLFRAM_GUIDE.md"
+        exit 1
+    fi
+
     if ! command -v wolframscript &> /dev/null; then
-        log_error "Wolfram Engine is not installed or not activated"
-        log_error "Run: sudo ./scripts/install-wolfram-engine.sh"
-        log_error "Then: ./scripts/activate-wolfram.sh"
+        log_error "wolframscript not on PATH (kernel exists at ${engine_dir})"
         exit 1
     fi
 
