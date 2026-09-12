@@ -6647,6 +6647,44 @@ def _derive_from_toml(config_path: Path, args: Namespace) -> int:  # noqa: C901,
             except Exception:  # noqa: BLE001, S110
                 pass  # JSON missing or corrupt — honor the non-zero exit code
 
+    # A wolframscript that ABORTS mid-script still exits 0.  Probed directly
+    # 2026-09-12, with both -code and -file: an uncaught `Throw` prints
+    # `Throw::nocatch`, stops execution, and returns status 0.  The Wolfram
+    # pipeline signals its own errors by throwing -- `ParseMultiFieldRHS`,
+    # among others -- so a zero exit code cannot, on its own, mean the
+    # derivation ran.  Verify the artifact positively instead: it must exist
+    # AND have been written by THIS run.  Found by execution (GH #561):
+    # `tidal derive examples/gertsenshtein/theory_radial.toml` printed its
+    # stages, threw in `ParseMultiFieldRHS`, wrote no JSON, and exited 0 --
+    # reporting success for a derivation that never produced anything.
+    if ret == 0:
+        from tidal.cli._console import error_with_hint as _cerror_hint2
+
+        if not resolved.exists():
+            _cerror_hint2(
+                f"wolframscript exited 0 but wrote no output: {resolved}",
+                [
+                    "An uncaught Throw in the Wolfram pipeline aborts the script "
+                    "and still exits 0 -- read the wolframscript output above for "
+                    "the abort (look for 'Throw::nocatch' or '::invrl').",
+                    "Re-run with --save-script PATH to keep the generated .wls and "
+                    "evaluate it interactively at the failing stage.",
+                ],
+            )
+            ret = 1
+        elif resolved.stat().st_mtime_ns <= pre_run_mtime:
+            _cerror_hint2(
+                f"wolframscript exited 0 but did not rewrite {resolved.name} -- "
+                f"the file on disk is from an earlier run",
+                [
+                    "The script aborted before export; the stale JSON must not be "
+                    "read as this run's result (see 'Throw::nocatch' above).",
+                    "Use --force-derive to re-run, and --save-script to inspect "
+                    "the generated .wls.",
+                ],
+            )
+            ret = 1
+
     # NOTE: Plane-wave reduction (coordinate remapping, operator renaming,
     # dimension change) is now handled entirely in Wolfram via
     # _wls_json_plane_wave_reduction(). No Python post-processing needed.

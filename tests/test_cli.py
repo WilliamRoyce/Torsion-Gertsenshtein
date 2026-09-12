@@ -2293,6 +2293,89 @@ class TestDeriveAbsolutePaths:
         assert f'"{expected}"' in script
 
 
+class TestDeriveAbortedScriptIsNotSuccess:
+    """A wolframscript that aborts mid-script exits 0 (GH #561).
+
+    Probed 2026-09-12: an uncaught `Throw` prints `Throw::nocatch`, stops
+    execution and returns status 0, and the Wolfram pipeline signals its own
+    errors by throwing. `tidal derive` therefore cannot read exit 0 as "the
+    derivation ran"; it verifies the artifact positively. Both tests patch the
+    subprocess boundary rather than running a kernel, so they need no license.
+    """
+
+    THEORY = """
+[theory]
+name = "Aborting Scalar"
+
+[spacetime]
+dimension = 2
+metric = "minkowski"
+
+[[fields]]
+name = "phi"
+type = "scalar"
+
+[constants]
+names = ["mPhi2"]
+
+[lagrangian]
+expression = "-1/2 CD[-a][phi[]] eta[a, b] CD[-b][phi[]] - mPhi2/2 phi[]^2"
+
+[output]
+path = "out.json"
+"""
+
+    def _config(self, tmp_path: Path) -> Path:
+        config = tmp_path / "theory.toml"
+        config.write_text(self.THEORY)
+        return config
+
+    def test_exit_zero_with_no_output_is_a_failure(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The radial case: stages print, the script throws, nothing is written."""
+        from tidal.cli import _derive
+
+        def exits_zero_without_writing(*_args: object, **_kwargs: object) -> int:
+            return 0
+
+        monkeypatch.setattr(_derive, "_run_wolframscript", exits_zero_without_writing)
+        ret = main(["derive", str(self._config(tmp_path))])
+        assert ret == 1
+        assert not (tmp_path / "out.json").exists()
+
+    def test_exit_zero_leaving_a_stale_output_is_a_failure(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A previous run's JSON must not be read as this run's result."""
+        from tidal.cli import _derive
+
+        stale = tmp_path / "out.json"
+        # A REAL committed spec, so `load_equation_system` succeeds and the only
+        # thing that can fail this run is the mtime check.  With a structurally
+        # invalid file the post-validate step fails first and the test passes for
+        # the wrong reason -- measured while writing it.
+        stale.write_text(
+            (
+                Path(__file__).resolve().parent.parent
+                / "examples/data/conformal_kg_static.json"
+            ).read_text(),
+        )
+        before = stale.stat().st_mtime_ns
+
+        def exits_zero_without_writing(*_args: object, **_kwargs: object) -> int:
+            return 0
+
+        monkeypatch.setattr(_derive, "_run_wolframscript", exits_zero_without_writing)
+        ret = main(["derive", str(self._config(tmp_path)), "--force-derive"])
+        assert ret == 1
+        assert stale.stat().st_mtime_ns == before, "the stale file must be left alone"
+
+
 class TestDeriveValidation:
     def test_missing_spacetime(self, tmp_path: Path) -> None:
         config = tmp_path / "bad.toml"
