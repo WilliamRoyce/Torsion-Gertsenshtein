@@ -44,10 +44,11 @@ seven `H*.md` files while the programme document speaks of eight handoffs.
 | --- | --- | --- | --- | --- | --- |
 | `I-524.md` | #524 (M0) | 0 | no | **merged** | `tidalcosmo/` installable, extras, console script, CI lane |
 | `I-525.md` | #525 (M0.5) | 0 | no | **merged** | `scripts/oracles/`, 185 frozen fixtures under `tests_cosmo/data/oracles/`; filed #535–#538 |
-| `I-526.md` | #526 | 0 | **yes** | **merged, install UNCERTIFIED** | PSALTer v2.0.2 installed; Tier-1 **MISMATCH** → #543. `../stage1_measurements.md`, `../evidence/tier1-20260907/` |
-| `I-REM.md` | #545, #546, #540 | 0-completion | no | merges **first** | instruction-site amendments, docs index, `oracle.yml`, tooling |
-| `I-533.md` | #533 | 0-completion | no | merges second | retire the M0 drop rows (`sweep`, `sample`, `analyze`, `plot`) |
-| `I-543.md` | #543 (+#542, #549) | 0-completion | **yes** | merges last | resolve the Tier-1 gate — pass it, or locate the mechanism |
+| `I-526.md` | #526 | 0 | **yes** | **merged**; gate resolved by I-543 (2026-09-11) | PSALTer v2.0.2 installed; Tier-1 MISMATCH on merge → #543. `../stage1_measurements.md`, `../evidence/tier1-20260907/` |
+| `I-REM.md` | #545, #546, #540 | 0-completion | no | **merged** 2026-09-09 (#550) | instruction-site amendments, docs index, `oracle.yml`, tooling |
+| `I-533.md` | #533 | 0-completion | no | **merged** 2026-09-11 (#552) | retire the M0 drop rows (`sweep`, `sample`, `analyze`, `plot`) |
+| `I-543.md` | #543 (+#542, #549) | 0-completion | **yes** | **merged** 2026-09-11 (#557) — **gate passes, install certified** | resolve the Tier-1 gate — pass it, or locate the mechanism |
+| `I-ONB.md` | #559 (#488, #543 hardening) | 0-completion | no | drafted 2026-09-11 | one onboarding path: a fresh user with their own Wolfram ID lands in the certified configuration; fixes the fresh-host container failure |
 
 ## The Wolfram lane
 

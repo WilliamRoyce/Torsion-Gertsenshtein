@@ -415,7 +415,7 @@ connects):** the same registration behaves on 14.2.1 under PSALTer on master and
 (`{True, False, "appended", 3}`; `{True, True, 3}`). **Ladder on 14.2.1: every rung PASS** —
 X (cubic control throws), G ×3 (`{3, 1}` rows every run), A, B, C with the same values as
 14.3.0. **CTEG readback on 14.2.1:** the same seven rows, the same multiplicities and 21
-generators, and pseudo-determinant expressions identical to 14.3.0 and to the oracle.
+generators, and pseudo-determinant expressions identical to 14.3.0 and to the oracle. **Retired 2026-09-11** after its artifact was committed (`docs/cosmology/evidence/tier1-20260911-engine-142/`: MATCH on the same input; the summary reader refuses its verdict by engine version, as designed). To redo: the installer is kept at `third_party/WolframEngine_14.2.1_LIN.sh` (host bind); install with `sudo bash <installer> -- -auto -targetdir=$HOME/.local/wolfram/engine/14.2`, activate it with your own Wolfram ID, select it per command with `WOLFRAMSCRIPT_KERNELPATH=$HOME/.local/wolfram/engine/14.2/Executables/WolframKernel`, and run the gate with `--skip-preflight` (its headless PDF export produces nothing). One engine — the certified one — is the sound state; a second is 6.8 GB of overlay that a rebuild deletes anyway.
 
 **The 14.2.1 gate *wrapper* refuses, for a reason that is neither PSALTer nor physics:** on
 this side-by-side install the front end cannot start headlessly (`UsingFrontEnd[Export[…]]` →

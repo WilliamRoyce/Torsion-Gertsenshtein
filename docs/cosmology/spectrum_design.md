@@ -885,7 +885,7 @@ propagates nothing).
 >   > **⚠ This banner has itself gone stale (I-REM, 2026-09-09).** It read "only PSALTer
 >   > itself is not [installed]". **PSALTer v2.0.2 `bb45adb0` was installed and verified on
 >   > 2026-09-07** (#526), and Inkscape 1.2.2 is installed too. The install is nonetheless
->   > **UNCERTIFIED**: its Tier-1 gate reports MISMATCH (#543). Two further corrections to
+>   > ~~**UNCERTIFIED**: its Tier-1 gate reports MISMATCH (#543).~~ **Certified 2026-09-11** (#557, `evidence/tier1-20260911-pass/`, `VERDICT: MATCH`): the mismatch was two undeclared Function Repository dependencies, now registered locally. Two further corrections to
 >   > the bullet above: Inkscape is unused *by PSALTer's own `$InkscapePath`*, but its
 >   > dependencies — `libwayland-egl1` in particular — are what make the headless PDF export
 >   > work at all, so removing it reintroduces a hang; and the export hazard begins at
@@ -911,7 +911,7 @@ own session:
   > verified (#526, `scripts/install-psalter.sh`, `scripts/verify-wolfram-setup.sh`). Two of
   > the three live-session items were settled — the missing-coupling behavior is **silence**
   > (#522) and `Method` is **inert**, so the cost item is not a `Method` comparison at all
-  > (#521, §14 below). **The install is UNCERTIFIED** — Tier 1 reports MISMATCH (#543).
+  > (#521, §14 below). ~~**The install is UNCERTIFIED** — Tier 1 reports MISMATCH (#543).~~ **Certified 2026-09-11** (#557): `VERDICT: MATCH` once PSALTer's two undeclared Function Repository resources are registered locally.
 - The **spectrum derivation branch** (§4.5) and the auto-generated model/export script (§4.4,
   §4.5), with the enumerated-symmetry validation and the coupling-per-operator contract.
 - **Our own Wolfram-side exporter** reaching into PSALTer's result objects to emit the

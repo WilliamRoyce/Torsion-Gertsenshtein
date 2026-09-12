@@ -200,6 +200,11 @@ them, there was simply no index.
 | **Admissible theories** | Scoped **explicitly**: only theories admitting the assumed background are in scope, the user judges whether theirs qualifies, and the background-EOM residual is a **first-class per-theory gate** rather than a diagnostic | user, 2026-09-05 | `spectator_route.md` §3, #501, #531 |
 | **Oracle re-run rule** | **If `tidal/` or `examples/data/` changes, re-run `scripts/oracles/` in the same commit.** Stated as an action, not a prohibition — "never edit legacy" is unenforceable and would forbid fixing an open bug, whereas this is checkable at review and keeps the frozen oracle honest by construction | I-525 + orchestrator, 2026-09-06 | `repo_reshape.md` §8, `tests_cosmo/data/oracles/README.md` |
 | **Guardrails retire too** | `tests_cosmo/test_package_boundary.py` and the shell-out check are **deleted at M7, not adapted** — after `git mv tidalcosmo tidal` their own regexes match every legitimate import, so the guard inverts into a blocker | I-525, 2026-09-06 | #537, §7's M7 row |
+| **`A[0]` owner** | Answered by **I-S1B**, which has a real export; I-S1A represents both forms and carries it as a named unknown. Documents cannot settle it | orchestrator, 2026-09-09 | #527, #522 |
+| **Oracle CI, with its expiry** | `oracle.yml` runs `freeze_legacy_oracle.py --check`, path-filtered to `tidal/**`, `examples/**`, `scripts/oracles/**`, the fixtures, `uv.lock` and itself. Firing on `uv.lock` — every version bump, ~4 min — is accepted. **Expires with legacy `inspect`/`validate` (M6/M7)**, recorded in the workflow header and §7's M3 row | I-REM + orchestrator, 2026-09-09 | `.github/workflows/oracle.yml`, `scripts/oracles/README.md` |
+| **Wolfram gates are lane-held, not CI jobs** | No engine in CI (single license), so the Tier-1 gate and `verify --require-psalter` run on the lane and commit their evidence; CI keeps the evidence readable (`summarize_diff.py`, no lane) and the Python suites green. No separate CI job is added for them | I-REM + orchestrator, 2026-09-09 | `docs/cosmology/evidence/`, `scripts/psalter/README.md` |
+| **The certified PSALTer configuration, and what it is independent of** | Wolfram **14.3.0** × xAct **1.3.0** bundle × PSALTer v2.0.2 `bb45adb0` × local registration of `LinearlyIndependent` (the engine-bundled/userbase `ResourceFunctionHelpers` file, sha256 `7bc228a2…`) and `PolynomialDegree` (the committed definition notebook, sha256 `c233e226…`) under **fixed UUIDs** `d40a8dd6-…`, `2f89f2e6-…`. `verify --require-psalter` asserts *provenance* — those UUIDs on master and subkernel, the engine under its mount, the xAct fingerprint — and each assertion was watched fail. `scripts/psalter/ensure_registered.sh` re-creates the registration idempotently (rebuild simulated from an empty registry: identical UUIDs, exit 0). **Independent of the Wolfram-ID cloud login** (asserted logged in and logged out, stored credentials untouched) and of the engine minor version (14.2.1 cross-check MATCH, `evidence/tier1-20260911-engine-142/`, then retired). Nobody's login is logged out: it lives in the user's own home mounts, not the repo | orchestrator, 2026-09-11 | `docs/cosmology/evidence/tier1-20260911-pass/`, `scripts/psalter/README.md`, #559 |
+| **Reduce before you bisect** | A protocol rule, not advice: find the smallest input that still shows the defect and iterate there. #543 reproduces on one scalar field in ~30 s where the CTEG gate takes 7 min | I-543 + orchestrator, 2026-09-09 | delegation protocol, `scripts/psalter/repro_543.wl` |
 | **Verification gates** | Made **able to fail** — `tidalcosmo/` had been outside pyright, coverage, `testpaths` and CI, and the never-import-legacy rule had no test | coherence pass, 2026-09-04 | `8b54fe6e`, #524 |
 
 ### Still open, deliberately
@@ -208,7 +213,7 @@ them, there was simply no index.
 |---|---|
 | **When to start the `tidalcosmo` version line** | Natural trigger: M0, or O0 first passing. No cost to deferring |
 | **GPL/MIT on the Barker-derived code (#495)** | A **release** gate, not an implementation one. Implementation proceeds; distribution does not |
-| **Whether non-sampled constants enter the coupling vector** | Decides whether `A[0]` is legitimate (recommended: yes, they stay out, so the linearity check becomes "no *sampled* coupling appears non-linearly"). **Documents cannot settle this — it needs a real export** (#522) |
+| **Whether non-sampled constants enter the coupling vector** | Decides whether `A[0]` is legitimate (recommended: yes, they stay out, so the linearity check becomes "no *sampled* coupling appears non-linearly"). **Documents cannot settle this — it needs a real export** (#522). Owner: **I-S1B** (the `A[0]` row above); I-S1A carries it as a named unknown |
 | **O4a's precondition** | Whether the chosen operator is `n = 0` with `β` constant over recombination. Determines whether the settled rung order's cheap rung exists (#503) |
 
 ## Decisions (user, 2026-08-29)
@@ -457,7 +462,10 @@ context should be able to read it and the queue, and know what to do next.
 ### The loop
 
 1. **Orchestrator writes prompts** into `docs/cosmology/handoffs/` as an `I-<issue>.md`
-   file (the `I-` series; `H-` was the research series, all complete).
+   file (the `I-` series; `H-` was the research series, all complete). Every "the orchestrator
+   will…" commitment inside a prompt is copied onto the wave-boundary checklist as a named item
+   **in the same commit as the prompt** — at dispatch, not at the boundary, which is where two
+   of Wave 0's were lost.
 2. **The user dispatches** each prompt to a separate session. *This orchestrator session
    never launches them.*
 3. A delegate works in **its own git worktree** off `feat/cosmology-program`
@@ -529,7 +537,10 @@ rules → the **flaw protocol** → the report-back format.
 - **Any guard you add carries its expiry.** When you write a test, assertion, lint rule or
   CI gate, ask in the same breath *what future change makes this wrong rather than merely
   unnecessary?* If there is one, record it **both** where the guard lives and in the row of
-  §7's milestone table that will trigger it. A guard's correctness has a lifetime, and the
+  §7's milestone table that will trigger it, and mark the guard's site with an
+  `EXPIRES-WITH: #<issue>` comment so `git grep EXPIRES-WITH` finds every guard whose trigger
+  has closed — that grep is a closing precondition for the issue and an item
+  `scripts/wave_boundary_check.sh` prints. A guard's correctness has a lifetime, and the
   moment of writing is the only moment its expiry is obvious — the merge checklist cannot
   catch it, because such a failure bites at a milestone nothing is tested against yet.
   (Found the hard way: `test_package_boundary.py` inverts into a blocker at M7, when
@@ -540,6 +551,13 @@ rules → the **flaw protocol** → the report-back format.
   the same knowledge, and the difference between an afternoon and a week when a hypothesis
   needs a dozen tests. This extends `feedback_minimal_tests` from choosing test theories to
   bisecting bugs.
+- **Read the tool's own known-issues before hypothesizing.** PSALTer's README lists "gauge
+  symmetries not identified" as known bug #1 — the symptom class #543 spent a wave attributing
+  to the engine. I-REM found it by reading; nobody had.
+- **A forbidden resource is only forbidden once everything in scope that acquires it is
+  enumerated.** "No kernel" means: `wolframscript` directly, `tidal derive`, every
+  `examples/*/run.sh`, the gate, the verify script. `wolfram-guard.sh` failed open on the
+  wrappers until #555 enumerated them; a prompt that says "no lane" names the list.
 - One `wolframscript` at a time, machine-wide — only a prompt flagged for the Wolfram lane
   may start a kernel.
 - Conventional commits; no attribution trailers.
@@ -666,6 +684,7 @@ Status: `drafted → dispatched → reported → merged`.
 | 0c | I-REM — instruction sites, docs index, tooling, oracle CI | #545 #546 #540 | — | design docs, `docs/README.md`, `handoffs/README.md`, `tidalcosmo/**/README.md`, `scripts/`, skills, `Makefile`, `.github/`, config | `cosmo/irem-amendments` (#550) | **merged** ✅ CI 34393863566 + 34393863645 success on `1cde083d`. **`oracle.yml` proven in both directions**: CI 34393316535 failure on a corrupted fixture, CI 34392693815 success clean. Replaced the six-item exporter list with a rule + anchor + guard rather than a longer list. Found PSALTer's own README known-bug #1 (#543) |
 | 0c | I-533 — retire the M0 drop rows | #533 | — | `tidal/`, `tests/`, `examples/**/run.sh`, legacy `scripts/`, `docs/tex/` | `cosmo/i533-retire-drop-rows` (#552) | **merged** ✅ CI 34401167660 + 34401167568 success on `f8d4001a`. `sweep`/`sample`/`analyze`/`plot` gone with their in-package plotting, +1182/−26727; each name exits 2 naming a `git show v0.53.0:` recovery path, handler probed. **`measure` deliberately kept** — a `drop` verdict is not a retire milestone; it is drop **+ M5**, amended at the site. Orphan inventory #553, spec drift #554 |
 | 0c | I-543 — resolve the Tier-1 gate | #543 #542 #556 #551 | **yes** | `scripts/psalter/`, `docs/cosmology/psalter_543_*.md`, `evidence/tier1-20260911-pass/` | `cosmo/i543-psalter-gate` (#557) | **merged** ✅ CI 34619683909 success on `4a2c38fd`. **GATE PASSES — `VERDICT: MATCH`**, both keys identical. Cause: two undocumented PSALTer Function Repository dependencies, **not** the engine (14.2.1 behaves identically). Certified: 14.3.0 × `bb45adb0` × local registration. Upstream issue drafted, not filed |
+| 0d | I-ONB — one onboarding path, fresh-host container, registry volume | #559 | — | `.devcontainer/**`, root `README.md` setup, `scripts/README.md`, `scripts/{install-wolfram-engine,install-xact-xcoba,activate-wolfram}.sh` | — | **drafted** — prompt committed `0a630b46`; the user dispatches |
 | 1 | I-532 — CAMB seam, background protocol, flag schema | #532 | — | `tidalcosmo/{background,spectator,validity}/` | — | planned |
 | 1 | I-503 — per-operator dispersion + zero-mode scope | #503 | — | `research/lagrangian_enumeration/`, `docs/` | — | planned |
 | 1 | I-S1A — Stage-1 Python side | #527 | — | `tidalcosmo/{config,derive}/` (Python only), `tidalcosmo/spectrum/` | — | planned |
@@ -749,9 +768,7 @@ the point of the boundary is that Wave 0's findings get to change it.
 
 **Inputs Wave 1 has that the original outline did not:**
 
-- **#543 blocks both spectrum criteria**, not only the residue cross-check — the Schur
-  route's gauge-mode removal is degraded too (`$LocalSourceConstraints` = `{}` against 21).
-  Awaiting Barker, 11 September.
+- ~~**#543 blocks both spectrum criteria** … Awaiting Barker, 11 September.~~ **Superseded 2026-09-11:** resolved by I-543 (#557); the current inherited-inputs list is in "What to implement next" below and governs.
 - **The Stage-1 exporter must read all eight private globals**, not the six §5 specified —
   both of that section's justifications were refuted on the live install (#523).
 - **§6's checkpoint machinery need not be built**: PSALTer already emits a per-function
@@ -766,7 +783,14 @@ a time-dependent background; nothing is ported from `modal.py` and it is not an 
 
 ### Wave-boundary checklist
 
-What the next planning session does *first*, before planning anything:
+What the next planning session does *first*, before planning anything. **Run
+`scripts/wave_boundary_check.sh` before reading on** — it prints the mechanical half of this
+list (tree and unpushed commits, worktrees, remote `cosmo/*` branches, CI conclusion *fetched*
+for `HEAD`, open cosmology issues without a milestone, `EXPIRES-WITH` markers whose issue is
+closed, prompt files without a STATUS header, memory size and index, retired names exiting 2,
+oracle `--check` and `--staleness`, version vs tag; `--with-wolfram` adds
+`verify --require-psalter`). Three orchestrator omissions in the completion wave were all
+items it prints red; prose had failed three times.
 
 1. Confirm every row of the wave reads `merged`. **A row whose deliverable is a gate reads
    `merged` only when the gate *passed*** — I-526 was recorded `merged` with its gate
@@ -812,7 +836,12 @@ The program is **design-complete**, has passed the pre-implementation scientific
 >
 > **The PSALTer install is certified**: Wolfram 14.3.0 × PSALTer `bb45adb0` × local
 > registration of two Function Repository resources the package depends on but never declares.
-> `VERDICT: MATCH` on the author's own published input. **Nothing is blocked.**
+> `VERDICT: MATCH` on the author's own published input, re-run from scratch by the orchestrator
+> on 2026-09-11 with provenance asserted. **Nothing in Wave 1 is blocked.** What is still open in
+> the completion wave is lane work and onboarding, none of which Wave 1's three prompts depend on:
+> #547 (the four excluded oracle theories; orchestrator, lane), #559 / I-ONB (one onboarding
+> path; delegate, no lane), #558 (β over recombination — the second half of O4a's precondition;
+> with the #503 session), #548 (two specs without a TOML; M3).
 >
 > **Wave 1 is planned by a fresh planning session, which the user initiates** — this
 > orchestrator never starts it. Composition is settled and recorded so that session begins
@@ -825,9 +854,12 @@ The program is **design-complete**, has passed the pre-implementation scientific
 > - The Stage-1 exporter must **enumerate the private globals from
 >   `ParticleSpectrum.m:74-81` at the pinned revision** and guard the set with a fixture test
 >   — not hard-code a count, which is how the six-item list came to be wrong.
-> - **Two Function Repository resources are load-bearing and undeclared.** Any environment
->   running PSALTer needs `scripts/psalter/register_resources.wl`, and re-running it after a
->   container rebuild is required before the gate.
+> - **Two Function Repository resources are load-bearing and undeclared.**
+>   `scripts/psalter/ensure_registered.sh` registers them idempotently under fixed UUIDs
+>   (`install-psalter.sh` calls it; the `wolfram-objects` volume from #559 keeps the registry
+>   across rebuilds), and `verify-wolfram-setup.sh --require-psalter` asserts provenance, so a
+>   lost or foreign registration is red rather than a silently wrong spectrum. Run the verify
+>   before any gate.
 > - **A Tier-1 pass certifies two keys and nothing else** — not source constraints, spectrum,
 >   or unitarity conditions. Tier 2 is the physics gate.
 > - `A[0]` is answered by **I-S1B** (it needs a real export); I-S1A represents both forms and
@@ -835,7 +867,9 @@ The program is **design-complete**, has passed the pre-implementation scientific
 > - The `§5.2` legacy↔new mapping is designed **with the symbolic stage (M3)**, not at M0.5.
 > - Deferred with owners: #553 (M1b/M5 orphan inventory), #554 (spec drift, needs the lane),
 >   #534 (port manifest at M3), #535/#536 (M3 `inspect`/`validate` requirements), #537 (M7),
->   #529 (WS3 O2 contract, blocks the O2 handoff not Wave 1), #530 (survey tags at WS3).
+>   #529 (WS3 O2 contract, blocks the O2 handoff not Wave 1), #530 (survey tags at WS3),
+>   #547 (four excluded oracle theories, M0.5, lane), #548 (two specs without a TOML, M3),
+>   #558 (β over recombination, with #503), #559 (onboarding, I-ONB, no lane).
 
 ## Verification gates
 

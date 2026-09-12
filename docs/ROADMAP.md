@@ -232,7 +232,7 @@ Issues should be tagged with appropriate labels:
 - ✅ Gauge fixing: optional per-field Lorenz/de Donder/Coulomb/temporal/axial (Phase B)
 - ✅ Constraint pre-solve: FFT/sparse three-tier solver (Phase J)
 - ✅ Parameter sweep framework (Phase C): `tidal sweep` + `tidal analyze`, 12 measurement types, adaptive/LHS/Sobol sampling, Sobol/Morris sensitivity, convergence mode, 6 plot types
-- ✅ CLI (`tidal` command) implemented: 11 subcommands, zero new dependencies
+- ✅ CLI (`tidal` command) implemented: 11 subcommands, zero new dependencies *(7 since 2026-09-11 — `sweep`, `sample`, `analyze`, `plot` retired under the cosmology programme, #533)*
 - ✅ Measurement module: 12 types (energy, conversion, mixing, spectrum, dispersion, conservation, effective_mass, asymptotic, peak_conversion, velocity, resonance, summary)
 - ✅ 19 working examples spanning 1+1D through 3+1D
 - ✅ 2,449 Python tests + 133 Wolfram test cases passing, 0 ruff violations, 0 pyright errors

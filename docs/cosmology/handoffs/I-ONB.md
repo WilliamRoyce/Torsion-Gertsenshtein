@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Issue** | #488 (umbrella) · #543 (the certified configuration this must reproduce) · foundation audit 2026-09-11 |
+| **Issue** | **#559** (this work) · #488 (umbrella) · #543 (the certified configuration this must reproduce) · foundation audit 2026-09-11 |
 | **Wave** | 0-completion, hardening (runs alongside the orchestrator's certification-mechanics work) |
 | **Wolfram lane** | **NO.** Never start a kernel. The lane guard (`.claude/hooks/wolfram-guard.sh`, #555) now blocks bare `tidal derive` and `bash run.sh` too — it will stop you rather than fail open. The orchestrator runs the kernel rehearsal at merge. |
 | **Depends on** | the orchestrator's `scripts/psalter/ensure_registered.sh` (exists) and the corrected verify script (exist on trunk before you branch) |
@@ -17,12 +17,12 @@ certified configuration. They cannot reach a working container:
 - **`postCreateCommand` aborts on a fresh host.** `devcontainer.json:21-24` bind-mounts
   `${localEnv:HOME}/.local/wolfram/engine/14.3`, `…/userbase` and `~/.cache/Wolfram`. On a new
   host none exist; Docker creates them **empty, root-owned**. Then line 74's chain reaches
-  `sudo ln -sf … /home/vscode/.local/wolfram/engine/14.3/Executables/wolframscript` — the
+  `sudo ln -sf … ~/.local/wolfram/engine/14.3/Executables/wolframscript` — the
   parent does not exist — the `&&` chain dies, `waitFor: postCreateCommand` reports failure,
   and everything after it (license links, memory restore, LSP) never runs. There is no
   `initializeCommand`; nothing creates the host directories; `${localEnv:HOME}` is unguarded
   (empty when VS Code is launched from Windows → sources at filesystem root); the blanket
-  `sudo chown -R /home/vscode/.local` silently rewrites host ownership.
+  `sudo chown -R ~/.local` silently rewrites host ownership.
 - **Three onboarding paths disagree and none reaches PSALTer.** (A) `.devcontainer/docs/
   WOLFRAM_GUIDE.md:3-83` (mirrored in `.devcontainer/README.md:35-75`, `QUICKREF.md:12-26`):
   `setup_wolfram_engine.sh` → `setup_xact.sh` → `validate-setup.sh` → "Done!" — installs the

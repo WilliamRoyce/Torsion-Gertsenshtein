@@ -39,7 +39,7 @@ problems:
   (`k ≈ 6.5×10²⁵ Mpc⁻¹`, `~10²⁹` oscillations — no integrator steps through that, so the carrier is
   removed analytically and only the slowly varying amplitude is integrated).
 
-**Workstream.** WS3 (#492). **Filled at.** M4, per `docs/cosmology/solver_design.md` — 650 lines, landed 2026-08-31. Follow-ups: **#518** (assembly, prerequisite), **#519** (matrix-WKB, bake-off-gated), **#520** (this rewrite), **#505** (O3 front-end, needs #504 + #518).
+**Workstream.** WS3 (#492). **Filled at.** M4, per `docs/cosmology/solver_design.md` — 650 lines, landed 2026-08-31. Follow-ups: **#518** (assembly, prerequisite), **#519** (matrix-WKB — built alongside Magnus from the first solver handoff per the 2026-09-06 decision; the bake-off decides composition, not whether the rung exists), **#520** (this rewrite), **#505** (O3 front-end, needs #504 + #518).
 
 **One inherited test contract, not code.** GH #367 and #379: **every dispatch path must consume
 the kinetic matrix `M` identically**, or cross-path regressions appear silently. Two such

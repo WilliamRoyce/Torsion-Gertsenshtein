@@ -1,5 +1,14 @@
 # I-REM — Amend the instruction sites Wave 0 falsified, integrate the docs, fix the tooling
 
+> **STATUS: COMPLETE — 2026-09-09.** Merged from `cosmo/irem-amendments` (PR #550, `32d21a3b`).
+> Closed #545, #546, #540; opened #551. Amended the instruction sites Wave 0 falsified,
+> integrated the docs, fixed the tooling, and added `oracle.yml` — **proven in both directions**
+> (CI 34393316535 failure on a corrupted fixture, 34392693815 success clean). Replaced the
+> six-item exporter list with a rule + anchor + guard rather than a longer list. Found PSALTer's
+> own README known-bug #1, which turned out to describe #543's symptom.
+>
+> Kept as the record of *what was asked*. **Not an open assignment.**
+
 | | |
 |---|---|
 | **Issue** | #545, #546 (fix and they close) · #540 (wording) · #534, #535, #536, #530 (back-references) · umbrella #488 |
