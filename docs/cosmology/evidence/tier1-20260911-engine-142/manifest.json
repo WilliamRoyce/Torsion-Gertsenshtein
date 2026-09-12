@@ -2,7 +2,7 @@
   "theory_name": "CTEG",
   "kind": "14.2.1 cross-check, component run (gate wrapper refuses on 14.2.1: front end cannot start headlessly)",
   "wolfram_version": "14.2.1",
-  "kernel_path": "/home/vscode/.local/wolfram/engine/14.2/Executables/WolframKernel",
+  "kernel_path": "~/.local/wolfram/engine/14.2/Executables/WolframKernel",
   "started_utc": "2026-09-11T19:45:16Z", "finished_utc": "2026-09-11T19:51:55Z", "exit_status": 0,
   "script_sha256_before": "2232a103a64987ea1a8af2afb5c154b1795f06530abc1dd30b4b6fe86ff65825", "script_sha256_after": "2232a103a64987ea1a8af2afb5c154b1795f06530abc1dd30b4b6fe86ff65825",
   "script_unmodified": true,

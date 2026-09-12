@@ -55,6 +55,8 @@ ALLOWLIST: dict[str, str] = {
     ".claude/settings.json": "permission patterns do not interpolate",
     # Documents the literal devcontainer.json mount block verbatim.
     ".devcontainer/docs/WOLFRAM_GUIDE.md": "quotes the literal mount config",
+    # Hands the delegate the literal `wolfram-objects` mount line to paste (#559).
+    "docs/cosmology/handoffs/I-ONB.md": "quotes the literal mount line it dispatches",
     # This file names the patterns it forbids.
     "tests/test_repo_hygiene.py": "defines the patterns themselves",
 }
