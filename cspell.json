@@ -848,7 +848,8 @@
     "notf",
     "unpushed",
     "unparseable",
-    "invrl"
+    "invrl",
+    "unregisters"
   ],
   "ignoreWords": [
     "Abar",
