@@ -96,7 +96,7 @@ Wolfram lane open forever. Every script here sets the variable itself.
 | `probe_521_method.wls` | is `Method` inert? (#521) |
 | `probe_522_couplings.wls` | is a bare numeric coefficient rejected? (#522) |
 | `probe_523_harvest.wls` | what must the exporter read? (#523) |
-| `ensure_registered.sh` | **the one to run**: registers (below) and verifies; exits non-zero on any failure. Called by `install-psalter.sh` and the devcontainer's `postCreateCommand` |
+| `ensure_registered.sh` | **the one to run**: registers (below) and verifies; exits non-zero on any failure, including **immediately** (no cloud round-trip) when the mounted engine kernel is absent — `command -v wolframscript` is satisfied by the image's own `/opt` client, so it is never the engine test (#559). Called by `install-psalter.sh` and the devcontainer's `postCreateCommand` |
 | `register_resources.wl` | registers the two Function Repository resources PSALTer needs and never declares (#543) with **fixed certified identities**, from the engine-bundled `LinearlyIndependent.wl` (sha256-asserted) and the committed `resources/PolynomialDegree-1-0-0-definition.nb`. **Required before the gate, and again after every container rebuild** — the registry lives in the container overlay. Idempotent; takes the lane for ~1 min; never edits PSALTer |
 | `repro_543.wl` | the known-answer ladder behind #543 — scalar, Proca, Fierz–Pauli, CTEG — each rung's expected result stated in the file, so a failure is decidable without an oracle |
 

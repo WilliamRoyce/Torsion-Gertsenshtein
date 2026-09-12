@@ -30,8 +30,26 @@ elif [[ "$(sha256sum "$NB" | cut -d' ' -f1)" != "$NB_SHA" ]]; then
     exit 1
 fi
 
+# Engine presence is a file test on the PINNED kernel, never `command -v
+# wolframscript`. The devcontainer image ships its own client at
+# /usr/bin/wolframscript -> /opt/Wolfram/..., which satisfies `command -v` with
+# no engine mounted at all; wolframscript then falls back to a CLOUD evaluation,
+# so the old gate let a fresh container spend up to `timeout 600` failing to
+# authenticate instead of saying the engine is not installed. Found by I-ONB
+# while wiring this into postCreateCommand (#559).
+EXPECTED_WOLFRAM_VERSION="${EXPECTED_WOLFRAM_VERSION:-14.3.0}"
+EXPECTED_ENGINE_DIR="${EXPECTED_ENGINE_DIR:-${HOME}/.local/wolfram/engine/${EXPECTED_WOLFRAM_VERSION%.*}}"
+KERNEL="${EXPECTED_ENGINE_DIR}/Executables/WolframKernel"
+if [[ ! -x "$KERNEL" ]]; then
+    echo "ensure_registered: no Wolfram kernel at ${KERNEL}" >&2
+    echo "  The engine is not installed in its mount yet, so there is nothing to register for:" >&2
+    echo "  PSALTer is not installed either. Follow the setup path in" >&2
+    echo "  .devcontainer/docs/WOLFRAM_GUIDE.md, then re-run this script." >&2
+    exit 1
+fi
+
 if ! command -v wolframscript >/dev/null 2>&1; then
-    echo "ensure_registered: wolframscript not on PATH -- install and activate the engine first" >&2
+    echo "ensure_registered: wolframscript not on PATH (kernel exists at ${KERNEL})" >&2
     exit 1
 fi
 

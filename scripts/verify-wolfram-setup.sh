@@ -108,6 +108,20 @@ log_soft_fail() {
 check_wolfram_binary() {
     log_info "Checking Wolfram Engine installation..."
     
+    # The mounted kernel first, and on its own line: `command -v wolframscript`
+    # is satisfied by the image's own client (/usr/bin/wolframscript ->
+    # /opt/Wolfram/...) with no engine installed, after which every later check
+    # runs against a CLOUD evaluation -- slow, and confusing for exactly the
+    # fresh user this script is supposed to orient (#559).
+    local kernel="${EXPECTED_ENGINE_DIR}/Executables/WolframKernel"
+    if [[ ! -x "$kernel" ]]; then
+        log_fail "No Wolfram kernel at ${kernel}"
+        log_fail "  The engine is not installed in its mount. Setup path:"
+        log_fail "  .devcontainer/docs/WOLFRAM_GUIDE.md"
+        return 1
+    fi
+    log_pass "Engine kernel present: ${kernel}"
+
     if command -v wolframscript &> /dev/null; then
         local path
         path=$(command -v wolframscript)
