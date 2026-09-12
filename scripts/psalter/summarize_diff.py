@@ -15,13 +15,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 PASSING = ("identical", "equal_normalized", "equal_simplified")
 
 
-def walk(entry: dict[str, Any], depth: int = 0):
+def walk(entry: dict[str, Any], depth: int = 0) -> Iterator[tuple[int, dict[str, Any]]]:
     yield depth, entry
     for child in entry.get("children", []):
         yield from walk(child, depth + 1)
@@ -40,6 +44,18 @@ def main() -> int:
     out: list[str] = []
     out.extend(("=" * 70, "PSALTer Tier-1 install gate", "=" * 70))
     env = data.get("environment", {})
+    # Refuse a verdict produced by an engine other than the certified one. The gate
+    # script records the engine in its manifest; the diff artifact records $Version.
+    # A leftover WOLFRAMSCRIPT_KERNELPATH, or a PATH that reaches a different
+    # wolframscript, would otherwise certify silently on the wrong engine.
+    expected = os.environ.get("EXPECTED_WOLFRAM_VERSION", "14.3.0")
+    got = str(env.get("wolfram_version", "")).split(" ")[0]
+    if got != expected:
+        print(
+            f"REFUSED: this diff was produced by Wolfram {got or '<unknown>'}, not the "
+            f"certified {expected} (set EXPECTED_WOLFRAM_VERSION to certify anew)"
+        )
+        return 1
     out.extend(
         (
             f"  theory        : {data.get('theory_name')}",

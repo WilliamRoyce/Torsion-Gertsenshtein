@@ -109,6 +109,12 @@ require_psalter() {
 # The reference sources are fetched, never committed: PSALTer and the
 # supplemental materials are GPL-3.0-or-later and this repository is MIT, so we
 # commit the route and not the payload.
+# The distinction that matters (decided 2026-09-11): the author's .m and .mx are
+# the payload and stay out; OUR run's ParticleSpectrographCTEG.mx is a data output
+# of running his script on this install -- the same position as the committed
+# .wxf fixtures, flagged on #495 -- and the certifying run's copy IS committed
+# beside its evidence (docs/cosmology/evidence/tier1-20260911-pass/ours.mx, sha256
+# in manifest.json) so the verdict can be recomputed without a kernel.
 ensure_reference_sources() {
     if [[ ! -f "${REF_DIR}/sm2506b/ParticleSpectrographCTEG.m" ||
           ! -f "${REF_DIR}/sm2506b/ParticleSpectrographCTEG.mx" ]]; then
@@ -245,10 +251,16 @@ run_spectrum() {
     python3 "${SCRIPT_DIR}/extract_checkpoints.py" "${RUN_DIR}/run.log" \
         > "${RUN_DIR}/checkpoints.json"
 
+    # The engine that produced this run, so a verdict can be refused if it is not the
+    # certified one. WOLFRAMSCRIPT_KERNELPATH silently outranks the WolframScript.conf pin,
+    # and PATH order is all that selects the mounted engine over /opt/Wolfram's.
+    local wolfram_version
+    wolfram_version=$(wolframscript -code 'ToString[$VersionNumber] <> "." <> ToString[$ReleaseNumber]' 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo unknown)
     cat > "${RUN_DIR}/manifest.json" <<EOF
 {
   "theory_name": "${THEORY}",
   "started_utc": "${started}",
+  "wolfram_version": "${wolfram_version}",
   "finished_utc": "${finished}",
   "timeout_s": ${TIER1_TIMEOUT},
   "exit_status": ${rc},
