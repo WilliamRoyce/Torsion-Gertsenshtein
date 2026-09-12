@@ -4,33 +4,18 @@
   "corpus_predicate": "every examples/*/*.toml whose [output].path, resolved relative to the TOML's own directory, ends in .json",
   "summary": {
     "toml_candidates": 50,
-    "pairs": 46,
-    "excluded": 4,
-    "validate_pass": 27,
-    "validate_fail": 19,
+    "pairs": 49,
+    "excluded": 1,
+    "validate_pass": 29,
+    "validate_fail": 20,
     "stability_pass": 6,
-    "stability_undefined_parameter": 39
+    "stability_undefined_parameter": 42
   },
   "exclusions": [
     {
-      "theory": "examples/curved_spacetime/de_sitter.toml",
-      "expected_spec": "examples/data/de_sitter_kg.json",
-      "reason": "no committed spec; re-deriving it needs the Wolfram lane, unavailable to the session that froze this corpus"
-    },
-    {
-      "theory": "examples/gertsenshtein/theory_dipolar.toml",
-      "expected_spec": "examples/data/gertsenshtein_dipolar.json",
-      "reason": "no committed spec; re-deriving it needs the Wolfram lane, unavailable to the session that froze this corpus"
-    },
-    {
-      "theory": "examples/gertsenshtein/theory_dipolar_centered.toml",
-      "expected_spec": "examples/data/gertsenshtein_dipolar_centered.json",
-      "reason": "no committed spec; re-deriving it needs the Wolfram lane, unavailable to the session that froze this corpus"
-    },
-    {
       "theory": "examples/gertsenshtein/theory_radial.toml",
       "expected_spec": "examples/data/gertsenshtein_radial.json",
-      "reason": "no committed spec; re-deriving it needs the Wolfram lane, unavailable to the session that froze this corpus"
+      "reason": "cannot be derived on the current pipeline (measured 2026-09-12, twice, ~135 s each): after gauge and gradient-zero elimination the pipeline re-derives EOM for 3 surviving fields, Keys[fieldEquations] then receives the bare symbol a_0 instead of an association, a_0's equation reaches the JSON stage as literal 0, and ParseMultiFieldRHS throws. No spec is written. See #547 for the record and #561 for the exit-code defect this uncovered"
     }
   ],
   "entries": [
@@ -177,6 +162,42 @@
         "validate_stability": 0
       },
       "stability_error_class": null
+    },
+    {
+      "id": "de_sitter_kg",
+      "theory": "examples/curved_spacetime/de_sitter.toml",
+      "source_spec": "examples/data/de_sitter_kg.json",
+      "derivation_hash": "84fa34ec710c624b6f9683eada6c19c9599a48a219a3e4d646d3888383ecdd61",
+      "has_metadata_parameters": false,
+      "artifacts": {
+        "spec": {
+          "path": "specs/de_sitter_kg.json",
+          "sha256": "d95d4b6464af3e590666bace98b508bb33ed14175eaddf6dfd3acac9305e490d",
+          "bytes": 2605
+        },
+        "inspect_summary": {
+          "path": "inspect/de_sitter_kg.summary.txt",
+          "sha256": "54c047660e1df56ceb78d8bc48a32998a59e8dd5f9ed1e09b16fadf255963049",
+          "bytes": 690
+        },
+        "inspect_families": {
+          "path": "inspect/de_sitter_kg.families.txt",
+          "sha256": "cf616831ed2c7bbe698f156852a327f9eece6d085ba8320bcc06d23702ab7b84",
+          "bytes": 576
+        },
+        "validate": {
+          "path": "validate/de_sitter_kg.txt",
+          "sha256": "84ecdf0d1c88c0b08283d544f06a786320e92ca533cb05f6a5b80d7737bff173",
+          "bytes": 1091
+        }
+      },
+      "exits": {
+        "inspect_summary": 0,
+        "inspect_families": 0,
+        "validate": 1,
+        "validate_stability": 1
+      },
+      "stability_error_class": "symbolic-coefficient-undefined"
     },
     {
       "id": "dark_photon_plasma",
@@ -388,6 +409,78 @@
       },
       "exits": {
         "inspect_summary": 0,
+        "inspect_families": 0,
+        "validate": 0,
+        "validate_stability": 1
+      },
+      "stability_error_class": "symbolic-coefficient-undefined"
+    },
+    {
+      "id": "gertsenshtein_dipolar",
+      "theory": "examples/gertsenshtein/theory_dipolar.toml",
+      "source_spec": "examples/data/gertsenshtein_dipolar.json",
+      "derivation_hash": "6912c845c573aeb5308ae565c3e179187d10f24b75f087674aa828ca3cb93608",
+      "has_metadata_parameters": false,
+      "artifacts": {
+        "spec": {
+          "path": "specs/gertsenshtein_dipolar.json",
+          "sha256": "d53f4d6e857c76ecaaa7bfb0c63ee31c6cf42728fcdacb2fb1fd942b2e06c4f3",
+          "bytes": 9650
+        },
+        "inspect_summary": {
+          "path": "inspect/gertsenshtein_dipolar.summary.txt",
+          "sha256": "ea1399ff756ca57a10b1ddbba0d9f85bf1050f7f8491e37162b24ca22674cab0",
+          "bytes": 950
+        },
+        "inspect_families": {
+          "path": "inspect/gertsenshtein_dipolar.families.txt",
+          "sha256": "919d42337c2319822e3d655d67cfb00b4e80c0ca7369e60a23dc973596c3fb13",
+          "bytes": 699
+        },
+        "validate": {
+          "path": "validate/gertsenshtein_dipolar.txt",
+          "sha256": "b26b0275ac5d7f479549237dcb8d9dd7379effa525590d3ca0cf220e3eff1fcd",
+          "bytes": 1128
+        }
+      },
+      "exits": {
+        "inspect_summary": 0,
+        "inspect_families": 0,
+        "validate": 0,
+        "validate_stability": 1
+      },
+      "stability_error_class": "symbolic-coefficient-undefined"
+    },
+    {
+      "id": "gertsenshtein_dipolar_centered",
+      "theory": "examples/gertsenshtein/theory_dipolar_centered.toml",
+      "source_spec": "examples/data/gertsenshtein_dipolar_centered.json",
+      "derivation_hash": "4665c6dcb18ad63ef6642e82ccb7c75b457abadd47344571504483989fb44eea",
+      "has_metadata_parameters": false,
+      "artifacts": {
+        "spec": {
+          "path": "specs/gertsenshtein_dipolar_centered.json",
+          "sha256": "afdcb3abc75abd0c10cb9fa63461936587bd01b47c7a32acce304451ad74a3df",
+          "bytes": 26420
+        },
+        "inspect_summary": {
+          "path": "inspect/gertsenshtein_dipolar_centered.summary.txt",
+          "sha256": "5ad5c4ace61c368c9ae98c31cd5ffcaf0b5875df83db6f68f840e085b3c58fc1",
+          "bytes": 686
+        },
+        "inspect_families": {
+          "path": "inspect/gertsenshtein_dipolar_centered.families.txt",
+          "sha256": "3c7c1e9a28c95de002215a81fc0faf17ca040c70a92cf38f3e44c3b2b1ab7f5a",
+          "bytes": 726
+        },
+        "validate": {
+          "path": "validate/gertsenshtein_dipolar_centered.txt",
+          "sha256": "f79710488ee9963036c1256c19c62b127bcf08fa6576449b1d93f7148a456d15",
+          "bytes": 1298
+        }
+      },
+      "exits": {
+        "inspect_summary": 1,
         "inspect_families": 0,
         "validate": 0,
         "validate_stability": 1

@@ -1,0 +1,19 @@
+# frozen legacy oracle -- tidal validate, plain and --stability
+# generator: scripts/oracles/freeze_legacy_oracle.py -- do not edit by hand
+# regenerate: uv run python -m scripts.oracles.freeze_legacy_oracle
+# theory: examples/curved_spacetime/de_sitter.toml
+# spec: examples/data/de_sitter_kg.json
+# plain-command: tidal --no-banner validate examples/data/de_sitter_kg.json
+# plain-exit: 1
+# stability-command: tidal --no-banner validate examples/data/de_sitter_kg.json --stability
+# stability-exit: 1
+# scrub: ansi-stripped; warnings-suppressed; paths-relative; trailing-whitespace-normalized
+#--- plain:stdout ---
+
+#--- plain:stderr ---
+[ERROR] Non-constant volume_element 'E^(2*Re[dSH*t[]])' but no spatial gradient term in any equation. The sqrt|g| measure was likely dropped during Euler-Lagrange variation, so the energy integral will not match the evolution operator (see GH #394).
+#--- stability:stdout ---
+
+#--- stability:stderr ---
+[ERROR] Cannot evaluate symbolic coefficient '-(dSm2*E^(2*dSH*t[]))' (Python form: '-(dSm2*exp(2*dSH*t))'): name 'dSm2' is not defined
+#--- end ---

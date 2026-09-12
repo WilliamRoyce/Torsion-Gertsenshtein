@@ -25,6 +25,7 @@
 #   Boccaletti et al. (1970, Nuovo Cimento 70B:129) — finite-region conversion formula
 #   McDonald & Ellis (2024, arXiv:2406.18634) — magnetar graviton-photon conversion
 #   Domcke, Garcia-Cely & Lee (2025, arXiv:2507.16609) — inhomogeneous B-field treatment
+# Derivation timing: ~45s wall (last verified: 2026-09-12, 6 fields, 16 H terms, v0.54.0)
 
 [theory]
 name = "Gertsenshtein Effect (Dipolar B-field, Flat Space)"

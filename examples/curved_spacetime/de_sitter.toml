@@ -1,3 +1,4 @@
+# Derivation timing: ~9s wall (last verified: 2026-09-12, 1 field, 4 H terms, v0.54.0)
 [theory]
 name = "de Sitter Klein-Gordon"
 

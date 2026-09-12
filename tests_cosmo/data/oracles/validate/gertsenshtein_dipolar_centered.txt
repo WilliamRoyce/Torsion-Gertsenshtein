@@ -1,0 +1,23 @@
+# frozen legacy oracle -- tidal validate, plain and --stability
+# generator: scripts/oracles/freeze_legacy_oracle.py -- do not edit by hand
+# regenerate: uv run python -m scripts.oracles.freeze_legacy_oracle
+# theory: examples/gertsenshtein/theory_dipolar_centered.toml
+# spec: examples/data/gertsenshtein_dipolar_centered.json
+# plain-command: tidal --no-banner validate examples/data/gertsenshtein_dipolar_centered.json
+# plain-exit: 0
+# stability-command: tidal --no-banner validate examples/data/gertsenshtein_dipolar_centered.json --stability
+# stability-exit: 1
+# scrub: ansi-stripped; warnings-suppressed; paths-relative; trailing-whitespace-normalized
+#--- plain:stdout ---
+
+#--- plain:stderr ---
+[WARN] Parameter 'Bpeak' (used in: a_1, a_2, h_5, h_7) has no default value
+[WARN] Parameter 'kappa' (used in: h_5, h_7) has no default value
+[WARN] Parameter 'z0' (used in: a_1, a_2, h_5, h_7) has no default value
+[WARN] Parameter 'zc' (used in: a_1, a_2, h_5, h_7) has no default value
+[OK] gertsenshtein_dipolar_centered.json is valid
+#--- stability:stdout ---
+
+#--- stability:stderr ---
+[ERROR] Cannot evaluate symbolic coefficient '(-3*Bpeak*z0*zc^3)/(z0^2 + (zc - x[])^2)^(5/2)' (Python form: '(-3*Bpeak*z0*zc**3)/(z0**2 + (zc - x)**2)**(5/2)'): name 'Bpeak' is not defined
+#--- end ---

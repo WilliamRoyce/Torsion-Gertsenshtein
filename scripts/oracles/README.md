@@ -31,7 +31,7 @@ uv run python -m scripts.oracles.freeze_legacy_oracle --verify-determinism
 uv run python -m scripts.oracles.freeze_legacy_oracle --staleness      # per spec: would derive re-derive it here? no kernel
 ```
 
-A full run is ~5–8 minutes: 46 theories × 4 legacy invocations, serial. `--list` answers
+A full run is ~5–8 minutes: 49 theories × 4 legacy invocations, serial. `--list` answers
 "what is in the corpus" in a second without running anything.
 
 **`--staleness` is the license-free detector for `--check`'s blind spot (#554).** `--check`

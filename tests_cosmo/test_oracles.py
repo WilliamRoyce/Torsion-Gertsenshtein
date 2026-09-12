@@ -44,8 +44,8 @@ ORACLES = REPO_ROOT / "tests_cosmo" / "data" / "oracles"
 MANIFEST = ORACLES / "manifest.json"
 README = ORACLES / "README.md"
 
-EXPECTED_PAIRS = 46
-EXPECTED_EXCLUSIONS = 4
+EXPECTED_PAIRS = 49
+EXPECTED_EXCLUSIONS = 1
 
 ARTIFACT_KINDS = ("spec", "inspect_summary", "inspect_families", "validate")
 
@@ -92,7 +92,7 @@ def _entries() -> list[dict[str, Any]]:
 
 
 def test_corpus_counts_match_the_verified_predicate() -> None:
-    """46 pairs and 4 exclusions, from 50 candidate TOMLs.
+    """49 pairs and 1 exclusion, from 50 candidate TOMLs.
 
     The count is asserted here because the enumeration recipe originally given in
     the design silently dropped ``curved_spacetime/conformal_static.toml`` and

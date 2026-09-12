@@ -28,7 +28,7 @@ commentary on it*. **It does not exist yet** — WS2 owes it at M3.
 
 ## What is frozen
 
-46 theory/spec pairs × 4 artifact kinds, plus `manifest.json`.
+49 theory/spec pairs × 4 artifact kinds, plus `manifest.json` — 197 files. (**49, not the original 46**: the four theories excluded at M0.5 for want of the Wolfram lane were derived on 2026-09-12 (#547); three succeeded in under a minute each and are now pairs, and `theory_radial` cannot be derived at all — the manifest's single exclusion carries its measured reason.)
 
 | kind | path | what it is |
 | --- | --- | --- |
@@ -83,19 +83,37 @@ the *physics* while dropping them is correct:
 
 1. **#397 — 18 specs carry the stale `a_0` sign** (the section below). A defect the port must
    not carry forward; their frozen verdict is a specification, not a target.
-2. **The `coupling` block is present in 46/46 frozen specs and is no longer emitted.**
+2. **The `coupling` block is present in 46 of the 49 frozen specs and is no longer emitted**
+   (the three added on 2026-09-12 are fresh derivations, so they do not carry it — which is
+   itself the clearest statement of the class).
    `efd18a5b` (#403/#404, 2026-08-17) deleted `ExportJSON.wl`'s `coupling` output as
    write-only dead data — nothing in `tidal/` reads it (`git grep '\["coupling"\]'` → zero) —
    and verified the loaded model byte-identical with and without it. A fresh derive omits
    it; the committed files keep it. `coupled_scalars` is the case #554 noticed.
+**A fourth class arrived with the #547 theories (2026-09-12), and it is a *defect in the
+reader*, not in the spec.** `de_sitter_kg` fails plain `tidal validate` on the #394
+volume-element check, which demands a **spatial** first-derivative term whenever `sqrt|g|` is
+non-constant. A measure that depends on **time only** — every FRW background — generates a
+*temporal* one instead, and this spec carries it (`first_derivative_t(phi_0): -dSH`, i.e.
+`phi_tt + H phi_t - laplacian(phi) + a^2 m^2 phi = 0`, the analytic result). The check had only
+ever seen spatial measures (`polar_kg`, `spherical_kg_1d`, both of which pass). Filed as
+**#560**; the frozen `validate` fixture pins the *current* reader, so it will change when #560
+is fixed — that is a reader change, which is exactly what `--check` exists to catch, and the
+mapping must not read it as a physics regression. Related: `de_sitter_kg`'s
+`canonical.volume_element` is `e^{2Ht}` where `sqrt|g| = e^{3Ht}` for its metric, and the
+velocity-squared `hamiltonian_terms` carry `1/(2 e^{2Ht})`. The **equations are verified
+correct**; the energy-side normalization is **not** verified, so treat this fixture as an
+oracle for the equations and not for energy (noted on #547 and #560, and it matters because
+`de_sitter` is WS2's designated oracle).
+
 3. **`component_metadata` (`tensor_head`/`tensor_rank`/`tensor_indices` on `fields[]`) is
-   absent from 11/46** that predate `78374c1`: `conformal_kg_static`, `navier_cauchy_2d`,
+   absent from 11 of the 49** that predate `78374c1`: `conformal_kg_static`, `navier_cauchy_2d`,
    `graviton_torsion`, `massive_3form`, `scalar_vector_coupling`, and six
    `torsion_gertsenshtein*` variants. The port's field metadata is richer than these by
    design.
 
 **A full re-freeze was considered and rejected (2026-09-11).** It would take `--stability`
-coverage from 6/46 to 1/46 — five of the six passes depend on `metadata.parameters`, which
+coverage from 6/49 to 1/49 — five of the six passes depend on `metadata.parameters`, which
 #232 stopped injecting — three theories cannot be re-derived at all on the current pipeline
 (#321 ×2 including the main thesis theory, #402 ×1), and it costs 8–12 hours of the single
 kernel to strip data nothing reads. The pin stays; the classes above are the contract.
@@ -175,14 +193,14 @@ a machine-specific path, not missing a row.
 
 ## What the verdicts actually say
 
-Measured across the 46 pairs:
+Measured across the 49 pairs (regenerated 2026-09-12):
 
 | | |
 | --- | --- |
-| `tidal validate` (plain) | **27** pass, **19** fail |
-| `tidal validate --stability` | **6** pass, 40 fail — of which **39** are "cannot evaluate symbolic coefficient" |
-| `tidal inspect --detail summary` | 45 exit 0; `torsion_gertsenshtein_exact` exits 1 |
-| `tidal inspect --families` | all 46 exit 0 |
+| `tidal validate` (plain) | **29** pass, **20** fail |
+| `tidal validate --stability` | **6** pass, 43 fail — of which **42** are "cannot evaluate symbolic coefficient" |
+| `tidal inspect --detail summary` | 47 exit 0; `gertsenshtein_dipolar_centered` and `torsion_gertsenshtein_exact` exit 1 (both `sign_algebra: unsupported node Subscript`) |
+| `tidal inspect --families` | all 49 exit 0 |
 
 ### The 18 #397 specs — "same verdicts" is the wrong gate for these
 
@@ -213,11 +231,11 @@ missing from the query-flag list that relaxes the v6 strict guard
 
 ### `--stability` is a weak oracle on its own, and that is recorded rather than fixed
 
-39 of the 46 `--stability` captures are **not stability verdicts**. They record that the
+42 of the 49 `--stability` captures are **not stability verdicts**. They record that the
 spec has free symbolic parameters with no committed defaults, so the tachyon check never
-runs. Only **5** specs carry `metadata.parameters`; those plus one needing none are the 6
-that pass. As a port gate, this corpus exercises the stability path on **6** specs and the
-error path on 39 (plus one load failure).
+runs. Only **5** specs carry `metadata.parameters`; those plus one needing none are the
+6 that pass. As a port gate, this corpus exercises the stability path on
+**6** specs and the error path on 42 (plus one load failure).
 
 No `--param` values were invented to improve this. Choosing them would be choosing
 physics, and would make the oracle a record of *our* parameter choices rather than of
@@ -228,8 +246,8 @@ patched for it.
 ## The corpus, and what is not in it
 
 Enumerated as: every `examples/*/*.toml` whose `[output].path`, resolved relative to the
-TOML's own directory, ends in `.json` — **50** TOMLs, of which **46** have a committed
-spec.
+TOML's own directory, ends in `.json` — **50** TOMLs, of which **49** have a committed
+spec (46 until 2026-09-12; see #547).
 
 > The recipe originally given in §8 was `examples/*/theory*.toml`. It matches 48 files and
 > silently drops `examples/curved_spacetime/conformal_static.toml`, giving 45. Amended at

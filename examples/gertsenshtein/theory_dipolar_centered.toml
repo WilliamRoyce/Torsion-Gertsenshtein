@@ -29,6 +29,7 @@
 #   Boccaletti et al. (1970, Nuovo Cimento 70B:129) — conversion formula
 #   Jackson (1998, Classical Electrodynamics §5.6) — on-axis dipole field
 #   Domcke, Garcia-Cely & Lee (2025, arXiv:2507.16609) — inhomogeneous B
+# Derivation timing: ~49s wall (last verified: 2026-09-12, 6 fields, 38 H terms, v0.54.0)
 
 [theory]
 name = "Gertsenshtein Effect (Centered Dipolar B-field, Flat Space)"

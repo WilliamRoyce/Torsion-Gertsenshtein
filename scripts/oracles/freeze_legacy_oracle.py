@@ -94,6 +94,21 @@ NO_COMMITTED_SPEC = (
     "the session that froze this corpus"
 )
 
+# Once the lane WAS held (2026-09-12, #547), a generic reason became a false one:
+# three of the four originally excluded theories derive in under a minute and are
+# now pairs.  The fourth does not derive at all, and the manifest should say why
+# rather than repeat the lane excuse.  Keyed by the theory's repo-relative path.
+MEASURED_EXCLUSIONS: dict[str, str] = {
+    "examples/gertsenshtein/theory_radial.toml": (
+        "cannot be derived on the current pipeline (measured 2026-09-12, twice, "
+        "~135 s each): after gauge and gradient-zero elimination the pipeline "
+        "re-derives EOM for 3 surviving fields, Keys[fieldEquations] then receives "
+        "the bare symbol a_0 instead of an association, a_0's equation reaches the "
+        "JSON stage as literal 0, and ParseMultiFieldRHS throws. No spec is written. "
+        "See #547 for the record and #561 for the exit-code defect this uncovered"
+    ),
+}
+
 # ``tests/test_repo_hygiene.py`` rejects three specific shapes: a container path,
 # a user home, and a Claude project slug.  The first two are *subsumed* by the
 # generic absolute-path rule below, which is deliberately broader -- a fixture
@@ -199,7 +214,13 @@ def resolve_corpus() -> tuple[list[Pair], list[Exclusion]]:
         if spec_path.is_file():
             pairs.append(Pair(spec_path.stem, theory_rel, spec_rel))
         else:
-            exclusions.append(Exclusion(theory_rel, spec_rel, NO_COMMITTED_SPEC))
+            exclusions.append(
+                Exclusion(
+                    theory_rel,
+                    spec_rel,
+                    MEASURED_EXCLUSIONS.get(theory_rel, NO_COMMITTED_SPEC),
+                )
+            )
 
     seen: dict[str, str] = {}
     for pair in pairs:
