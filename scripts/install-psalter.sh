@@ -334,18 +334,18 @@ install_inkscape() {
 #
 # Idempotent, takes the Wolfram lane for about a minute. Never edits PSALTer.
 register_resources() {
-    local script="${SCRIPT_DIR}/psalter/register_resources.wl"
-    [[ -f "$script" ]] || { log_warn "register_resources.wl not found -- skipping"; return 1; }
+    local script="${SCRIPT_DIR}/psalter/ensure_registered.sh"
+    [[ -f "$script" ]] || { log_error "ensure_registered.sh not found"; return 1; }
 
     log_step "Registering the Function Repository resources PSALTer needs (#543)"
-    if QT_QPA_PLATFORM=offscreen timeout 300 wolframscript -file "$script" 2>&1 | tail -5; then
-        log_info "Resources registered"
+    # --no-verify: verify_installation runs below and covers check 10 under --require-psalter.
+    if bash "$script" --no-verify; then
+        log_info "Resources registered with the certified identities"
     else
-        log_warn "Registration did not complete. PSALTer will still load and run, but it"
-        log_warn "will produce a SILENTLY WRONG spectrum: empty source constraints and"
-        log_warn "zero pseudo-determinants. Run it by hand before trusting any result:"
-        log_warn "  wolframscript -file scripts/psalter/register_resources.wl"
-        log_warn "Then confirm with: bash scripts/verify-wolfram-setup.sh --require-psalter"
+        log_error "Registration failed. This is NOT optional: an unregistered PSALTer does not"
+        log_error "fail, it completes and writes a SILENTLY WRONG spectrum (empty source"
+        log_error "constraints, zero pseudo-determinants). Fix it before trusting any result:"
+        log_error "  bash scripts/psalter/ensure_registered.sh"
         return 1
     fi
 }
@@ -444,7 +444,7 @@ main() {
     install_tree
     write_installed_commit
     install_inkscape || true
-    register_resources || true
+    register_resources
 
     if [[ "$NO_VERIFY" == "true" ]]; then
         log_warn "Skipping verification (--no-verify)"

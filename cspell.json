@@ -844,7 +844,9 @@
     "\u039bCDM",
     "\u03bc\u03bd\u03c1\u03c3",
     "\u03bc\u03c1\u03bd\u03c3",
-    "\u03c1\u03c3\u03bc\u03bd"
+    "\u03c1\u03c3\u03bc\u03bd",
+    "notf",
+    "unpushed"
   ],
   "ignoreWords": [
     "Abar",
@@ -1256,7 +1258,8 @@
     "docs/cosmology/evidence/**/*.json",
     "docs/cosmology/evidence/**/*.txt",
     "docs/cosmology/evidence/**/*.log",
-    "docs/cosmology/evidence/**/*.pdf"
+    "docs/cosmology/evidence/**/*.pdf",
+    "scripts/psalter/resources/**/*.nb"
   ],
   "noConfigSearch": true
 }

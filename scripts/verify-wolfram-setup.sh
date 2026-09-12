@@ -50,6 +50,17 @@ PSALTER_COMMIT="${PSALTER_COMMIT:-bb45adb0fa21e467dbd88d4dc36ef21b84abbe6d}"
 # the result is not certifiable, so a mismatch is reported as DEGRADED (exit 2).
 # Override with EXPECTED_WOLFRAM_VERSION=<major.minor.release> when certifying anew.
 EXPECTED_WOLFRAM_VERSION="${EXPECTED_WOLFRAM_VERSION:-14.3.0}"
+# The certified engine lives on the devcontainer mount; a kernel reporting any other
+# $InstallationDirectory is not the local engine (wolframscript falls back to CLOUD
+# evaluation when the pinned kernel path is absent, and '1+1' passes there too).
+EXPECTED_ENGINE_DIR="${EXPECTED_ENGINE_DIR:-${HOME}/.local/wolfram/engine/${EXPECTED_WOLFRAM_VERSION%.*}}"
+# The certified xAct is the CODE, not the tarball label: the four package $Version strings
+# measured on the certified install (xAct 1.3.0 bundle). The "1.2.1" that earlier documents
+# carried was install-xact-xcoba.sh's default, never a measurement.
+EXPECTED_XACT_FINGERPRINT="${EXPECTED_XACT_FINGERPRINT:-xCore=0.6.10 xPerm=1.2.4 xTensor=1.3.0 xCoba=0.8.6}"
+# The two Function Repository resources PSALTer needs, as registered by
+# scripts/psalter/register_resources.wl with FIXED identities (evidence/tier1-20260911-pass).
+EXPECTED_RESOURCE_UUIDS="${EXPECTED_RESOURCE_UUIDS:-d40a8dd6-658c-47d2-8719-2f5fc8e1f83d 2f89f2e6-7bc8-4491-84bf-d8e13c69addb}"
 
 log_pass() {
     echo -e "${GREEN}[PASS]${NC} $1"
@@ -135,6 +146,18 @@ check_wolfram_activation() {
             local license
             license=$(wolframscript -code '$LicenseType' 2>/dev/null || echo "unknown")
             log_info "  License: ${license}"
+
+            # Provenance of the kernel itself. Without this, an absent local engine is
+            # invisible: wolframscript evaluates '1+1' in the cloud and the check passes.
+            local instdir
+            instdir=$(wolframscript -code '$InstallationDirectory' 2>/dev/null | tr -d '\r' | tail -1)
+            if [[ "$instdir" == "$EXPECTED_ENGINE_DIR"* ]]; then
+                log_pass "  Kernel is the local engine at ${instdir}"
+            else
+                log_fail "  Kernel is NOT the local engine: \$InstallationDirectory=${instdir:-<none>} (expected under ${EXPECTED_ENGINE_DIR})"
+                log_info "  A cloud-evaluated or foreign kernel cannot certify anything. Check WOLFRAMSCRIPT_KERNELPATH and the engine mount."
+                return 1
+            fi
             return 0
         else
             log_fail "Wolfram Engine returned unexpected result: ${result}"
@@ -184,6 +207,20 @@ check_xact_installed() {
                 log_fail "  Package ${pkg} missing"
             fi
         done
+
+        # The certified xAct, asserted from the code: each package's own $Version line,
+        # read from its .m header (no kernel needed). Degraded, not failed -- the install
+        # runs, but a different bundle is not the one the Tier-1 gate was passed on.
+        local fp="" pkg ver
+        for pkg in "${packages[@]}"; do
+            ver=$(grep -m1 -oE '\$Version *= *\{"[0-9.]+"' "${xact_dir}/${pkg}/${pkg}.m" 2>/dev/null | grep -oE '[0-9.]+' | head -1)
+            fp="${fp}${fp:+ }${pkg}=${ver:-missing}"
+        done
+        if [[ "$fp" == "$EXPECTED_XACT_FINGERPRINT" ]]; then
+            log_pass "  xAct packages match the certified bundle (${fp})"
+        else
+            log_degraded "  xAct packages (${fp}) are not the certified set (${EXPECTED_XACT_FINGERPRINT}): runs are possible, not certifiable"
+        fi
         return 0
     else
         log_fail "xAct directory not found: ${xact_dir}"
@@ -452,6 +489,7 @@ check_psalter_resources() {
     Print["RESOURCE_UUIDS=", ToString[ok[{ResourceObject["LinearlyIndependent"]["UUID"], ResourceObject["PolynomialDegree"]["UUID"]}], InputForm]];
     Quiet@LaunchKernels[1];
     Print["RESOURCE_SUBKERNEL=", ToString[ok[First[ParallelEvaluate[{ResourceFunction["LinearlyIndependent"][{{1, 0}, {0, 1}}], ResourceFunction["LinearlyIndependent"][{{1, 0}, {2, 0}}], ResourceFunction["PolynomialDegree"][rx^2 ry, {rx, ry}]}]]], InputForm]];
+    Print["RESOURCE_SUBKERNEL_UUIDS=", ToString[ok[First[ParallelEvaluate[{ResourceObject["LinearlyIndependent"]["UUID"], ResourceObject["PolynomialDegree"]["UUID"]}]]], InputForm]];
     CloseKernels[];
     Print["RESOURCE_CHECK_DONE"];
     '
@@ -476,7 +514,28 @@ check_psalter_resources() {
             bad=1
         fi
     done
-    log_info "  Resolved to: $(echo "$result" | grep -o 'RESOURCE_UUIDS=.*' | head -1)"
+    # Provenance, not only behavior: a function fetched from the repository behaves
+    # identically to the registered one and would pass the block above. The registered
+    # objects carry FIXED identities (register_resources.wl), so identity is checkable
+    # on both the master and a subkernel. Anything else means the local registry is
+    # absent, corrupted, or silently unregistered -- the resolver drops a name whose
+    # object fails ResourceObjectQ without a message (FindResource.m:76-83).
+    local want_uuids uuids_master uuids_sub
+    want_uuids="{\"${EXPECTED_RESOURCE_UUIDS%% *}\", \"${EXPECTED_RESOURCE_UUIDS##* }\"}"
+    uuids_master=$(echo "$result" | grep -o 'RESOURCE_UUIDS=.*' | head -1 | cut -d= -f2-)
+    uuids_sub=$(echo "$result" | grep -o 'RESOURCE_SUBKERNEL_UUIDS=.*' | head -1 | cut -d= -f2-)
+    if [[ "$uuids_master" == "$want_uuids" ]]; then
+        log_pass "  Resolved to the certified identities on the master"
+    else
+        log_soft_fail "  Master resolves to ${uuids_master:-<none>}, not the certified ${want_uuids}"
+        bad=1
+    fi
+    if [[ "$uuids_sub" == "$want_uuids" ]]; then
+        log_pass "  Resolved to the certified identities on the subkernel"
+    else
+        log_soft_fail "  Subkernel resolves to ${uuids_sub:-<none>}, not the certified ${want_uuids}"
+        bad=1
+    fi
 
     if [[ $bad -eq 1 ]]; then
         log_info "  PSALTer continues WITHOUT these and silently produces a wrong spectrum"

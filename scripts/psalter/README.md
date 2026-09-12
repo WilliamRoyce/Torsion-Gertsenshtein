@@ -81,7 +81,9 @@ Wolfram lane open forever. Every script here sets the variable itself.
 > **Before any run on a fresh container:** `wolframscript -file scripts/psalter/register_resources.wl`.
 > Without it PSALTer does not fail — it completes and writes a **silently wrong** spectrum
 > (empty source constraints, zero pseudo-determinants), which is what #543 turned out to be.
-> `bash scripts/verify-wolfram-setup.sh --require-psalter` exits 2 when they are missing.
+> `bash scripts/verify-wolfram-setup.sh --require-psalter` exits **1** when they are missing or
+> resolve to anything but the certified identities (it was exit 2 before the #549 routing was
+> reversed for this check; the gate refuses on 1 and proceeds on 2).
 
 | file | what it does |
 | --- | --- |
@@ -94,7 +96,8 @@ Wolfram lane open forever. Every script here sets the variable itself.
 | `probe_521_method.wls` | is `Method` inert? (#521) |
 | `probe_522_couplings.wls` | is a bare numeric coefficient rejected? (#522) |
 | `probe_523_harvest.wls` | what must the exporter read? (#523) |
-| `register_resources.wl` | registers the two Function Repository resources PSALTer needs and never declares (#543). **Required before the gate, and again after every container rebuild** — the registry lives in the container overlay. Idempotent; takes the lane for ~1 min; never edits PSALTer |
+| `ensure_registered.sh` | **the one to run**: registers (below) and verifies; exits non-zero on any failure. Called by `install-psalter.sh` and the devcontainer's `postCreateCommand` |
+| `register_resources.wl` | registers the two Function Repository resources PSALTer needs and never declares (#543) with **fixed certified identities**, from the engine-bundled `LinearlyIndependent.wl` (sha256-asserted) and the committed `resources/PolynomialDegree-1-0-0-definition.nb`. **Required before the gate, and again after every container rebuild** — the registry lives in the container overlay. Idempotent; takes the lane for ~1 min; never edits PSALTer |
 | `repro_543.wl` | the known-answer ladder behind #543 — scalar, Proca, Fierz–Pauli, CTEG — each rung's expected result stated in the file, so a failure is decidable without an oracle |
 
 The probes need only a working install, not a passing gate, and each writes a
