@@ -48,7 +48,7 @@ seven `H*.md` files while the programme document speaks of eight handoffs.
 | `I-REM.md` | #545, #546, #540 | 0-completion | no | **merged** 2026-09-09 (#550) | instruction-site amendments, docs index, `oracle.yml`, tooling |
 | `I-533.md` | #533 | 0-completion | no | **merged** 2026-09-11 (#552) | retire the M0 drop rows (`sweep`, `sample`, `analyze`, `plot`) |
 | `I-543.md` | #543 (+#542, #549) | 0-completion | **yes** | **merged** 2026-09-11 (#557) — **gate passes, install certified** | resolve the Tier-1 gate — pass it, or locate the mechanism |
-| `I-ONB.md` | #559 (#488, #543 hardening) | 0-completion | no | drafted 2026-09-11 | one onboarding path: a fresh user with their own Wolfram ID lands in the certified configuration; fixes the fresh-host container failure |
+| `I-ONB.md` | #559 (#488, #543 hardening) | 0-completion | no | **merged** 2026-09-12 (#564) | one onboarding path: a fresh user with their own Wolfram ID lands in the certified configuration; fixes the fresh-host container failure |
 
 ## The Wolfram lane
 

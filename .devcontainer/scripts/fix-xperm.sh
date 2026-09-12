@@ -53,7 +53,7 @@ if [[ ! -f "$XPERM_FILE" ]]; then
     print_error "xPerm.m not found at $XPERM_FILE"
     echo ""
     echo "${BOLD}Solution:${RESET}"
-    echo "  Install xAct first: ${BLUE}bash .devcontainer/scripts/setup_xact.sh${RESET}"
+    echo "  Install step 4 first: ${BLUE}bash scripts/install-xact-xcoba.sh${RESET}"
     echo ""
     exit 1
 fi

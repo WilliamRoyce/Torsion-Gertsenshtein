@@ -14,18 +14,19 @@ The project uses Wolfram Engine for symbolic computation (xCoba tensor algebra).
 
 ### Installation
 
-#### Automatic (Dev Container)
-
-If you place the installer in `third_party/` before building the dev container, it will be installed automatically during container creation.
-
-#### Manual Installation
+**No lifecycle hook installs Wolfram.** Container creation wires up an engine that is already
+on the mount; installing it is a manual, one-time step. The full path — six steps, ending at
+the certified configuration — is in
+[`.devcontainer/docs/WOLFRAM_GUIDE.md`](../.devcontainer/docs/WOLFRAM_GUIDE.md), which is the
+single source. This file documents the individual scripts.
 
 ```bash
-# Run the installation script (requires sudo)
-sudo ./scripts/install-wolfram-engine.sh
+# Installs into $HOME/.local/wolfram/engine/14.3 -- the dev container's bind mount.
+# No sudo: only the system-library step escalates, and the container has those already.
+./scripts/install-wolfram-engine.sh
 
-# Or if installer is already downloaded:
-sudo ./scripts/install-wolfram-engine.sh --skip-download
+# Or if the installer is already in third_party/:
+./scripts/install-wolfram-engine.sh --skip-download
 ```
 
 ### Activation
@@ -101,8 +102,11 @@ wolframscript -code "Integrate[x^2, {x, 0, 1}]"
 
 **GLIBC compatibility errors (xPerm)**
 
-- If you see `GLIBC_2.38 not found`, the xPerm binary needs recompilation
-- Run `./scripts/install-xact-xcoba.sh` which handles this automatically
+- If you see a `GLIBC_… not found` error, the xPerm binary shipped in the tarball is newer
+  than this image's GLIBC (2.36) and must be rebuilt from source
+- Run `bash .devcontainer/scripts/build-xperm.sh` — the route that produced the certified
+  binary. It runs `mprep` on xAct's own `xperm.tm`, compiles, and installs a wrapper that puts
+  MathLink's shared libraries on `LD_LIBRARY_PATH`
 
 ## Verification
 
@@ -112,12 +116,18 @@ Run the comprehensive verification script to check all components:
 ./scripts/verify-wolfram-setup.sh
 ```
 
-This checks:
+Eleven checks: the binary on `PATH`; activation, version, license and — critically — that
+`$InstallationDirectory` is the **mounted** engine rather than a cloud fallback; the userbase;
+the xAct packages and their four-version fingerprint; the xPerm binary; loading each package;
+the PSALTer install and its pinned commit; PSALTer's own functions; a headless PDF smoke test;
+the certified identities of the two registered resource functions on master and subkernel; and
+an xAct smoke test.
 
-- Wolfram Engine installation and activation
-- xAct package installation (xCore, xPerm, xTensor, xCoba)
-- xPerm binary compatibility
-- Full smoke test with tensor operations
+```bash
+./scripts/verify-wolfram-setup.sh --require-psalter   # the certification gate: exit 0
+```
+
+Exit **0** = certified, **2** = works but degraded (not certifiable), **1** = broken.
 
 ### Smoke Test
 
@@ -256,8 +266,8 @@ same commit, so the frozen oracle keeps describing what legacy actually produces
 | Variable              | Default                            | Description                       |
 | --------------------- | ---------------------------------- | --------------------------------- |
 | `WOLFRAM_VERSION`     | `14.3.0`                           | Wolfram Engine version to install |
-| `WOLFRAM_INSTALL_DIR` | `/usr/local/Wolfram/WolframEngine` | Installation directory            |
-| `XACT_VERSION`        | `1.2.1`                            | xAct version to install           |
+| `WOLFRAM_INSTALL_DIR` | `$HOME/.local/wolfram/engine`      | Install root (the bind mount)     |
+| `XACT_VERSION`        | `1.3.0`                            | xAct version to install           |
 | `PSALTER_COMMIT`      | `bb45adb0…` (v2.0.2)               | PSALTer revision to install       |
 | `QT_QPA_PLATFORM`     | unset                              | Set to `offscreen` before running PSALTer |
 
@@ -274,8 +284,15 @@ gate set it themselves; anything else you write must too.
 
 On container rebuild:
 
-1. **postCreateCommand**: Installs system dependencies including build tools for xPerm recompilation
-2. **postAttachCommand**: Checks Wolfram activation, auto-installs xAct/xCoba if missing
-3. **Manual**: Run `./scripts/verify-wolfram-setup.sh` for full verification
+1. **initializeCommand** (on the host): creates the bind-mount source directories
+2. **postCreateCommand**: installs system dependencies, then runs
+   `.devcontainer/scripts/setup-wolfram-links.sh` to wire the engine, license and
+   `WolframScript.conf`, and finally `scripts/psalter/ensure_registered.sh` to re-register
+   PSALTer's two resource functions
+3. **Manual**: `./scripts/verify-wolfram-setup.sh --require-psalter` for full verification
 
-**Note**: Wolfram Engine activation is per-container and needs to be redone after each rebuild.
+There is no post-attach hook, and nothing installs Wolfram, xAct or PSALTer for you.
+
+**Note**: activation is **not** per-container. `mathpass` is written into the bind-mounted
+userbase, so you activate once per machine, not once per rebuild. What the resource registry
+under `~/.Wolfram` needs after a rebuild is re-registration, which step 2 above does.

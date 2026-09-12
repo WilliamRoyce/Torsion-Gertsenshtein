@@ -2,19 +2,28 @@
 # ==============================================================================
 # Wolfram Engine Activation Script
 # ==============================================================================
-# This script helps activate Wolfram Engine with various methods.
+# Install step 3 of the six in .devcontainer/docs/WOLFRAM_GUIDE.md: a thin
+# wrapper around `wolframscript -activate`.
+#
+# What activation is, and is not. It is a one-time, interactive exchange with
+# your own Wolfram ID; the ENGINE (not this script) then writes a license file,
+# mathpass, into $UserBaseDirectory/Licensing. In this dev container that is
+# $HOME/.local/wolfram/userbase/Licensing/mathpass, which is bind-mounted from
+# the host -- so it survives container rebuilds and you activate once, not once
+# per rebuild.
+#
+# It is NOT a cloud login. Nothing in the TIDAL pipeline needs a Wolfram Cloud
+# session: WOLFRAMSCRIPT_KERNELPATH is pinned to the mounted kernel, so
+# evaluation is local. The cloud tokens under ~/.cache/Wolfram are a separate,
+# optional thing, and `.activation_backup` backs up those tokens -- never the
+# license.
 #
 # Usage:
-#   ./scripts/activate-wolfram.sh [--interactive | --env | --check]
+#   ./scripts/activate-wolfram.sh [--interactive | --check]
 #
 # Options:
 #   --interactive  Run interactive activation (default)
-#   --env          Activate using WOLFRAM_ID and WOLFRAM_PASSWORD environment variables
 #   --check        Check current activation status
-#
-# Environment Variables (for --env mode):
-#   WOLFRAM_ID        Your Wolfram ID (email)
-#   WOLFRAM_PASSWORD  Your Wolfram password (use with caution)
 #
 # ==============================================================================
 
@@ -45,9 +54,21 @@ log_step() {
 
 # Check if Wolfram Engine is installed
 check_installation() {
+    # The mounted kernel, never `command -v wolframscript`: the dev container
+    # image ships a standalone client at /usr/bin that evaluates in the CLOUD, so
+    # `command -v` succeeds with no engine installed -- and activation would then
+    # be attempted against nothing (#559).
+    local kernel="${HOME}/.local/wolfram/engine/14.3/Executables/WolframKernel"
+    if [[ ! -x "$kernel" ]]; then
+        log_error "Wolfram Engine is not installed on the mount"
+        log_error "  expected kernel: ${kernel}"
+        log_error "Run install step 2 first: bash scripts/install-wolfram-engine.sh"
+        exit 1
+    fi
+
     if ! command -v wolframscript &> /dev/null; then
-        log_error "Wolfram Engine is not installed or not in PATH"
-        log_error "Run: sudo ./scripts/install-wolfram-engine.sh"
+        log_error "wolframscript is not on PATH"
+        log_error "Run: bash .devcontainer/scripts/setup-wolfram-links.sh"
         exit 1
     fi
 }
@@ -101,30 +122,21 @@ activate_interactive() {
     fi
 }
 
-# Activate using environment variables
+# --env is retired. It demanded WOLFRAM_ID and WOLFRAM_PASSWORD, then admitted it
+# could not use them and ran the same interactive `wolframscript -activate` as
+# --interactive: a mode that did nothing but ask for a password first (#559).
 activate_with_env() {
-    if [[ -z "${WOLFRAM_ID:-}" ]]; then
-        log_error "WOLFRAM_ID environment variable not set"
-        exit 1
-    fi
-    
-    if [[ -z "${WOLFRAM_PASSWORD:-}" ]]; then
-        log_error "WOLFRAM_PASSWORD environment variable not set"
-        exit 1
-    fi
-    
-    log_info "Activating with environment credentials..."
-    log_warn "Note: This method stores credentials in the command history"
-    
-    # Use expect-style activation if available, otherwise fall back to interactive
-    # Unfortunately, wolframscript -activate doesn't accept credentials via stdin easily
-    # This is a limitation of the Wolfram activation process
-    
-    log_warn "Environment-based activation is limited."
-    log_warn "For automated activation, consider using a license server or"
-    log_warn "pre-activating and copying the licensing directory."
-    
-    wolframscript -activate
+    log_error "--env was removed: it never used the credentials it asked for."
+    log_error "  wolframscript -activate cannot take a Wolfram ID non-interactively."
+    log_error ""
+    log_error "  Activate interactively, once:   bash scripts/activate-wolfram.sh"
+    log_error "  For an unattended machine, activate once and keep the userbase:"
+    log_error "    mathpass lives in \$HOME/.local/wolfram/userbase/Licensing/ and is"
+    log_error "    bind-mounted from the host, so it survives container rebuilds."
+    log_error ""
+    log_error "  Recover the old behavior, if you really want it:"
+    log_error "    git show v0.54.1:scripts/activate-wolfram.sh"
+    exit 2
 }
 
 # Show help for activation
@@ -145,8 +157,15 @@ show_activation_help() {
     echo "  4. Complete activation in browser"
     echo ""
     echo "OPTION 3: License File (Enterprise)"
-    echo "  - Copy mathpass file to ~/.WolframEngine/Licensing/"
+    echo "  - Copy mathpass to \$HOME/.local/wolfram/userbase/Licensing/"
+    echo "    (~/.WolframEngine is a symlink to that directory, so either path works)"
     echo "  - Contact your Wolfram administrator for details"
+    echo ""
+    echo "WHERE ACTIVATION LANDS:"
+    echo "  \$HOME/.local/wolfram/userbase/Licensing/mathpass -- bind-mounted from"
+    echo "  the host, so you activate once, not once per container rebuild."
+    echo "  This is a license, not a cloud login: nothing in TIDAL needs a Wolfram"
+    echo "  Cloud session, and evaluation is local to the mounted kernel."
     echo ""
     echo "CREATING A WOLFRAM ID:"
     echo "  1. Visit: https://account.wolfram.com/login/create"

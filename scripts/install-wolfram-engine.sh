@@ -2,8 +2,11 @@
 # ==============================================================================
 # Wolfram Engine Installation Script
 # ==============================================================================
-# This script downloads and installs Wolfram Engine for headless Linux use.
-# It is designed to be run during dev container creation.
+# Installs Wolfram Engine for headless Linux use, onto the directory the dev
+# container bind-mounts from the host so it survives rebuilds.
+#
+# No lifecycle hook runs this: it is install step 2 of the six in
+# .devcontainer/docs/WOLFRAM_GUIDE.md, run by hand, once per machine.
 #
 # Usage:
 #   ./scripts/install-wolfram-engine.sh [--skip-download]
@@ -13,7 +16,9 @@
 #
 # Environment Variables:
 #   WOLFRAM_VERSION  Wolfram Engine version (default: 14.3.0)
-#   WOLFRAM_INSTALL_DIR  Installation directory (default: /usr/local/Wolfram/WolframEngine)
+#   WOLFRAM_INSTALL_DIR  Install root (default: $HOME/.local/wolfram/engine, the
+#                        dev container's bind mount). scripts/verify-wolfram-setup.sh
+#                        rejects a kernel installed anywhere else.
 #
 # ==============================================================================
 
@@ -21,8 +26,18 @@ set -euo pipefail
 
 # Configuration
 WOLFRAM_VERSION="${WOLFRAM_VERSION:-14.3.0}"
-WOLFRAM_INSTALL_DIR="${WOLFRAM_INSTALL_DIR:-/usr/local/Wolfram/WolframEngine}"
-WOLFRAM_SCRIPTS_DIR="/usr/local/bin"
+# The mount, not /usr/local. devcontainer.json bind-mounts
+# $HOME/.local/wolfram/engine/<series> from the host, and verify-wolfram-setup.sh
+# hard-fails any kernel outside it: an engine under /usr/local is wiped on every
+# rebuild, after which wolframscript silently falls back to CLOUD evaluation.
+WOLFRAM_INSTALL_DIR="${WOLFRAM_INSTALL_DIR:-${HOME}/.local/wolfram/engine}"
+# 14.3.0 -> 14.3: the mount is named by the series, not the point release.
+ENGINE_SERIES="${WOLFRAM_VERSION%.*}"
+ENGINE_DIR="${WOLFRAM_INSTALL_DIR}/${ENGINE_SERIES}"
+ENGINE_KERNEL="${ENGINE_DIR}/Executables/WolframKernel"
+# Keep the engine's own scripts inside the engine: /usr/local/bin would create a
+# second wolframscript that shadows the mounted one on PATH.
+WOLFRAM_SCRIPTS_DIR="${ENGINE_DIR}/Executables"
 
 # Derived paths
 INSTALLER_NAME="WolframEngine_${WOLFRAM_VERSION}_LIN.sh"
@@ -49,20 +64,34 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if running as root or with sudo
-check_privileges() {
-    if [[ $EUID -ne 0 ]]; then
-        log_error "This script must be run with sudo or as root"
+# Installing into $HOME needs no root, and demanding it is what left root-owned
+# files inside the mount. Escalate only for a target outside the user's home,
+# and refuse /usr/local outright.
+check_target() {
+    if [[ "$ENGINE_DIR" == /usr/local/* ]]; then
+        log_error "Refusing to install into ${ENGINE_DIR}"
+        log_error "  /usr/local is not mounted: the engine would be wiped on the next"
+        log_error "  container rebuild, and verify-wolfram-setup.sh rejects a kernel"
+        log_error "  outside the mount. Leave WOLFRAM_INSTALL_DIR unset to install to:"
+        log_error "    ${HOME}/.local/wolfram/engine"
+        exit 1
+    fi
+    if [[ "$ENGINE_DIR" != "${HOME}/"* && $EUID -ne 0 ]]; then
+        log_error "Installing outside your home directory needs root."
+        log_error "  Re-run with sudo, or leave WOLFRAM_INSTALL_DIR unset."
         exit 1
     fi
 }
 
 # Check if Wolfram Engine is already installed
+# The kernel file on the mount, never `command -v wolframscript`: the dev
+# container image ships a standalone wolframscript at /usr/bin that evaluates in
+# the CLOUD, so `command -v` succeeds on a machine with no engine at all. This
+# function then reported "already installed" and skipped the install on exactly
+# the fresh container that needed it (#559).
 check_existing_installation() {
-    if command -v wolframscript &> /dev/null; then
-        local version
-        version=$(wolframscript -code '$VersionNumber' 2>/dev/null || echo "unknown")
-        log_info "Wolfram Engine already installed (version: ${version})"
+    if [[ -x "$ENGINE_KERNEL" ]]; then
+        log_info "Wolfram Engine ${ENGINE_SERIES} already installed: ${ENGINE_DIR}"
         return 0
     fi
     return 1
@@ -71,8 +100,18 @@ check_existing_installation() {
 # Install system dependencies
 install_dependencies() {
     log_info "Installing system dependencies..."
-    apt-get update -qq
-    apt-get install -y --no-install-recommends \
+    local sudo_cmd=""
+    if [[ $EUID -ne 0 ]]; then
+        if command -v sudo &> /dev/null && sudo -n true 2>/dev/null; then
+            sudo_cmd="sudo"
+        else
+            log_warn "Cannot install system packages without root -- skipping."
+            log_warn "  The dev container already installs the engine's runtime libraries."
+            return 0
+        fi
+    fi
+    $sudo_cmd apt-get update -qq
+    $sudo_cmd apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         xz-utils \
@@ -144,16 +183,16 @@ run_installer() {
     # - Whether to create symbolic links
     
     # Create installation directory
-    mkdir -p "$WOLFRAM_INSTALL_DIR"
+    mkdir -p "$ENGINE_DIR"
     
     # Run with auto mode and predefined answers
-    # Note: The installer prompts are:
-    # 1. Installation directory (default: /usr/local/Wolfram/WolframEngine/14.3)
-    # 2. Scripts directory (default: /usr/local/bin)
-    # We pipe these answers to stdin
+    # Note: the installer prompts for
+    # 1. the installation directory -- must be ${ENGINE_DIR}
+    # 2. the scripts directory     -- must stay inside the engine
+    # -auto supplies both; the heredoc below is the fallback for older installers.
     echo -e "\n\n" | bash "$installer_path" -- \
         -auto \
-        -targetdir="${WOLFRAM_INSTALL_DIR}/${WOLFRAM_VERSION}" \
+        -targetdir="${ENGINE_DIR}" \
         -execdir="${WOLFRAM_SCRIPTS_DIR}" \
         2>/dev/null || {
             # If -auto flag doesn't work, try with heredoc for interactive prompts
@@ -171,13 +210,17 @@ EOF
 verify_installation() {
     log_info "Verifying installation..."
     
-    if ! command -v wolframscript &> /dev/null; then
-        log_error "wolframscript not found in PATH"
+    # Again the kernel file, not PATH: /usr/bin/wolframscript would make a failed
+    # install look successful.
+    if [[ ! -x "$ENGINE_KERNEL" ]]; then
+        log_error "Kernel not found at ${ENGINE_KERNEL}"
+        log_error "  The installer did not write to the expected location."
+        log_error "  Re-run and give ${ENGINE_DIR} when it asks for the install directory."
         return 1
     fi
     
     log_info "Wolfram Engine installed successfully!"
-    log_info "Location: $(command -v wolframscript)"
+    log_info "Location: ${ENGINE_DIR}"
     
     # Check if activated (this will fail if not activated, which is expected)
     log_info ""
@@ -230,7 +273,7 @@ main() {
         exit 0
     fi
     
-    check_privileges
+    check_target
     install_dependencies
     
     if [[ "$skip_download" == false ]]; then

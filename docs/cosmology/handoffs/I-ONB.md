@@ -1,5 +1,18 @@
 # I-ONB — One onboarding path: a fresh user, their own Wolfram ID, the certified configuration
 
+> **STATUS: COMPLETE — 2026-09-12.** Merged from `cosmo/onb-one-path` (PR #564,
+> `CI 34712322686: success` on `1158235f`). Closed #559. One six-step path in
+> `WOLFRAM_GUIDE.md`; `initializeCommand` + the `wolfram-objects` volume; the postCreate
+> chain's Wolfram wiring extracted to `setup-wolfram-links.sh`, which always exits 0 so a
+> container completes without an engine and says what to run; `setup_wolfram_engine.sh` and
+> `setup_xact.sh` deleted, `validate-setup.sh` and `check-wolfram.sh` redirected;
+> `tests/test_devcontainer_creation.py` added. Found a **second** fresh-host abort this prompt
+> did not know about (`install-lsp-wl.sh:17`), which had been silently skipping the Claude
+> memory restore and the session reindex. Opened #565.
+>
+> Kept as the record of *what was asked*. **Not an open assignment.**
+
+
 | | |
 |---|---|
 | **Issue** | **#559** (this work) · #488 (umbrella) · #543 (the certified configuration this must reproduce) · foundation audit 2026-09-11 |

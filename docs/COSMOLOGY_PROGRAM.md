@@ -206,6 +206,7 @@ them, there was simply no index.
 | **The certified PSALTer configuration, and what it is independent of** | Wolfram **14.3.0** × xAct **1.3.0** bundle × PSALTer v2.0.2 `bb45adb0` × local registration of `LinearlyIndependent` (the engine-bundled/userbase `ResourceFunctionHelpers` file, sha256 `7bc228a2…`) and `PolynomialDegree` (the committed definition notebook, sha256 `c233e226…`) under **fixed UUIDs** `d40a8dd6-…`, `2f89f2e6-…`. `verify --require-psalter` asserts *provenance* — those UUIDs on master and subkernel, the engine under its mount, the xAct fingerprint — and each assertion was watched fail. `scripts/psalter/ensure_registered.sh` re-creates the registration idempotently (rebuild simulated from an empty registry: identical UUIDs, exit 0). **Independent of the Wolfram-ID cloud login** (asserted logged in and logged out, stored credentials untouched) and of the engine minor version (14.2.1 cross-check MATCH, `evidence/tier1-20260911-engine-142/`, then retired). Nobody's login is logged out: it lives in the user's own home mounts, not the repo | orchestrator, 2026-09-11 | `docs/cosmology/evidence/tier1-20260911-pass/`, `scripts/psalter/README.md`, #559 |
 | **`theory_radial` stays excluded, not retired** | Three of M0.5's four excluded theories derive in under a minute (9 s / 45 s / 49 s) and are now pairs; `theory_radial` aborts in `ParseMultiFieldRHS` with `a_0`'s equation arriving as literal `0`, measured twice. #547's own plan said retire it — **overruled**: retiring legacy is milestone work (§7's M5/M6/M7 schedule), so it is recorded as un-derivable with the measurement in the manifest instead. A generic exclusion reason became a *false* one the moment the lane was held, so reasons are now per-theory | orchestrator, 2026-09-12 | #547, `scripts/oracles/freeze_legacy_oracle.py` `MEASURED_EXCLUSIONS` |
 | **Exit 0 is not evidence a derivation ran** | An uncaught `Throw` stops a `wolframscript` script and still returns status 0 (probed, `-code` and `-file`), and the Wolfram pipeline signals its own errors by throwing — so `derive` verifies the **artifact**: the output JSON must exist and its mtime must have advanced. The Wolfram-side fix (`Catch` + `Exit[1]`) is deferred to #513's own script emission, because it would change every generated script and so every `derivation_hash` | orchestrator, 2026-09-12 | #561, `tidal/cli/_derive.py` |
+| **The engine test is a file, never `command -v wolframscript`** | The dev container image ships a **second**, cloud-only `wolframscript` at `/usr/bin` (#565), so `command -v` succeeds with no engine installed and every later call evaluates in the cloud — an installer reported "already installed" on a bare machine, a verifier passed against the cloud, a registration step burned `timeout 600` before failing. The test is `[ -x "$HOME/.local/wolfram/engine/<series>/Executables/WolframKernel" ]`. Enumerated and fixed at **nine** sites rather than the one that bit | orchestrator + I-ONB, 2026-09-12 | #559, #565, `0078b3c9`, `fdbfdcdc` and `dc664076` |
 | **Reduce before you bisect** | A protocol rule, not advice: find the smallest input that still shows the defect and iterate there. #543 reproduces on one scalar field in ~30 s where the CTEG gate takes 7 min | I-543 + orchestrator, 2026-09-09 | delegation protocol, `scripts/psalter/repro_543.wl` |
 | **Verification gates** | Made **able to fail** — `tidalcosmo/` had been outside pyright, coverage, `testpaths` and CI, and the never-import-legacy rule had no test | coherence pass, 2026-09-04 | `8b54fe6e`, #524 |
 
@@ -686,7 +687,7 @@ Status: `drafted → dispatched → reported → merged`.
 | 0c | I-REM — instruction sites, docs index, tooling, oracle CI | #545 #546 #540 | — | design docs, `docs/README.md`, `handoffs/README.md`, `tidalcosmo/**/README.md`, `scripts/`, skills, `Makefile`, `.github/`, config | `cosmo/irem-amendments` (#550) | **merged** ✅ CI 34393863566 + 34393863645 success on `1cde083d`. **`oracle.yml` proven in both directions**: CI 34393316535 failure on a corrupted fixture, CI 34392693815 success clean. Replaced the six-item exporter list with a rule + anchor + guard rather than a longer list. Found PSALTer's own README known-bug #1 (#543) |
 | 0c | I-533 — retire the M0 drop rows | #533 | — | `tidal/`, `tests/`, `examples/**/run.sh`, legacy `scripts/`, `docs/tex/` | `cosmo/i533-retire-drop-rows` (#552) | **merged** ✅ CI 34401167660 + 34401167568 success on `f8d4001a`. `sweep`/`sample`/`analyze`/`plot` gone with their in-package plotting, +1182/−26727; each name exits 2 naming a `git show v0.53.0:` recovery path, handler probed. **`measure` deliberately kept** — a `drop` verdict is not a retire milestone; it is drop **+ M5**, amended at the site. Orphan inventory #553, spec drift #554 |
 | 0c | I-543 — resolve the Tier-1 gate | #543 #542 #556 #551 | **yes** | `scripts/psalter/`, `docs/cosmology/psalter_543_*.md`, `evidence/tier1-20260911-pass/` | `cosmo/i543-psalter-gate` (#557) | **merged** ✅ CI 34619683909 success on `4a2c38fd`. **GATE PASSES — `VERDICT: MATCH`**, both keys identical. Cause: two undocumented PSALTer Function Repository dependencies, **not** the engine (14.2.1 behaves identically). Certified: 14.3.0 × `bb45adb0` × local registration. Upstream issue drafted, not filed |
-| 0d | I-ONB — one onboarding path, fresh-host container, registry volume | #559 | — | `.devcontainer/**`, root `README.md` setup, `scripts/README.md`, `scripts/{install-wolfram-engine,install-xact-xcoba,activate-wolfram}.sh` | — | **drafted** — prompt committed `0a630b46`; the user dispatches |
+| 0d | I-ONB — one onboarding path, fresh-host container, registry volume | #559 | — | `.devcontainer/**`, root `README.md` setup, `scripts/README.md`, `scripts/{install-wolfram-engine,install-xact-xcoba,activate-wolfram}.sh` | `cosmo/onb-one-path` (#564) | **merged** ✅ CI 34712322686 success on `1158235f`. +911/−1784 over 21 files: one six-step path in `WOLFRAM_GUIDE.md`, `initializeCommand` + the `wolfram-objects` volume, the 25-step chain's Wolfram wiring extracted to `setup-wolfram-links.sh` (always exits 0), two installers deleted and two redirected, `tests/test_devcontainer_creation.py`. Found a **second** fresh-host abort my audit missed (`install-lsp-wl.sh:17`), which had been silently skipping the Claude memory restore and session reindex |
 | 1 | I-532 — CAMB seam, background protocol, flag schema | #532 | — | `tidalcosmo/{background,spectator,validity}/` | — | planned |
 | 1 | I-503 — per-operator dispersion + zero-mode scope | #503 | — | `research/lagrangian_enumeration/`, `docs/` | — | planned |
 | 1 | I-S1A — Stage-1 Python side | #527 | — | `tidalcosmo/{config,derive}/` (Python only), `tidalcosmo/spectrum/` | — | planned |
@@ -838,9 +839,12 @@ tagged and pushed. The Tier-1 gate was re-run from scratch from an **empty** reg
 `VERDICT: MATCH`, `tier1_diff.json` identical to I-543's but for `generated_utc`
 (`evidence/tier1-20260911-recert/`, with the run's own `.mx` committed).
 
-**What is open at this boundary:** **I-ONB (#559) only** — the one remaining M0.5 issue, a
-delegate prompt the user dispatches. It is not a Wave-1 dependency. Carried forward with
-owners: #558, #548, #560, #562.
+**What is open at this boundary: nothing in the completion wave.** I-ONB merged 2026-09-12
+(#564, `CI 34712322686: success`), closing #559. Carried forward with owners, none of them a
+Wave-1 dependency: #558 (β over recombination, with #503), #548 (two specs without a TOML, M3),
+#560 (the FRW volume-element check, WS2), #562 (Wolfram call forms in `sign_algebra`, M3),
+#563 (the undeclared `xPerm.m` patch, M0.5) and #565 (the image's second `wolframscript`,
+M-parallel).
 
 ### Wave-boundary checklist
 
@@ -900,10 +904,10 @@ The program is **design-complete**, has passed the pre-implementation scientific
 > registration of two Function Repository resources the package depends on but never declares.
 > `VERDICT: MATCH` on the author's own published input, re-run from scratch by the orchestrator
 > on 2026-09-11 with provenance asserted. **Nothing in Wave 1 is blocked.** What is still open in
-> the completion wave is **#559 / I-ONB** alone (one onboarding path; delegate, no lane) —
-> which is also the only issue still open in M0.5. Closed on 2026-09-12: **#547** (three of the
-> four excluded theories derived, the fourth measured un-derivable) and **#554** (the oracle's
-> drift classes and the `--staleness` detector). Carried forward with owners: **#558** (β over
+> the completion wave is **nothing**: I-ONB merged 2026-09-12 (#564). Closed on 2026-09-12:
+> **#559** (one onboarding path), **#547** (three of the four excluded theories derived, the
+> fourth measured un-derivable) and **#554** (the oracle's drift classes and the `--staleness`
+> detector). Carried forward with owners: **#558** (β over
 > recombination — the second half of O4a's precondition; with the #503 session), **#548** (two
 > specs without a TOML; M3), and two defects #547 uncovered by execution — **#561** (`derive`
 > reported success for an aborted derivation; fixed, `bf9361c5`) and **#560** (the #394

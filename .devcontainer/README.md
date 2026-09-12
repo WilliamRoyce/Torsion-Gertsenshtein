@@ -13,14 +13,17 @@ This directory contains the complete development container setup for the TIDAL p
 │   ├── WOLFRAM_GUIDE.md     # Complete Wolfram Engine setup and usage guide
 │   └── XACT_TESTS.md        # xAct test suite documentation
 ├── scripts/                  # Utility scripts for setup and maintenance
-│   ├── setup_wolfram_engine.sh        # Interactive Wolfram Engine 14.3 setup (NEW)
-│   ├── setup_xact.sh                  # Interactive xAct package installation (NEW)
-│   ├── validate-setup.sh              # Comprehensive setup validation (NEW)
+│   ├── setup-wolfram-links.sh         # Wire the mounted engine, license and cache
 │   ├── build-xperm.sh                 # Build xPerm from source for current GLIBC
-│   ├── check-wolfram.sh               # Health check for Wolfram Engine
-│   ├── fix-xperm.sh                   # Fix xPerm installation issues
+│   ├── fix-xperm.sh                   # Fall back to pure-Mathematica xPerm
+│   ├── install-lsp-wl.sh              # Wolfram Language Server + paclets
 │   ├── install-extensions-final.sh    # Install VS Code extensions
 │   ├── notify-install-extensions.sh   # Extension installation notification
+│   ├── reindex-claude-sessions.sh     # Rebuild the Claude session index
+│   ├── setup-swap.sh                  # Swap file for large derivations
+│   ├── sync-claude-memory.sh          # Back up / restore Claude memory
+│   ├── validate-setup.sh              # -> scripts/verify-wolfram-setup.sh
+│   ├── check-wolfram.sh               # -> scripts/verify-wolfram-setup.sh
 │   └── wolfram-activation-manager.sh  # Manage Wolfram licensing and activation
 └── tests/                    # Comprehensive test suite
     ├── test-all-xact.sh              # Master test runner (runs all tests below)
@@ -35,76 +38,25 @@ This directory contains the complete development container setup for the TIDAL p
 
 ## First-Time Setup
 
-If this is your first time using this devcontainer and you don't have Wolfram Engine installed:
-
-### 1. Install Wolfram Engine 14.3
-
-```bash
-bash .devcontainer/scripts/setup_wolfram_engine.sh
-```
-
-This interactive wizard will:
-- Guide you through downloading the Wolfram Engine installer (~4 GB)
-- Run the installer and activate with your Wolfram ID (free)
-- Verify installation and create backups
-
-**Time:** ~15-20 minutes (mostly download)
-
-### 2. Install xAct Packages
+**See [docs/WOLFRAM_GUIDE.md](docs/WOLFRAM_GUIDE.md).** It is the single source for Wolfram
+setup: six steps from a bare machine to the certified configuration, ending at
 
 ```bash
-bash .devcontainer/scripts/setup_xact.sh
+bash scripts/verify-wolfram-setup.sh --require-psalter   # exit 0
 ```
 
-This will:
-- Download xAct 1.3.0 (~6 MB)
-- Install all tensor computation packages
-- Optionally compile xPerm for performance
+Do not follow setup instructions from anywhere else — three paths used to disagree here and
+none of them reached PSALTer (GH #559).
 
-**Time:** ~5 minutes
-
-### 3. Validate Setup
-
-```bash
-bash .devcontainer/scripts/validate-setup.sh
-```
-
-Runs 9 comprehensive checks and provides a health report.
-
-**Time:** ~3-5 minutes
-
-See [WOLFRAM_GUIDE.md](docs/WOLFRAM_GUIDE.md) for detailed setup instructions.
-
----
-
-## Quick Start
-
-### Running Tests
-
-Run the complete xAct test suite:
-
-```bash
-cd .devcontainer/tests
-./test-all-xact.sh
-```
-
-Individual test files can be run directly with `wolframscript`:
-
-```bash
-cd .devcontainer/tests
-wolframscript test-xtensor.wls
-wolframscript test-xcoba.wls
-wolframscript test-xperm.wls
-wolframscript test-xpert.wls
-wolframscript test-integration.wls
-```
+A container whose engine is not installed yet still finishes creating: `postCreateCommand`
+guards every Wolfram step and prints the install steps.
 
 ### Wolfram Engine Management
 
 Check Wolfram Engine health:
 
 ```bash
-bash .devcontainer/scripts/check-wolfram.sh
+bash scripts/verify-wolfram-setup.sh
 ```
 
 Manage activation and licensing:
@@ -125,8 +77,8 @@ bash .devcontainer/scripts/install-extensions-final.sh
 
 ### Wolfram Engine Integration
 
-- **Version**: 14.3 (July 31, 2025)
-- **Licensing**: Dual system with offline mathpass and cloud activation
+- **Version**: 14.3.0
+- **Licensing**: `mathpass` in the mounted userbase — offline, and **not** a cloud login
 - **Persistence**: All licensing and activation data persists across rebuilds
 - **MathLink**: Enabled for high-performance computations with xPerm
 
@@ -139,31 +91,39 @@ bash .devcontainer/scripts/install-extensions-final.sh
 
 ### VS Code Configuration
 
-- **Extensions**: 12 pre-configured extensions (Python, Ruff, Prettier, GitHub Copilot, etc.)
+- **Extensions**: 16 pre-configured extensions (Python, Ruff, Prettier, GitHub Copilot, etc.)
 - **Python Support**: Full debugging, linting, and testing setup
 - **Settings**: Format on save, auto-import organization, pytest configuration
 
 ## Development Workflow
 
 ### First-Time Setup (New Users)
-1. **Wolfram Engine Install**: Run `setup_wolfram_engine.sh` (one-time, ~15-20 min)
-2. **xAct Install**: Run `setup_xact.sh` (one-time, ~5 min)
-3. **Validation**: Run `validate-setup.sh` to verify (~3-5 min)
+The six steps in [docs/WOLFRAM_GUIDE.md](docs/WOLFRAM_GUIDE.md) — about 30 minutes, mostly
+download.
 
 ### Every Container Build
-1. **Container Creation**: devcontainer.json runs `onCreateCommand` then `postCreateCommand`
-2. **Mount Activation**: Wolfram Engine and xAct automatically available via mounts
-3. **Activation Restore**: License and activation automatically restored from backup
-4. **Extension Installation**: Manual via `install-extensions-final.sh` (runs once per rebuild)
-5. **Ready to Use**: Everything works immediately - no reinstallation needed!
+1. **Host directories**: `initializeCommand` creates the bind-mount sources on the host
+2. **Container Creation**: `onCreateCommand`, then `postCreateCommand`
+3. **Mounts**: engine, userbase and caches are already populated — nothing is reinstalled
+4. **Wolfram wiring**: `setup-wolfram-links.sh` re-creates the links and `WolframScript.conf`
+5. **Claude state**: memory restored, session index rebuilt
+6. **PSALTer resources**: re-registered — the registry is a volume, but a fresh one starts empty
+7. **Extension Installation**: manual via `install-extensions-final.sh`
+
+The license is **not** restored from a backup: `mathpass` persists because the userbase is a
+mount. What `.activation_backup` restores is wolframscript's cloud tokens, which nothing in
+TIDAL needs.
 
 ## Important Notes
 
-- **Mounts**: 4 critical mounts ensure Wolfram Engine, licensing, and caches persist:
-  - Engine: `~/.local/wolfram/engine/14.3`
-  - User base: `~/.local/wolfram/userbase`
-  - Machine ID: `/etc/machine-id` (read-only)
-  - Cache: `~/.cache/Wolfram`
+- **Mounts**: 6 mounts ensure everything persists across rebuilds:
+  - Engine: `~/.local/wolfram/engine/14.3` (host bind)
+  - User base: `~/.local/wolfram/userbase` (host bind)
+  - Machine ID: `/etc/machine-id` (host bind, read-only)
+  - Cache: `~/.cache/Wolfram` (host bind)
+  - Claude data: `~/.claude` (named volume)
+  - Wolfram resource registry: `~/.Wolfram` (named volume) — without it PSALTer writes a
+    silently wrong spectrum after every rebuild
 
 - **GLIBC Compatibility**: xPerm is compiled from source to match container's GLIBC version (2.36)
 
@@ -180,10 +140,10 @@ See the comprehensive guides in the `docs/` folder:
 
 If tests fail or Wolfram Engine isn't working:
 
-1. Run health check: `bash .devcontainer/scripts/check-wolfram.sh`
-2. Check activation: `bash .devcontainer/scripts/wolfram-activation-manager.sh status`
-3. Review logs: `cat .devcontainer/docs/WOLFRAM_GUIDE.md`
-4. Restore activation: `bash .devcontainer/scripts/wolfram-activation-manager.sh restore`
+1. Verify: `bash scripts/verify-wolfram-setup.sh --require-psalter`
+2. Re-wire the links: `bash .devcontainer/scripts/setup-wolfram-links.sh`
+3. Re-register PSALTer resources: `bash scripts/psalter/ensure_registered.sh`
+4. Read [docs/WOLFRAM_GUIDE.md](docs/WOLFRAM_GUIDE.md) — troubleshooting lives there
 
 ## Contact & Updates
 

@@ -93,7 +93,8 @@ if [[ ! -f "$MATHLINK_DIR/mprep" ]]; then
     print_error "Wolfram MathLink SDK not found at $MATHLINK_DIR"
     echo ""
     echo "${BOLD}Solution:${RESET}"
-    echo "  Install Wolfram Engine 14.3: ${BLUE}bash .devcontainer/scripts/setup_wolfram_engine.sh${RESET}"
+    echo "  Install step 2: ${BLUE}bash scripts/install-wolfram-engine.sh${RESET}"
+    echo "  See .devcontainer/docs/WOLFRAM_GUIDE.md for the full six-step path."
     echo ""
     exit 1
 fi
@@ -104,7 +105,7 @@ if [[ ! -d "$XPERM_DIR" ]]; then
     print_error "xPerm package not found at $XPERM_DIR"
     echo ""
     echo "${BOLD}Solution:${RESET}"
-    echo "  Install xAct: ${BLUE}bash .devcontainer/scripts/setup_xact.sh${RESET}"
+    echo "  Install step 4: ${BLUE}bash scripts/install-xact-xcoba.sh${RESET}"
     echo ""
     exit 1
 fi
@@ -228,7 +229,11 @@ echo "  • xperm.linux.64-bit.compiled (compiled binary)"
 echo "  • xperm.c.original (backup)"
 echo "  • xperm.linux.64-bit.factory (factory backup)"
 echo ""
-echo "${BOLD}To restore factory version:${RESET}"
-echo "  ${BLUE}cd $XPERM_DIR${RESET}"
-echo "  ${BLUE}mv xperm.linux.64-bit.factory xperm.linux.64-bit${RESET}"
+echo "${BOLD}To restore the shipped binary:${RESET}"
+echo "  ${BLUE}bash scripts/install-xact-xcoba.sh${RESET}   # re-extracts xAct from the tarball"
+echo ""
+echo "${BOLD}Note on xperm.linux.64-bit.factory:${RESET} it snapshots whatever"
+echo "xperm.linux.64-bit was when this script first ran. If that was already a"
+echo "wrapper from an earlier build, .factory is a wrapper too -- not the binary"
+echo "xAct ships. Re-extracting is the reliable way back."
 echo ""
