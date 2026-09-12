@@ -106,7 +106,7 @@ def test_initialize_command_refuses_an_unset_home() -> None:
 
 
 def test_named_volumes_are_chowned() -> None:
-    """Docker materialises a named volume root-owned, so the user cannot write it.
+    """Docker materializes a named volume root-owned, so the user cannot write it.
 
     ``~/.Wolfram`` holds the Wolfram resource registry; if registration fails on a
     permission error, PSALTer writes a silently wrong spectrum.
@@ -118,7 +118,9 @@ def test_named_volumes_are_chowned() -> None:
         if mount.get("type") != "volume":
             continue
         target = mount["target"]
-        assert target in chown, f"named volume {target!r} is not chowned; it stays root-owned"
+        assert target in chown, (
+            f"named volume {target!r} is not chowned; it stays root-owned"
+        )
 
 
 def test_chown_does_not_descend_into_bind_mounts() -> None:
@@ -165,4 +167,6 @@ def test_every_lifecycle_script_exists() -> None:
     )
     for match in re.finditer(r"bash\s+((?:\.devcontainer|scripts)/[\w./-]+)", commands):
         script = REPO_ROOT / match.group(1)
-        assert script.is_file(), f"lifecycle command references a missing script: {match.group(1)}"
+        assert script.is_file(), (
+            f"lifecycle command references a missing script: {match.group(1)}"
+        )

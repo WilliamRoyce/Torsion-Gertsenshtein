@@ -11,14 +11,18 @@
 #   ./scripts/install-xact-xcoba.sh [--version VERSION]
 #
 # Options:
-#   --version VERSION  xAct version to install (default: 1.2.1, compatible with GLIBC 2.36)
+#   --version VERSION  xAct version to install (default: 1.3.0, the certified bundle)
 #
 # ==============================================================================
 
 set -euo pipefail
 
 # Configuration
-XACT_VERSION="${XACT_VERSION:-1.2.1}"
+# The certified xAct is the CODE, not the tarball label: scripts/verify-wolfram-setup.sh
+# asserts the four package $Version strings of the 1.3.0 bundle (xCore 0.6.10,
+# xPerm 1.2.4, xTensor 1.3.0, xCoba 0.8.6). The "1.2.1" this defaulted to was
+# never a measurement -- it was this line, copied into three documents (#559).
+XACT_VERSION="${XACT_VERSION:-1.3.0}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WOLFRAM_USER_DIR=""
 
@@ -47,10 +51,23 @@ log_step() {
 
 # Check if Wolfram Engine is available
 check_wolfram() {
+    # The mounted kernel first, and on its own line. `command -v wolframscript` is
+    # not an engine test: the dev container image ships a standalone client at
+    # /usr/bin that evaluates in the CLOUD, so it succeeds with no engine at all,
+    # and the "1+1" probe below would then pass against the cloud (#559).
+    local kernel="${HOME}/.local/wolfram/engine/14.3/Executables/WolframKernel"
+    if [[ ! -x "$kernel" ]]; then
+        log_error "Wolfram Engine is not installed on the mount"
+        log_error "  expected kernel: ${kernel}"
+        log_error "Run install steps 1-3 from .devcontainer/docs/WOLFRAM_GUIDE.md:"
+        log_error "  bash scripts/install-wolfram-engine.sh"
+        log_error "  wolframscript -activate"
+        exit 1
+    fi
+
     if ! command -v wolframscript &> /dev/null; then
-        log_error "Wolfram Engine is not installed or not activated"
-        log_error "Run: sudo ./scripts/install-wolfram-engine.sh"
-        log_error "Then: ./scripts/activate-wolfram.sh"
+        log_error "wolframscript is not on PATH"
+        log_error "Run: bash .devcontainer/scripts/setup-wolfram-links.sh"
         exit 1
     fi
     
@@ -153,17 +170,33 @@ recompile_xperm() {
     
     log_step "Finding MathLink compiler..."
     
-    # Find mcc (MathLink compiler)
+    # Resolve mcc from the engine wolframscript actually belongs to. The block
+    # this replaces could never match: the globs sat inside double quotes in the
+    # `for` list so they were never expanded, `[[ -f $path ]]` does no pathname
+    # expansion either, and even expanded it searched /usr/local/Wolfram, where
+    # nothing is installed. It had never run -- it only ever exited 1 (#559).
+    #
+    # Do NOT canonicalize with `readlink -f`: Executables/wolframscript is a
+    # symlink into SystemFiles/Kernel/Binaries/Linux-x86-64/, which holds no mcc.
+    # The dirname of the link itself is the Executables directory, which does.
     local mcc_path=""
-    for path in "/usr/local/Wolfram/WolframEngine/*/Executables/mcc" "/usr/local/Wolfram/Mathematica/*/Executables/mcc"; do
-        if [[ -f $path ]]; then
-            mcc_path="$path"
+    local exec_dir
+    exec_dir="$(dirname "$(command -v wolframscript)")"
+    for candidate in \
+        "${exec_dir}/mcc" \
+        "${HOME}/.local/wolfram/engine/14.3/Executables/mcc" \
+        "${HOME}/.local/wolfram/engine/14.3/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-64/CompilerAdditions/mcc"
+    do
+        if [[ -x "$candidate" ]]; then
+            mcc_path="$candidate"
             break
         fi
     done
     
     if [[ -z "$mcc_path" ]]; then
-        log_error "MathLink compiler (mcc) not found"
+        log_error "MathLink compiler (mcc) not found beside ${exec_dir}"
+        log_error "  Build xPerm with the route that produced the certified binary:"
+        log_error "    bash .devcontainer/scripts/build-xperm.sh"
         exit 1
     fi
     
@@ -185,6 +218,20 @@ recompile_xperm() {
         log_error "Failed to recompile xPerm binary"
         exit 1
     fi
+}
+
+# Record what was installed. Nothing else does: verify-wolfram-setup.sh has to
+# fingerprint xAct by grepping each package's $Version out of its .m file,
+# because the tarball leaves no marker behind.
+write_installed_version() {
+    local xact_dir="${WOLFRAM_USER_DIR}/Applications/xAct"
+    {
+        echo "${XACT_VERSION}"
+        echo "source_url=https://xact.es/download/xAct_${XACT_VERSION}.tgz"
+        echo "installed_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        echo "installed_by=scripts/install-xact-xcoba.sh"
+    } > "${xact_dir}/INSTALLED_VERSION"
+    log_info "Recorded: ${xact_dir}/INSTALLED_VERSION"
 }
 
 # Test xAct/xCoba installation
@@ -266,6 +313,7 @@ main() {
     get_wolfram_user_dir
     install_build_deps
     download_xact
+    write_installed_version
     recompile_xperm
     
     if test_installation; then
