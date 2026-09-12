@@ -64,7 +64,7 @@ if [[ ! -d "$USERBASE_DIR" ]]; then
     echo "  • Userbase mount is not configured correctly"
     echo ""
     echo "${BOLD}Solution:${RESET}"
-    echo "  Install Wolfram Engine: ${BLUE}bash .devcontainer/scripts/setup_wolfram_engine.sh${RESET}"
+    echo "  Install step 2: ${BLUE}bash scripts/install-wolfram-engine.sh${RESET}"
     echo ""
     exit 1
 fi
