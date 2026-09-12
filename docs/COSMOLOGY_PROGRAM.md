@@ -204,6 +204,8 @@ them, there was simply no index.
 | **Oracle CI, with its expiry** | `oracle.yml` runs `freeze_legacy_oracle.py --check`, path-filtered to `tidal/**`, `examples/**`, `scripts/oracles/**`, the fixtures, `uv.lock` and itself. Firing on `uv.lock` — every version bump, ~4 min — is accepted. **Expires with legacy `inspect`/`validate` (M6/M7)**, recorded in the workflow header and §7's M3 row | I-REM + orchestrator, 2026-09-09 | `.github/workflows/oracle.yml`, `scripts/oracles/README.md` |
 | **Wolfram gates are lane-held, not CI jobs** | No engine in CI (single license), so the Tier-1 gate and `verify --require-psalter` run on the lane and commit their evidence; CI keeps the evidence readable (`summarize_diff.py`, no lane) and the Python suites green. No separate CI job is added for them | I-REM + orchestrator, 2026-09-09 | `docs/cosmology/evidence/`, `scripts/psalter/README.md` |
 | **The certified PSALTer configuration, and what it is independent of** | Wolfram **14.3.0** × xAct **1.3.0** bundle × PSALTer v2.0.2 `bb45adb0` × local registration of `LinearlyIndependent` (the engine-bundled/userbase `ResourceFunctionHelpers` file, sha256 `7bc228a2…`) and `PolynomialDegree` (the committed definition notebook, sha256 `c233e226…`) under **fixed UUIDs** `d40a8dd6-…`, `2f89f2e6-…`. `verify --require-psalter` asserts *provenance* — those UUIDs on master and subkernel, the engine under its mount, the xAct fingerprint — and each assertion was watched fail. `scripts/psalter/ensure_registered.sh` re-creates the registration idempotently (rebuild simulated from an empty registry: identical UUIDs, exit 0). **Independent of the Wolfram-ID cloud login** (asserted logged in and logged out, stored credentials untouched) and of the engine minor version (14.2.1 cross-check MATCH, `evidence/tier1-20260911-engine-142/`, then retired). Nobody's login is logged out: it lives in the user's own home mounts, not the repo | orchestrator, 2026-09-11 | `docs/cosmology/evidence/tier1-20260911-pass/`, `scripts/psalter/README.md`, #559 |
+| **`theory_radial` stays excluded, not retired** | Three of M0.5's four excluded theories derive in under a minute (9 s / 45 s / 49 s) and are now pairs; `theory_radial` aborts in `ParseMultiFieldRHS` with `a_0`'s equation arriving as literal `0`, measured twice. #547's own plan said retire it — **overruled**: retiring legacy is milestone work (§7's M5/M6/M7 schedule), so it is recorded as un-derivable with the measurement in the manifest instead. A generic exclusion reason became a *false* one the moment the lane was held, so reasons are now per-theory | orchestrator, 2026-09-12 | #547, `scripts/oracles/freeze_legacy_oracle.py` `MEASURED_EXCLUSIONS` |
+| **Exit 0 is not evidence a derivation ran** | An uncaught `Throw` stops a `wolframscript` script and still returns status 0 (probed, `-code` and `-file`), and the Wolfram pipeline signals its own errors by throwing — so `derive` verifies the **artifact**: the output JSON must exist and its mtime must have advanced. The Wolfram-side fix (`Catch` + `Exit[1]`) is deferred to #513's own script emission, because it would change every generated script and so every `derivation_hash` | orchestrator, 2026-09-12 | #561, `tidal/cli/_derive.py` |
 | **Reduce before you bisect** | A protocol rule, not advice: find the smallest input that still shows the defect and iterate there. #543 reproduces on one scalar field in ~30 s where the CTEG gate takes 7 min | I-543 + orchestrator, 2026-09-09 | delegation protocol, `scripts/psalter/repro_543.wl` |
 | **Verification gates** | Made **able to fail** — `tidalcosmo/` had been outside pyright, coverage, `testpaths` and CI, and the never-import-legacy rule had no test | coherence pass, 2026-09-04 | `8b54fe6e`, #524 |
 
@@ -829,7 +831,8 @@ The program is **design-complete**, has passed the pre-implementation scientific
 (`docs/cosmology/scientific_review.md`), and is in implementation.
 
 > **State, 2026-09-11. Wave 0 and its completion wave are COMPLETE.** All six prompts merged:
-> #524 M0 packaging (`654b627a`), #525 M0.5 with 185 frozen fixtures (`e310e125`), #526
+> #524 M0 packaging (`654b627a`), #525 M0.5 with 185 frozen fixtures (`e310e125`, now **197
+> fixtures over 49 pairs** since #547 derived three of the four excluded theories), #526
 > PSALTer installed (`c8c57251`), then I-REM instruction sites and the oracle CI gate
 > (`32d21a3b`), I-533 retiring the drop rows (`df206443`), and I-543 resolving the Tier-1
 > gate (`7286ae94`).
@@ -838,10 +841,14 @@ The program is **design-complete**, has passed the pre-implementation scientific
 > registration of two Function Repository resources the package depends on but never declares.
 > `VERDICT: MATCH` on the author's own published input, re-run from scratch by the orchestrator
 > on 2026-09-11 with provenance asserted. **Nothing in Wave 1 is blocked.** What is still open in
-> the completion wave is lane work and onboarding, none of which Wave 1's three prompts depend on:
-> #547 (the four excluded oracle theories; orchestrator, lane), #559 / I-ONB (one onboarding
-> path; delegate, no lane), #558 (β over recombination — the second half of O4a's precondition;
-> with the #503 session), #548 (two specs without a TOML; M3).
+> the completion wave is **#559 / I-ONB** alone (one onboarding path; delegate, no lane) —
+> which is also the only issue still open in M0.5. Closed on 2026-09-12: **#547** (three of the
+> four excluded theories derived, the fourth measured un-derivable) and **#554** (the oracle's
+> drift classes and the `--staleness` detector). Carried forward with owners: **#558** (β over
+> recombination — the second half of O4a's precondition; with the #503 session), **#548** (two
+> specs without a TOML; M3), and two defects #547 uncovered by execution — **#561** (`derive`
+> reported success for an aborted derivation; fixed, `bf9361c5`) and **#560** (the #394
+> volume-element check rejects every FRW measure; WS2 needs it before trusting `de_sitter`).
 >
 > **Wave 1 is planned by a fresh planning session, which the user initiates** — this
 > orchestrator never starts it. Composition is settled and recorded so that session begins
@@ -868,8 +875,9 @@ The program is **design-complete**, has passed the pre-implementation scientific
 > - Deferred with owners: #553 (M1b/M5 orphan inventory), #554 (spec drift, needs the lane),
 >   #534 (port manifest at M3), #535/#536 (M3 `inspect`/`validate` requirements), #537 (M7),
 >   #529 (WS3 O2 contract, blocks the O2 handoff not Wave 1), #530 (survey tags at WS3),
->   #547 (four excluded oracle theories, M0.5, lane), #548 (two specs without a TOML, M3),
->   #558 (β over recombination, with #503), #559 (onboarding, I-ONB, no lane).
+>   #548 (two specs without a TOML, M3), #558 (β over recombination, with #503),
+>   #559 (onboarding, I-ONB, no lane), #560 (the FRW volume-element check, WS2 reads
+>   `de_sitter` through it), #561's deferred half (Wolfram-side `Exit[1]` on abort, with #513).
 
 ## Verification gates
 
