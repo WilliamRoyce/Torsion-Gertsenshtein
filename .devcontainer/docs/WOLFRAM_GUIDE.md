@@ -76,12 +76,16 @@ If the container was created before the engine existed, wire it up now:
 bash .devcontainer/scripts/setup-wolfram-links.sh
 ```
 
-### 4. Install xAct (and build xPerm)
+### 4. Install xAct
 
 ```bash
 bash scripts/install-xact-xcoba.sh          # xAct 1.3.0, ~15.6 MB, into the userbase
-bash .devcontainer/scripts/build-xperm.sh   # xPerm MathLink binary — see below
 ```
+
+This also rebuilds xPerm's MathLink binary — xAct's pre-built one needs a newer GLIBC than this
+image has — and that is **all you need**: measured on a fresh userbase 2026-09-12, it detected
+the dependency problem, recompiled with the engine's own `mcc`, and the result connected.
+`build-xperm.sh` is a **fallback**, not a second step; see [xPerm](#xperm).
 
 ### 5. Install PSALTer and register its resources
 
@@ -164,22 +168,35 @@ and it never needed to: `mathpass` persists because the userbase is a mount.
 
 ## xPerm
 
-xAct ships a pre-built `xperm.linux.64-bit` that needs a newer GLIBC than this image provides
-(Debian GLIBC 2.36), so it is rebuilt from the tarball's own sources:
+xAct ships a pre-built `xperm.linux.64-bit` needing a newer GLIBC than this image provides
+(Debian GLIBC 2.36), so it has to be rebuilt. **Step 4 already does this** — you only need what
+follows if `verify-wolfram-setup.sh` reports the xPerm external executable *not* connecting.
+
+**What step 4 does, measured on a fresh userbase (2026-09-12):** `install-xact-xcoba.sh` finds
+the shipped binary has unmet dependencies, resolves the engine's own MathLink compiler
+(`<engine>/Executables/mcc` — reachable from `dirname "$(command -v wolframscript)"`, though
+**not** after `readlink -f`, which lands in a directory with no `mcc`), recompiles, and the
+result connects with **no wrapper**. That settles a question this guide previously left open.
+
+**The fallback**, if that ever fails:
 
 ```bash
 bash .devcontainer/scripts/build-xperm.sh
 ```
 
-Preconditions: the engine installed (the script needs `mprep` from its MathLink DeveloperKit)
-and `gcc` (installed if missing). It runs `mprep` on xAct's own `xperm.tm`, compiles the result,
-and installs a small wrapper that puts the MathLink shared libraries on `LD_LIBRARY_PATH` —
-the wrapper solves a runtime loader problem, not a compiler-choice one.
+Preconditions: the engine installed (it needs `mprep` from the MathLink DeveloperKit), `gcc`
+(installed if missing), and a set `TERM` — it colors its output and exits on an unset one, so
+run it from a real terminal. It takes a different route from step 4: `mprep` on xAct's own
+`xperm.tm`, then `gcc`, then a small wrapper putting the MathLink shared libraries on
+`LD_LIBRARY_PATH`. That wrapper is what the *reference* machine runs, and it is why the
+certified install has one where a fresh install does not — the `mcc` path was broken until
+2026-09-12 and had never run.
 
-This **reproduces the build**, not a byte-identical file: the wrapper it writes resolves
-`$HOME` at run time, which is more portable than an older one you may find already installed.
+It **reproduces the build**, not a byte-identical file: the wrapper it writes resolves `$HOME`
+at run time, which is more portable than an older one you may find already installed.
 
-Success shows up in `verify-wolfram-setup.sh` as the xPerm external executable connecting.
+Either way, success shows up in `verify-wolfram-setup.sh` as the xPerm external executable
+connecting.
 
 ---
 

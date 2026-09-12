@@ -58,7 +58,14 @@ print_step() {
 XPERM_DIR="$WOLFRAM_USERBASE/Applications/xAct/xPerm/mathlink"
 MATHLINK_DIR="$HOME/.local/wolfram/engine/14.3/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-64/CompilerAdditions"
 
-clear
+# Guarded exactly like the colors above: `clear` needs TERM and returns non-zero
+# without it, which under `set -e` aborts the whole script at line one with
+# "TERM environment variable not set." -- measured 2026-09-12 when the merge
+# rehearsal ran this non-interactively and it died in 0 s. A screen clear is
+# never worth failing a build over.
+if [ -t 1 ] && [ -n "${TERM:-}" ] && command -v clear >/dev/null 2>&1; then
+    clear
+fi
 print_header "xPerm MathLink Compiler and Installer"
 
 echo "This script compiles the xPerm MathLink binary from source code,"
