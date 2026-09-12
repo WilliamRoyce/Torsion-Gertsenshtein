@@ -1,224 +1,214 @@
-# Wolfram Engine - Complete Guide
+# Wolfram Engine — the one setup path
 
-## 🎯 First-Time Setup (For New Users)
+**This file is the single source for Wolfram setup.** `.devcontainer/README.md`,
+`.devcontainer/QUICKREF.md`, the root `README.md` and `scripts/README.md` all point here and
+must not contradict it. Three paths used to disagree and none of them reached PSALTer (GH #559).
 
-If you're setting up this devcontainer for the first time and don't have Wolfram Engine installed yet, follow these steps:
-
-### Step 1: Install Wolfram Engine 14.3
-
-Run the interactive setup wizard:
-
-```bash
-bash .devcontainer/scripts/setup_wolfram_engine.sh
-```
-
-**What this script does:**
-- Guides you through downloading the Wolfram Engine 14.3 installer
-- Runs the installer interactively (you'll need to accept the license)
-- Activates the engine with your Wolfram ID (free developer license)
-- Verifies installation and creates activation backups
-- Ensures strict version matching (14.3 only)
-
-**Prerequisites:**
-- Wolfram ID account (free at https://account.wolfram.com/)
-- ~4 GB disk space for the engine
-- Internet connection for download and activation
-
-**Time required:** ~15-20 minutes (depending on download speed)
-
-### Step 2: Install xAct Tensor Packages
-
-Run the xAct setup wizard:
-
-```bash
-bash .devcontainer/scripts/setup_xact.sh
-```
-
-**What this script does:**
-- Downloads xAct 1.3.0 from xact.es (~6 MB)
-- Extracts all packages to your Wolfram UserBase
-- Verifies installation by loading xTensor
-- Optionally compiles xPerm for high-performance MathLink
-
-**Time required:** ~5 minutes
-
-### Step 3: Validate Your Setup
-
-Run the comprehensive validation script:
-
-```bash
-bash .devcontainer/scripts/validate-setup.sh
-```
-
-**What this checks:**
-- ✅ Wolfram Engine 14.3 installation
-- ✅ WolframKernel and wolframscript functionality
-- ✅ Activation status
-- ✅ xAct packages installation
-- ✅ xPerm MathLink compilation
-- ✅ Full test suite (all 5 xAct tests)
-- ✅ VS Code extensions
-- ✅ Python wolframclient package
-
-**Output:** Clear pass/fail report with remediation steps for any issues.
-
-**Time required:** ~3-5 minutes (includes running full test suite)
-
-### Quick Start Summary
-
-```bash
-# 1. Install Wolfram Engine (one-time, ~15-20 min)
-bash .devcontainer/scripts/setup_wolfram_engine.sh
-
-# 2. Install xAct packages (one-time, ~5 min)
-bash .devcontainer/scripts/setup_xact.sh
-
-# 3. Validate everything works (~3-5 min)
-bash .devcontainer/scripts/validate-setup.sh
-
-# 4. Done! Start using Wolfram Engine
-wolframscript -code 'Integrate[x^2, x]'
-```
-
-**Note:** These setup scripts are **idempotent** - you can run them multiple times safely. They'll skip steps that are already complete.
+Required only for `tidal derive` — deriving linearized field equations from a Lagrangian.
+Everything downstream of a JSON specification runs without any of this.
 
 ---
 
-## ✅ Current Status (Post-Setup)
+## The certified configuration
 
-**Wolfram Engine is now fully configured and persistent!** Both WolframKernel and WolframScript work automatically after container rebuilds.
+**Wolfram 14.3.0 × xAct 1.3.0 bundle × PSALTer v2.0.2 `bb45adb0` × the two Function Repository
+resources registered locally under fixed UUIDs.**
 
-## 🚀 Quick Usage
-
-### Command Line
-
-```bash
-# WolframScript (simple)
-wolframscript -code "2+2"
-wolframscript -code "Integrate[x^2, x]"
-
-# WolframKernel (direct)
-"$HOME/.local/wolfram/engine/14.3/Executables/WolframKernel" -noprompt -run "Print[2+2]; Exit[]"
-
-# Run script files
-wolframscript -file mycode.wls
-```
-
-### Python Integration (Quickest Path)
-
-Install the Wolfram Python client in the uv environment:
+"Set up correctly" has exactly one definition:
 
 ```bash
-uv pip install wolframclient
+bash scripts/verify-wolfram-setup.sh --require-psalter    # exit 0
 ```
 
-Then use a `WolframLanguageSession` and evaluate xAct directly:
+That asserts *provenance*, not just function: the engine running from its mount, the four xAct
+package `$Version` strings, PSALTer at its pinned commit, and the two resources resolving to
+their certified identities on both the master kernel and a subkernel.
 
-```python
-from wolframclient.evaluation import WolframLanguageSession
-from wolframclient.language import wlexpr
+It is **independent of any Wolfram Cloud login** — asserted both logged in and logged out. See
+[Activation is not a cloud login](#activation-is-not-a-cloud-login).
 
-session = WolframLanguageSession()
-session.evaluate(wlexpr('Needs["xAct`xTensor`"]'))
-print(session.evaluate(wlexpr("$Version")))
-print(session.evaluate(wlexpr("Integrate[x^2,x]")))
-session.terminate()
+> The certified xAct is the **code**, not the tarball label: xTensor 1.3.0, xPerm 1.2.4,
+> xCore 0.6.10, xCoba 0.8.6, measured from the installed `.m` headers. Older documents said
+> "1.2.1"; that was an installer default copied between files, never a measurement.
+
+---
+
+## First-time setup — six steps
+
+Roughly 30 minutes, most of it downloading. You need a free Wolfram ID
+(<https://account.wolfram.com/login/create>) and about 8 GB of disk.
+
+### 1. Download the installer
+
+Get `WolframEngine_14.3.0_LIN.sh` from <https://www.wolfram.com/engine/> (a Wolfram account is
+required to download) and put it in `third_party/`:
+
+```text
+third_party/WolframEngine_14.3.0_LIN.sh     # 1,750,578,010 bytes (~1.6 GiB)
 ```
 
-If session startup fails, ensure the kernel is discoverable on `PATH` or pass the explicit kernel path:
-
-```python
-kernel = "$HOME/.local/wolfram/engine/14.3/Executables/WolframKernel"
-session = WolframLanguageSession(kernel)
-```
-
-### xAct Tensor Package
-
-**✅ xAct 1.3.0 is installed and ready for differential geometry computations!**
+### 2. Install the engine onto the mount
 
 ```bash
-# xAct tensor calculations
-wolframscript -code '<<xAct`xTensor`; DefManifold[M,4]; Print["4D spacetime dimension: ", Dim[M]];'
-wolframscript -code '<<xAct`xCoba`; DefManifold[M,4]; DefChart[coord, M, {0,1,2,3}];'
-
-# Test installation and compatibility fix
-.devcontainer/tests/test-xact.wls
+bash scripts/install-wolfram-engine.sh
 ```
 
-**Available xAct packages:**
+Installs to `~/.local/wolfram/engine/14.3`, which is bind-mounted from your host, so it survives
+container rebuilds. It needs no `sudo` (only the system-library step escalates, and the dev
+container has already installed those). It expands to about 6.7 GB.
 
-- `xTensor`: Core tensor algebra ✅ Fully functional
-- `xCoba`: Component calculations and coordinate charts ✅ Fully functional
-- `xPerm`: Permutation groups ✅ **MathLink ENABLED - Full performance!**
-- `xPert`: Perturbation theory ✅ Fully functional
-- `Spinors`, `xIdeal`, `TexAct`, etc. ✅ Available
+**Not `/usr/local`.** An engine there is wiped on every rebuild, and `verify-wolfram-setup.sh`
+rejects a kernel outside the mount — because `wolframscript` answers from the *cloud* when its
+pinned kernel is missing, and `1+1` passes there too. The installer now refuses `/usr/local`.
 
-**Installation location:** `$WOLFRAM_USERBASE/Applications/xAct/` (persists across rebuilds)
-
-**🎉 GLIBC Issue SOLVED!** xPerm now compiled from source with full MathLink support:
-
-- Advanced permutation algorithms: ✅ Available
-- Strong generating sets: ✅ Fast computation
-- Stabilizer chain algorithms: ✅ High performance
-- All xPerm functions: ✅ Native speed
-
-**Maintenance:** Use `.devcontainer/scripts/build-xperm.sh` to rebuild xPerm after Wolfram updates.
-
-## 🔍 Diagnostics
+### 3. Activate, once, with your own Wolfram ID
 
 ```bash
-# Quick health check
-bash .devcontainer/scripts/check-wolfram.sh
+wolframscript -activate          # or: bash scripts/activate-wolfram.sh
+```
 
-# Activation management
-bash .devcontainer/scripts/wolfram-activation-manager.sh
+Interactive, one time. The engine writes `mathpass` into the mounted userbase, so you do **not**
+re-activate after a rebuild. This is a license, not a cloud login.
 
-# Check license
+If the container was created before the engine existed, wire it up now:
+
+```bash
+bash .devcontainer/scripts/setup-wolfram-links.sh
+```
+
+### 4. Install xAct (and build xPerm)
+
+```bash
+bash scripts/install-xact-xcoba.sh          # xAct 1.3.0, ~15.6 MB, into the userbase
+bash .devcontainer/scripts/build-xperm.sh   # xPerm MathLink binary — see below
+```
+
+### 5. Install PSALTer and register its resources
+
+```bash
+bash scripts/install-psalter.sh
+```
+
+Installs PSALTer at `bb45adb0` and registers the two undeclared Function Repository
+dependencies it needs. **Registration is not optional**: without it PSALTer does not fail — it
+completes and writes a *silently wrong* spectrum (empty source constraints, zero
+pseudo-determinants).
+
+### 6. Verify
+
+```bash
+bash scripts/verify-wolfram-setup.sh --require-psalter
+```
+
+Exit **0** = certified. Exit **2** = works but degraded (not certifiable). Exit **1** = broken.
+
+---
+
+## Supported hosts
+
+Linux, macOS, or Windows **via WSL** — open the folder from the WSL side, not from a
+Windows-side window. The three Wolfram mounts are rooted at the host's `$HOME`, and
+`initializeCommand` creates them on the host before the container starts; it refuses loudly if
+`$HOME` is unset, because the dev container spec leaves unset variables *blank*, which would
+resolve the mount sources to the host filesystem root.
+
+---
+
+## What persists, and why
+
+| Path | Kind | Holds |
+| --- | --- | --- |
+| `~/.local/wolfram/engine/14.3` | host bind | the engine itself (~6.7 GB) |
+| `~/.local/wolfram/userbase` | host bind | `mathpass`, xAct, PSALTer, paclets |
+| `~/.cache/Wolfram` | host bind | wolframscript cloud tokens (optional) |
+| `/etc/machine-id` | host bind, read-only | license validation |
+| `~/.claude` | named volume | Claude Code data |
+| `~/.Wolfram` | named volume | the **resource registry** (`Objects/`), and `Logs/` |
+
+`~/.Wolfram` is a container overlay directory: without the `wolfram-objects` volume the registry
+is lost on every rebuild and nothing re-creates it, which is the silently-wrong-spectrum
+condition above. The volume shadows the whole directory, so `Logs/` persists too.
+
+**The first rebuild after this change starts with an empty registry.** That is exactly why
+`postCreateCommand` ends with `scripts/psalter/ensure_registered.sh`, wrapped so it can never
+abort container creation. Re-run it by hand at any time; it is idempotent.
+
+`postCreateCommand` no longer runs `chown -R` over your home: recursive descent through a bind
+mount rewrites ownership on the **host**, and walked the 6.7 GB engine tree every rebuild. If
+the mounts ever come up unwritable (a host UID that does not match the container's `vscode`),
+recover from inside the container with:
+
+```bash
+sudo chown -R vscode:vscode ~/.local/wolfram
+```
+
+---
+
+## Activation is not a cloud login
+
+Two different things are easy to confuse:
+
+1. **`mathpass` — the license.** Written by `wolframscript -activate` into
+   `~/.local/wolfram/userbase/Licensing/mathpass`. Machine-ID-bound, works entirely offline,
+   and survives rebuilds because the userbase is mounted. `setup-wolfram-links.sh` links it into
+   every location the engine consults once it exists.
+2. **Cloud tokens — optional, and unused here.** `~/.cache/Wolfram/WolframScript/` holds Wolfram
+   Cloud authentication. **Nothing in the TIDAL pipeline needs them**: `WolframScript.conf` pins
+   `WOLFRAMSCRIPT_KERNELPATH` to the mounted kernel, so evaluation is local.
+
+`.activation_backup` in the userbase backs up the **cloud tokens only** — never the license.
+Earlier revisions of this guide described it as restoring "activation" on rebuild; it does not,
+and it never needed to: `mathpass` persists because the userbase is a mount.
+
+---
+
+## xPerm
+
+xAct ships a pre-built `xperm.linux.64-bit` that needs a newer GLIBC than this image provides
+(Debian GLIBC 2.36), so it is rebuilt from the tarball's own sources:
+
+```bash
+bash .devcontainer/scripts/build-xperm.sh
+```
+
+Preconditions: the engine installed (the script needs `mprep` from its MathLink DeveloperKit)
+and `gcc` (installed if missing). It runs `mprep` on xAct's own `xperm.tm`, compiles the result,
+and installs a small wrapper that puts the MathLink shared libraries on `LD_LIBRARY_PATH` —
+the wrapper solves a runtime loader problem, not a compiler-choice one.
+
+This **reproduces the build**, not a byte-identical file: the wrapper it writes resolves
+`$HOME` at run time, which is more portable than an older one you may find already installed.
+
+Success shows up in `verify-wolfram-setup.sh` as the xPerm external executable connecting.
+
+---
+
+## Verifying and diagnosing
+
+```bash
+bash scripts/verify-wolfram-setup.sh                     # 11 checks
+bash scripts/verify-wolfram-setup.sh --require-psalter   # the certification gate
+tidal doctor                                             # the same diagnosis from the CLI
+```
+
+`.devcontainer/scripts/validate-setup.sh` and `check-wolfram.sh` now redirect here. Two of their
+old checks have **no equivalent and are deliberately gone**: `wolframclient` (an optional Python
+extra that nothing in TIDAL imports — the pipeline shells out to `wolframscript`) and the VS Code
+extension check (which self-skips outside VS Code, and is owned by
+`.devcontainer/scripts/install-extensions-final.sh`).
+
+```bash
+# what the license and machine ID say
 cat ~/.local/wolfram/userbase/Licensing/mathpass
-
-# Check machine ID
 cat /etc/machine-id
+
+# activation token backup/restore
+bash .devcontainer/scripts/wolfram-activation-manager.sh status
 ```
 
-## 🔧 Persistence Architecture
-
-### What's Mounted from Host:
-
-- **Engine**: `~/.local/wolfram/engine/14.3` (6.7GB binaries)
-- **License**: `~/.local/wolfram/userbase/Licensing/mathpass` (machine-specific licenses)
-- **Activation Cache**: `~/.cache/Wolfram` (WolframScript tokens)
-- **Machine ID**: `/etc/machine-id` (for license validation)
-
-### Auto-Configuration:
-
-- License symlinks created in all expected locations
-- WolframScript.conf configured with correct kernel path
-- Binary symlinks placed in PATH
-- Activation data automatically restored from backup
-
-### Backup Strategy:
-
-- **Primary**: Activation tokens in mounted `~/.cache/Wolfram`
-- **Backup**: Copy stored in `~/.local/wolfram/userbase/.activation_backup`
-- **Recovery**: Automatic restoration via postCreateCommand on rebuild
-
-## 🛠️ Troubleshooting
-
-### Quick Diagnostics
-
-Run the comprehensive validation script first:
-
-```bash
-bash .devcontainer/scripts/validate-setup.sh
-```
-
-This checks all 9 critical components and provides specific remediation steps for any issues.
-
-For verbose output with detailed information:
-
-```bash
-bash .devcontainer/scripts/validate-setup.sh -v
-```
+`MATHEMATICA_HOME` may appear in your environment, set by the VS Code Wolfram extension rather
+than by anything in this repository. **Nothing in TIDAL reads it**; a stale value there is
+harmless and is not worth chasing.
 
 ### If a PSALTer run hangs instead of failing
 
@@ -244,128 +234,69 @@ matters.
 A hang is worse than an error here: it holds the single-license Wolfram lane indefinitely and
 looks exactly like a slow theory. See `docs/cosmology/stage1_measurements.md` §2.3–2.4.
 
-### If WolframScript stops working:
+### If wolframscript answers but the answers look wrong
+
+Check it is not evaluating in the cloud. The image ships a standalone
+`/usr/bin/wolframscript`, so `command -v wolframscript` succeeding proves nothing about the
+engine — `1+1` passes in the cloud too. The engine test is the kernel file:
 
 ```bash
-# Check if activation is present
-bash .devcontainer/scripts/wolfram-activation-manager.sh status
-
-# Restore from backup if needed
-bash .devcontainer/scripts/wolfram-activation-manager.sh restore
-
-# Re-activate if necessary (requires Wolfram ID)
-wolframscript -activate
+ls -l ~/.local/wolfram/engine/14.3/Executables/WolframKernel
+cat ~/.config/Wolfram/WolframScript/WolframScript.conf   # KERNELPATH must point at that file
+bash .devcontainer/scripts/setup-wolfram-links.sh        # rewrites the conf and the links
 ```
 
-### If WolframKernel stops working:
+### Complete reset
+
+Rebuild the container (`Ctrl+Shift+P` → "Dev Containers: Rebuild Container"). The engine,
+license and packages all live on mounts, so nothing is reinstalled; afterwards run
+`bash scripts/verify-wolfram-setup.sh --require-psalter`.
+
+---
+
+## Usage
 
 ```bash
-# Check license files
-bash .devcontainer/scripts/check-wolfram.sh
+wolframscript -code "Integrate[x^2, x]"
+wolframscript -file mycode.wls
 
-# Verify machine ID matches license
-grep -o "^[a-f0-9]*" ~/.local/wolfram/userbase/Licensing/mathpass
-cat /etc/machine-id
-
-# If mismatch, check if on correct host machine
+# xAct
+wolframscript -code '<<xAct`xTensor`; DefManifold[M,4]; Print[Dim[M]];'
 ```
 
-### Complete reset (if needed):
+Installed under `$WOLFRAM_USERBASE/Applications/xAct/` (~184 MB): xTensor, xPerm, xCoba, xPert,
+xTras, Spinors, TexAct, PSALTer and more.
 
-```bash
-# Rebuild container (applies all mounts and auto-config)
-# Ctrl+Shift+P → "Dev Containers: Rebuild Container"
+**One `wolframscript` session at a time** — the free license permits a single kernel. Never run
+`tidal derive` in parallel.
 
-# After rebuild, verify everything works
-bash .devcontainer/scripts/check-wolfram.sh
-```
+---
 
-## 📚 Understanding the Setup
+## Repo hygiene (never commit)
 
-### Two License Systems:
+Wolfram state lives in `~/.local/wolfram/...`, `~/.cache/Wolfram/...` and `~/.Wolfram/...`, all
+outside the repository, so it never appears in `git status`. `.gitignore` additionally covers
+license artifacts and installer bundles (`*.mathpass`, `.Wolfram*`, `.WolframEngine*`,
+`Wolfram*.{sh,run,tgz}`).
 
-1. **mathpass** (offline): Machine-specific license file for WolframKernel
-   - Located: `~/.local/wolfram/userbase/Licensing/mathpass`
-   - Requires machine ID match
-   - Works completely offline
+---
 
-2. **Cloud activation** (online): Wolfram ID tokens for WolframScript
-   - Located: `~/.cache/Wolfram/WolframScript/`
-   - Requires one-time online activation
-   - Tokens persist via mount
-
-### Why It Persists:
-
-- **Host mounts**: Engine, license, and cache directories mounted from host
-- **Machine ID**: Container uses host's machine ID for license validation
-- **Automatic restore**: postCreateCommand restores activation on rebuild
-- **Dual backup**: Both mounted cache and backup in userbase directory
-
-## 🎯 Maintenance
-
-**Normal operation**: No maintenance required! Everything works automatically.
-
-**If activation is lost**: Run `bash .devcontainer/scripts/wolfram-activation-manager.sh restore`
-
-**For new licenses**: Replace `~/.local/wolfram/userbase/Licensing/mathpass` on host
-
-**Performance**: ~30 second startup vs ~10 minutes for full engine installation
-
-## 🧹 Repo Hygiene (Never Commit)
-
-Keep persistent Wolfram directories in `~/.local/wolfram/...` and `~/.cache/Wolfram/...` (outside the repo) so they never appear in git status. This repository already ignores license artifacts and installer bundles (see .gitignore for patterns like `*.mathpass`, `.Wolfram*`, `.WolframEngine*`, and `Wolfram*.{sh,run,tgz}`), so nothing sensitive should be committed.
-
-## 🔄 Automated Setup Scripts
-
-The devcontainer now includes automated setup scripts for first-time installation. See the **First-Time Setup** section at the top of this guide for instructions.
-
-### Available Setup Scripts:
-
-**`setup_wolfram_engine.sh`** - Interactive Wolfram Engine 14.3 installation
-- Guides through downloading and installing the engine
-- Handles activation with Wolfram ID
-- Creates persistence backups
-- Strict version checking (14.3 only)
-
-**`setup_xact.sh`** - Automated xAct package installation
-- Downloads xAct 1.3.0 from xact.es
-- Installs all tensor packages
-- Verifies installation
-- Offers optional xPerm compilation
-
-**`validate-setup.sh`** - Comprehensive environment validation
-- 9-point health check
-- Tests Wolfram Engine, xAct, activation, tests
-- Clear pass/fail report with remediation steps
-- Verbose mode available with `-v` flag
-
-### Manual Setup (Advanced)
-
-If you prefer manual setup or need to customize the installation:
-
-1. Configure devcontainer.json with required mounts
-2. Add activation restoration to postCreateCommand
-3. Create backup of activation tokens in mounted userbase
-4. Test both WolframKernel and WolframScript functionality
-5. Verify persistence across container rebuilds
-
-### Mount Configuration:
+## The mount configuration, for reference
 
 ```jsonc
 "mounts": [
   "source=${localEnv:HOME}/.local/wolfram/engine/14.3,target=/home/vscode/.local/wolfram/engine/14.3,type=bind",
   "source=${localEnv:HOME}/.local/wolfram/userbase,target=/home/vscode/.local/wolfram/userbase,type=bind",
   "source=/etc/machine-id,target=/etc/machine-id,type=bind,readonly",
-  "source=${localEnv:HOME}/.cache/Wolfram,target=/home/vscode/.cache/Wolfram,type=bind"
+  "source=${localEnv:HOME}/.cache/Wolfram,target=/home/vscode/.cache/Wolfram,type=bind",
+  "source=claude-code-data,target=/home/vscode/.claude,type=volume",
+  "source=wolfram-objects,target=/home/vscode/.Wolfram,type=volume"
 ]
 ```
 
-### Automatic Configuration (postCreateCommand):
-
-- Create `.WolframEngine` symlink to userbase
-- Generate `WolframScript.conf` with correct kernel path
-- Link license file to all expected locations
-- Create wolframscript binary symlink
-- Restore activation tokens from backup if available
-
-This setup provides a robust, maintenance-free Wolfram Engine environment that survives all container rebuilds while avoiding the overhead of repeatedly downloading and installing the 6.7GB engine.
+Container creation then: creates the host directories (`initializeCommand`, on the host), takes
+ownership of the two named volumes, wires the engine and license
+(`.devcontainer/scripts/setup-wolfram-links.sh`), restores Claude memory, reindexes sessions,
+installs the Wolfram LSP paclets, and re-registers the PSALTer resources. Every Wolfram step is
+guarded: a container whose engine is not installed yet still finishes creating, and prints
+steps 1–3 above.

@@ -266,24 +266,28 @@ Without `ffmpeg`, animations fall back to GIF via Pillow.
 
 ## Symbolic computing setup
 
-Required only for `tidal derive` — deriving linearized field equations from a Lagrangian. Everything downstream of a JSON specification runs without it.
+Required only for `tidal derive` — deriving linearized field equations from a Lagrangian.
+Everything downstream of a JSON specification runs without it.
+
+**[`.devcontainer/docs/WOLFRAM_GUIDE.md`](.devcontainer/docs/WOLFRAM_GUIDE.md) is the single
+source** for this: six steps from a bare machine to the certified configuration.
 
 ```bash
-# 1. Download the Wolfram Engine installer from https://www.wolfram.com/engine/
-#    and place it in third_party/
+# 1. Download WolframEngine_14.3.0_LIN.sh (~1.6 GiB, needs a free Wolfram account)
+#    from https://www.wolfram.com/engine/ into third_party/
 
-# 2. Install and activate Wolfram Engine
-sudo ./scripts/install-wolfram-engine.sh
-./scripts/activate-wolfram.sh
-
-# 3. Install the xAct/xCoba tensor algebra packages
-./scripts/install-xact-xcoba.sh
-
-# 4. Verify the complete setup
-./scripts/verify-wolfram-setup.sh
+bash scripts/install-wolfram-engine.sh          # 2. install onto the mounted engine directory
+wolframscript -activate                         # 3. activate with your own Wolfram ID, once
+bash scripts/install-xact-xcoba.sh              # 4. xAct 1.3.0 tensor algebra
+bash .devcontainer/scripts/build-xperm.sh       #    + the xPerm MathLink binary
+bash scripts/install-psalter.sh                 # 5. PSALTer, and register its two resources
+bash scripts/verify-wolfram-setup.sh --require-psalter   # 6. must exit 0
 ```
 
-The verification script checks Wolfram Engine activation, xAct package installation (xCore, xPerm, xTensor, xCoba, xPert), xPerm binary GLIBC compatibility, and runs a smoke test with tensor operations. `tidal doctor` performs the same diagnosis at any time.
+Step 6 is the definition of "set up correctly": **Wolfram 14.3.0 × xAct 1.3.0 × PSALTer
+`bb45adb0` × the two Function Repository resources registered locally**, with the engine running
+from its mount rather than answering from the cloud. It is independent of any Wolfram Cloud
+login. `tidal doctor` performs the same diagnosis at any time.
 
 Note that a Wolfram Engine license permits **one** `wolframscript` session at a time; do not run `tidal derive` in parallel.
 

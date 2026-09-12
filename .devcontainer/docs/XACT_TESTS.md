@@ -84,7 +84,7 @@
 .devcontainer/tests/test-integration.wls
 
 # Rebuild xPerm if needed
-.devcontainer/build-xperm.sh
+bash .devcontainer/scripts/build-xperm.sh
 ```
 
 ## 📊 Expected Results
@@ -101,8 +101,8 @@
 
 If tests fail:
 
-1. Check Wolfram activation: `.devcontainer/check-wolfram.sh`
-2. Rebuild xPerm MathLink: `.devcontainer/build-xperm.sh`
+1. Verify the install: `bash scripts/verify-wolfram-setup.sh`
+2. Rebuild xPerm MathLink: `bash .devcontainer/scripts/build-xperm.sh`
 3. Verify package installation: `ls $WOLFRAM_USERBASE/Applications/xAct/`
 
 The test scripts are designed to be:

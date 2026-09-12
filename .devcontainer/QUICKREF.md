@@ -5,22 +5,22 @@
 | Folder      | Purpose         | Key Files                                                                         |
 | ----------- | --------------- | --------------------------------------------------------------------------------- |
 | `/docs/`    | Documentation   | WOLFRAM_GUIDE.md, XACT_TESTS.md                                                   |
-| `/scripts/` | Utility scripts | setup_wolfram_engine.sh, setup_xact.sh, validate-setup.sh, check-wolfram.sh, etc. |
+| `/scripts/` | Utility scripts | setup-wolfram-links.sh, build-xperm.sh, install-lsp-wl.sh, etc.                   |
 | `/tests/`   | Test suite      | test-all-xact.sh, test-xtensor.wls, test-xcoba.wls, etc.                          |
 
 ## 🎯 First-Time Setup
 
-**For new users without Wolfram Engine installed:**
+**The six steps are in [docs/WOLFRAM_GUIDE.md](docs/WOLFRAM_GUIDE.md)** — the single source.
+Summarized only; follow the guide, not this box:
 
 ```bash
-# 1. Install Wolfram Engine 14.3 (~15-20 min)
-bash .devcontainer/scripts/setup_wolfram_engine.sh
-
-# 2. Install xAct packages (~5 min)
-bash .devcontainer/scripts/setup_xact.sh
-
-# 3. Validate setup (~3-5 min)
-bash .devcontainer/scripts/validate-setup.sh
+# 1. put WolframEngine_14.3.0_LIN.sh (~1.6 GiB) in third_party/
+bash scripts/install-wolfram-engine.sh          # 2. onto the mount
+wolframscript -activate                         # 3. your own Wolfram ID, once
+bash scripts/install-xact-xcoba.sh              # 4. xAct 1.3.0
+bash .devcontainer/scripts/build-xperm.sh       #    + the xPerm MathLink binary
+bash scripts/install-psalter.sh                 # 5. PSALTer + resource registration
+bash scripts/verify-wolfram-setup.sh --require-psalter   # 6. must exit 0
 ```
 
 ---
@@ -30,8 +30,8 @@ bash .devcontainer/scripts/validate-setup.sh
 ### Validate Complete Setup
 
 ```bash
-bash .devcontainer/scripts/validate-setup.sh     # Quick health check
-bash .devcontainer/scripts/validate-setup.sh -v  # Verbose mode
+bash scripts/verify-wolfram-setup.sh                    # 11 checks
+bash scripts/verify-wolfram-setup.sh --require-psalter  # the certification gate
 ```
 
 ### Run All Tests
@@ -40,10 +40,10 @@ bash .devcontainer/scripts/validate-setup.sh -v  # Verbose mode
 .devcontainer/tests/test-all-xact.sh
 ```
 
-### Check System Health
+### Re-wire Wolfram after installing or activating
 
 ```bash
-bash .devcontainer/scripts/check-wolfram.sh
+bash .devcontainer/scripts/setup-wolfram-links.sh
 ```
 
 ### Manage Licensing
@@ -80,30 +80,28 @@ wolframscript .devcontainer/tests/test-integration.wls
 
 ### Setup Scripts (First-Time)
 
-| Script                    | Purpose                        | Usage                                                |
-| ------------------------- | ------------------------------ | ---------------------------------------------------- |
-| `setup_wolfram_engine.sh` | Install Wolfram Engine 14.3    | `bash .devcontainer/scripts/setup_wolfram_engine.sh` |
-| `setup_xact.sh`           | Install xAct 1.3.0 packages    | `bash .devcontainer/scripts/setup_xact.sh`           |
-| `validate-setup.sh`       | Comprehensive setup validation | `bash .devcontainer/scripts/validate-setup.sh [-v]`  |
+Setup lives in `scripts/`, not here — see [docs/WOLFRAM_GUIDE.md](docs/WOLFRAM_GUIDE.md).
+`validate-setup.sh` and `check-wolfram.sh` remain as redirects to
+`scripts/verify-wolfram-setup.sh`.
 
 ### Maintenance Scripts
 
 | Script                          | Purpose                    | Usage                                                                                |
 | ------------------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
 | `build-xperm.sh`                | Compile xPerm from source  | `bash .devcontainer/scripts/build-xperm.sh`                                          |
-| `check-wolfram.sh`              | Health check system        | `bash .devcontainer/scripts/check-wolfram.sh`                                        |
+| `setup-wolfram-links.sh`        | Wire engine/license/cache  | `bash .devcontainer/scripts/setup-wolfram-links.sh`                                  |
 | `fix-xperm.sh`                  | Fix xPerm issues           | `bash .devcontainer/scripts/fix-xperm.sh`                                            |
 | `install-extensions-final.sh`   | Install VS Code extensions | `bash .devcontainer/scripts/install-extensions-final.sh`                             |
 | `wolfram-activation-manager.sh` | Manage licensing           | `bash .devcontainer/scripts/wolfram-activation-manager.sh [status\|backup\|restore]` |
 
 ## ✅ What's Working
 
-- ✅ Wolfram Engine 14.3 (fully activated & persistent)
-- ✅ xAct 1.3.0 with all packages (xTensor, xCoba, xPerm, xPert)
-- ✅ xPerm MathLink (compiled from source, GLIBC compatible)
+- ✅ Wolfram Engine 14.3.0 (activated once; the license persists on a mount)
+- ✅ xAct 1.3.0 bundle (xTensor 1.3.0, xPerm 1.2.4, xCore 0.6.10, xCoba 0.8.6)
+- ✅ xPerm MathLink (compiled from source against this image's GLIBC 2.36)
+- ✅ PSALTer `bb45adb0` with its two resources registered locally
 - ✅ Complete test suite (100% passing)
-- ✅ VS Code extensions (auto-installing)
-- ✅ Licensing persistence (through rebuilds)
+- ⚠️ VS Code extensions — **manual**: `install-extensions-final.sh`
 
 ## 📊 Test Status
 
