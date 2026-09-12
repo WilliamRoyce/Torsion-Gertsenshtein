@@ -49,8 +49,16 @@ for n in $(grep -rhoE 'EXPIRES-WITH: #[0-9]+' docs/ scripts/ 2>/dev/null | grep 
     # "REVIEWED") often wraps onto the next line, so test a 3-line window rather
     # than the marker's own line -- a line-wise grep reported two false positives
     # the first time this ran.
-    live=$(grep -rn -A3 "EXPIRES-WITH: #$n" docs/ scripts/ \
-             | awk -v RS='--\n' '!/EXPIRED|still true|REVIEWED/' \
+    # Normalize whitespace and blockquote markers INSIDE each window before
+    # matching: the annotation wraps mid-phrase in real documents ("**still\n>
+    # true 2026-09-11"), so a regex over the raw record misses it just as a
+    # line-wise grep did.  Two false positives came from exactly this.
+    # -h, not -n: grep's own "file-310-" prefixes land BETWEEN the wrapped words
+    # and split the phrase they are meant to match ("**still" / "true 2026-..").
+    # Only the count is needed here, so drop the prefixes entirely.
+    live=$(grep -rhA3 "EXPIRES-WITH: #$n" docs/ scripts/ \
+             | awk -v RS='--\n' '{ r=$0; gsub(/[[:space:]>]+/, " ", r);
+                                    if (r !~ /EXPIRED|still true|REVIEWED/) print $0 }' \
              | grep -c "EXPIRES-WITH: #$n")
     [[ "$live" -gt 0 ]] && stale="$stale #$n($live)"
   fi
