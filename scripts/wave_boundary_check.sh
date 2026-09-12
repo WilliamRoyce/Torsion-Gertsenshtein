@@ -66,7 +66,12 @@ done
 [[ -z "$no_header" ]] && ok "every merged prompt carries a STATUS header" || bad "merged prompts without STATUS header:$no_header"
 
 # 5. memory index: size and integrity
-M="${HOME}/.claude/projects/-workspaces-torsion-gertsenshtein/memory"
+# Claude's project directory is the absolute workspace path with every
+# non-alphanumeric character replaced by a dash -- derived, never pasted, so this
+# script works from any clone (CLAUDE.md, "no environment-specific absolute
+# paths"; the hygiene test rejects the literal slug and caught it here).
+SLUG=$(printf '%s' "$REPO_ROOT" | sed 's/[^a-zA-Z0-9]/-/g')
+M="${HOME}/.claude/projects/${SLUG}/memory"
 if [[ -f "$M/MEMORY.md" ]]; then
   lines=$(wc -l < "$M/MEMORY.md"); bytes=$(wc -c < "$M/MEMORY.md")
   { [[ "$lines" -le 140 ]] && [[ "$bytes" -le 17408 ]]; } && ok "MEMORY.md $lines lines / $bytes B" || bad "MEMORY.md over cap: $lines lines / $bytes B (140 / 17408)"

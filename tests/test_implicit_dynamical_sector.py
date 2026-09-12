@@ -373,6 +373,15 @@ CORPUS_EXPECTED: dict[str, frozenset[str]] = {
 CORPUS_EMPTY: frozenset[str] = frozenset(
     {
         "chern_simons_3d",
+        # Derived 2026-09-12 (#547), measured empty rather than assumed: a single
+        # minimally coupled KG scalar on de Sitter, and the two gauged dipolar
+        # gertsenshtein variants -- which classify exactly like their siblings
+        # `gertsenshtein` and `gertsenshtein_localized` (the *ungauged* ones are
+        # E_CLASS, so the distinction that matters here is the gauge, not the
+        # background field profile).
+        "de_sitter_kg",
+        "gertsenshtein_dipolar",
+        "gertsenshtein_dipolar_centered",
         "conformal_kg_static",
         "coupled_scalars",
         "coupled_scattering",

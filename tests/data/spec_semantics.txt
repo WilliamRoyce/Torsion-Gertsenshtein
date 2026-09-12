@@ -46,6 +46,10 @@
   CONFLICT a: a_2 opposes a_0 (self laplacian_x)
   CONFLICT a: a_3 opposes a_0 (self laplacian_x)
 
+## de_sitter_kg.json
+  family 'phi' rank=0 n=1  temporal-slots 0:1
+  no proven sign conflicts
+
 ## euler_heisenberg.json
   family 'a' rank=1 n=4  temporal-slots 0:3, 1:1
   no proven sign conflicts
@@ -55,6 +59,16 @@
   no proven sign conflicts
 
 ## gertsenshtein.json
+  family 'a' rank=1 n=4  temporal-slots 0:3, 1:1
+  family 'h' rank=2 n=2  temporal-slots 0:2
+  no proven sign conflicts
+
+## gertsenshtein_dipolar.json
+  family 'a' rank=1 n=4  temporal-slots 0:3, 1:1
+  family 'h' rank=2 n=2  temporal-slots 0:2
+  no proven sign conflicts
+
+## gertsenshtein_dipolar_centered.json
   family 'a' rank=1 n=4  temporal-slots 0:3, 1:1
   family 'h' rank=2 n=2  temporal-slots 0:2
   no proven sign conflicts
@@ -301,5 +315,5 @@
   CONFLICT a: a_3 opposes a_0 (self laplacian_x)
 
 ## summary
-  specs analyzed: 48
+  specs analyzed: 51
   specs with a proven sign conflict: 19

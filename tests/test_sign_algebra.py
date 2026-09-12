@@ -295,8 +295,52 @@ class TestMisreadings401(unittest.TestCase):
         self.assertEqual(equation["lhs"]["order"]["time"], 0)
 
 
+# Corpus coefficients the ladder REFUSES to parse, pinned as an exact set.
+#
+# `Sqrt[...]` is a Wolfram call form: after `normalize_inputform` rewrites the
+# nullary `x[]`, it parses as an `ast.Subscript`, which the restricted evaluator
+# rejects rather than guess at.  Refusing is the CORRECT behavior (soundness over
+# coverage) -- the coverage gap is tracked separately.  This is a frozen set, not
+# a try/except, so a NEW refusal fails the tests below instead of being skipped in
+# silence: that is the difference between a known limit and an unnoticed one.
+# EXPIRES-WITH: #562 -- when call forms are normalized, this set empties and the
+# `test_refusals_are_exactly_the_known_set` assertion is what tells you so.
+REFUSED_COEFFICIENTS = frozenset(
+    {
+        "(Bpeak*z0)/Sqrt[z0^2 + (zc - x[])^2]",
+    },
+)
+
+
+def _decidable_corpus_coefficients() -> set[str]:
+    """The corpus minus the pinned refusals: every expression the ladder accepts."""
+    return _corpus_coefficients() - REFUSED_COEFFICIENTS
+
+
 class TestSoundnessProperty(unittest.TestCase):
     """The ladder must never lie — checked against the whole committed corpus."""
+
+    def test_refusals_are_exactly_the_known_set(self) -> None:
+        """Which coefficients the ladder refuses is pinned, in both directions.
+
+        A new unparseable coefficient in `examples/data/` fails here -- loudly,
+        naming the expression -- rather than quietly reducing what the soundness
+        properties below cover.  A refusal that disappears fails too, so the
+        pinned set cannot rot once #562 lands.
+        """
+        refused = set()
+        # The FULL corpus on purpose: `_decidable_corpus_coefficients()` removes
+        # the refusals by construction, which would make this assertion vacuous.
+        for expr in sorted(_corpus_coefficients()):
+            try:
+                sign_of(expr)
+            except KineticEvalError:
+                refused.add(expr)
+        self.assertEqual(
+            refused,
+            set(REFUSED_COEFFICIENTS),
+            "the set of coefficients sign_of refuses has changed; see GH #562",
+        )
 
     def test_every_definite_verdict_agrees_with_numeric_evaluation(self) -> None:
         """Sample each signed verdict at randomized parameters of both signs.
@@ -306,7 +350,7 @@ class TestSoundnessProperty(unittest.TestCase):
         """
         # Seeded sampling for reproducibility; nothing cryptographic here.
         rng = random.Random(_SEED)  # noqa: S311
-        expressions = _corpus_coefficients()
+        expressions = _decidable_corpus_coefficients()
         self.assertGreater(len(expressions), 100, "corpus fixture looks empty")
 
         checked = 0
@@ -349,7 +393,7 @@ class TestSoundnessProperty(unittest.TestCase):
 
     def test_ratio_round_trip(self) -> None:
         """``ratio(a, a)`` is 1, and ``ratio(a, b)`` inverts consistently."""
-        for expr in sorted(_corpus_coefficients()):
+        for expr in sorted(_decidable_corpus_coefficients()):
             with self.subTest(expr=expr):
                 self.assertEqual(constant_ratio(expr, expr), Fraction(1))
 
@@ -359,7 +403,7 @@ class TestSoundnessProperty(unittest.TestCase):
         Generated mechanically over the corpus, so it covers far more shapes
         than any hand-picked example.
         """
-        for expr in sorted(_corpus_coefficients()):
+        for expr in sorted(_decidable_corpus_coefficients()):
             with self.subTest(expr=expr):
                 # eff = expr/kin; negating both leaves the ratio identical.
                 self.assertEqual(
