@@ -75,10 +75,7 @@ rebuild could have produced a green gate on an uncertified leg.
   exit 0). By-name lookup is **local-first and short-circuits** (`ResourceSystemClient` 1.26.1,
   `Path.m:29-42`, `FindResource.m:23-34`), so a healthy registry cannot be pre-empted by the
   repository. Nobody is logged out for this: the login lives in the user's own home mounts,
-  never in the repo, and the pipeline never uses it. *Do not simulate logged-out with
-  `CloudDisconnect[]`* — measured here, it deletes the userbase
-  `ApplicationData/CloudObject/Authentication/RecentUser/` record (the `wolframscript`
-  credential store was untouched); the environment variable alone is the non-destructive way.
+    never in the repo, and the pipeline never uses it. Do **not** simulate logged-out with `CloudDisconnect[]`. Measured here, on 2026-09-11: it deleted the userbase `ApplicationData/CloudObject/Authentication/RecentUser/` record and **left the machine logged out of the Wolfram Cloud** — a fresh kernel now reports `$WolframID = None`, and `CloudConnect[]` returns `$Failed` even with the cloud reachable (HTTP 200), so the remaining `~/.cache/Wolfram/WolframScript/connection_*` credential (still byte-identical) does not restore the session on its own. Engine **activation** is untouched (`$LicenseType = Professional`) and nothing in the pipeline needs the login, so this costs capability, not correctness — but restoring it takes one interactive step, `wolframscript -authenticate`. The non-destructive way to test the logged-out case is the environment variable alone: `WOLFRAMSCRIPT_AUTHENTICATIONPATH` at an empty directory.
 - **The engine minor version.** 14.2.1 returned the same verdict on the same input
   (`../tier1-20260911-engine-142/`), which is why that engine could be retired.
 
