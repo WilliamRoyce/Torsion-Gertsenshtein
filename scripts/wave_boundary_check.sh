@@ -45,7 +45,13 @@ stale=""
 for n in $(grep -rhoE 'EXPIRES-WITH: #[0-9]+' docs/ scripts/ 2>/dev/null | grep -oE '[0-9]+' | sort -u); do
   st=$(gh issue view "$n" --json state -q .state 2>/dev/null)
   if [[ "$st" == "CLOSED" ]]; then
-    live=$(grep -rn "EXPIRES-WITH: #$n" docs/ scripts/ | grep -v 'EXPIRED\|still true' | wc -l)
+    # The annotation that discharges a marker ("EXPIRED 2026-..-..", "still true",
+    # "REVIEWED") often wraps onto the next line, so test a 3-line window rather
+    # than the marker's own line -- a line-wise grep reported two false positives
+    # the first time this ran.
+    live=$(grep -rn -A3 "EXPIRES-WITH: #$n" docs/ scripts/ \
+             | awk -v RS='--\n' '!/EXPIRED|still true|REVIEWED/' \
+             | grep -c "EXPIRES-WITH: #$n")
     [[ "$live" -gt 0 ]] && stale="$stale #$n($live)"
   fi
 done

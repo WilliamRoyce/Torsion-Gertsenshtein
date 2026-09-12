@@ -224,7 +224,8 @@ connection data under `~/.cache/Wolfram/WolframScript/`.
 - `I-543.md` research item 5 ("ruled out by test … the two Function Repository resources"):
   the test did not discriminate (#556); amended at the instruction site.
 - `stage1_measurements.md` §4.4: rewritten (ruling-out withdrawn with the reason).
-- The `EXPIRES-WITH: #543` sites are re-dated or removed in the same PR as the certification.
+- Every `EXPIRES-WITH` marker naming #543 is re-dated or removed in the same PR as the
+  certification (the markers themselves carry the `#543`; this line is the rule, not a marker).
 
 ## 9. Routing
 
