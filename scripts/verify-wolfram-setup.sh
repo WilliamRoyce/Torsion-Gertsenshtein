@@ -611,8 +611,25 @@ main() {
     echo "========================================"
     echo ""
     
-    # Run all checks
-    check_wolfram_binary || true
+    # Run all checks.
+    #
+    # `|| true` on every check is deliberate -- one failure must not hide the
+    # other nine -- but check 1 is the exception: if the mounted engine is not
+    # there, every later check would start `wolframscript` anyway, and with the
+    # pinned kernel missing that is a CLOUD evaluation. Slow, and it starts a
+    # kernel the caller did not ask for. I-ONB hit exactly that while probing a
+    # redirect with EXPECTED_ENGINE_DIR pointed at an empty path (#559): check 1
+    # refused, and check 2 then ran a kernel against the real engine anyway.
+    #
+    # So this one check short-circuits: no engine, no kernel, report and stop.
+    if ! check_wolfram_binary; then
+        echo ""
+        log_fail "Stopping: every remaining check needs the mounted engine, and"
+        log_fail "  without it wolframscript evaluates in the CLOUD instead."
+        log_fail "  Setup path: .devcontainer/docs/WOLFRAM_GUIDE.md"
+        echo ""
+        exit 1
+    fi
     echo ""
     
     check_wolfram_activation || true
