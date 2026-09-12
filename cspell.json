@@ -849,7 +849,9 @@
     "unpushed",
     "unparseable",
     "invrl",
-    "unregisters"
+    "unregisters",
+    "gsub",
+    "creatordate"
   ],
   "ignoreWords": [
     "Abar",
