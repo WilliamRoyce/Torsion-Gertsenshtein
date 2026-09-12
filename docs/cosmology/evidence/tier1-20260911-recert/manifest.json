@@ -1,0 +1,28 @@
+{
+  "theory_name": "CTEG",
+  "started_utc": "2026-09-11T20:19:19Z",
+  "wolfram_version": "14.3.0",
+  "finished_utc": "2026-09-11T20:27:06Z",
+  "timeout_s": 28800,
+  "exit_status": 0,
+  "timed_out": false,
+  "qt_qpa_platform": "offscreen",
+  "psalter_capabilities_degraded": false,
+  "script_sha256_before": "2232a103a64987ea1a8af2afb5c154b1795f06530abc1dd30b4b6fe86ff65825",
+  "script_sha256_after": "2232a103a64987ea1a8af2afb5c154b1795f06530abc1dd30b4b6fe86ff65825",
+  "script_unmodified": true,
+  "oracle_sha256": "07a8cd59b7eb722251e05432b91dfe77ada3ad0576b451d3441524c81ec412b4",
+  "ours_mx_sha256": "7e2f249e39944e402f14cab0bcd116f2bfc58dede5420e81dcbd747533dc0b95",
+  "ours_mx_committed_as": "ours.mx",
+  "registration": {
+    "script": "scripts/psalter/ensure_registered.sh",
+    "linearly_independent_uuid": "d40a8dd6-658c-47d2-8719-2f5fc8e1f83d",
+    "polynomial_degree_uuid": "2f89f2e6-7bc8-4491-84bf-d8e13c69addb",
+    "linearly_independent_wl_sha256": "7bc228a2eb817a65b1760fee81954922430f11031287b045912c1379bd58b817",
+    "polynomial_degree_notebook_sha256": "c233e226d4c77de65ee19ddbc84c20c9724df467bb86c27f1a65f17fba89787c",
+    "registry_state_at_run": "re-created from an empty ~/.Wolfram/Objects by ensure_registered.sh (rebuild simulation), then verified"
+  },
+  "verify_require_psalter_exit": 0,
+  "xact_bundle": "xCore=0.6.10 xPerm=1.2.4 xTensor=1.3.0 xCoba=0.8.6",
+  "cloud_login_state": "logged in (the harder case); the same assertions pass logged out -- see README"
+}

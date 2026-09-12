@@ -41,15 +41,51 @@ the Function Repository served no definitions to this machine during the session
       docs/cosmology/evidence/tier1-20260911-pass/tier1_diff.json
   ```
 
-  Exit 0 here (and only here) means `match`.
+  Exit 0 here (and only here) means `match`. Since 2026-09-11 it also **refuses** (`REFUSED`,
+  exit 1) an artifact whose `environment.wolfram_version` is not `EXPECTED_WOLFRAM_VERSION`
+  (14.3.0); `../tier1-20260911-engine-142/summary_refused.txt` is that refusal firing.
 
-- **Recompute the comparison** with `run_tier1_gate.sh --diff-only <run-dir>` needs the run's own
-  `.mx`, which is deliberately not committed — point it at a `third_party/psalter_runs/` directory,
-  never at this one; the script refuses otherwise (#544).
+- **Recompute the verdict** — `--diff-only` needs the run's own `.mx`, which this directory does
+  not carry. **`../tier1-20260911-recert/ours.mx` does**: an independent re-run of this gate the
+  same day (`20:19:19Z` vs this one's `15:11:15Z`), from a clean run directory and an *empty*
+  registry, whose `tier1_diff.json` differs from the one here in `generated_utc` and nothing
+  else. That directory documents the recompute; never point `--diff-only` at a directory under
+  `docs/` — it writes its output there, and doing so once destroyed this evidence (#544).
 
-- **Regenerate from scratch** (~8 min, occupies the lane): register the resources once
-  (`wolframscript -file scripts/psalter/register_resources.wl`, needed again after a container
-  rebuild because `~/.Wolfram/Objects` is not bind-mounted), then `bash scripts/psalter/run_tier1_gate.sh`.
+- **Regenerate from scratch** (~8 min on the lane):
+
+  ```bash
+  bash scripts/psalter/ensure_registered.sh      # idempotent; exits non-zero on any failure
+  bash scripts/psalter/run_tier1_gate.sh         # writes third_party/psalter_runs/tier1-<stamp>/
+  ```
+
+  `ensure_registered.sh` registers the two resources under the **fixed UUIDs** recorded above,
+  from the engine-bundled (or userbase) `LinearlyIndependent.wl` and the committed definition
+  notebook (`scripts/psalter/resources/`, both sha256-asserted), then runs
+  `verify-wolfram-setup.sh --require-psalter`, whose check 10 asserts **provenance** — those
+  UUIDs resolved on the master *and* on a subkernel — not merely that the two functions behave.
+  Behavior alone was what this run's check asserted, and a resource fetched from the repository
+  would also have behaved: a rebuild could have produced a green gate on an uncertified leg.
+  `install-psalter.sh` calls it as a required step; re-run it after a container rebuild
+  (the `wolfram-objects` volume, #559, is what stops a rebuild losing the registry at all).
+
+## Independent of the cloud login, and of the engine minor version
+
+Asserted 2026-09-11 with the cloud reachable, both ways: logged in (the harder case — a
+logged-in kernel has a third resolution leg, which cannot preempt a registered name because
+by-name lookup is local-first and short-circuits, `ResourceSystemClient` 1.26.1 `Path.m:29-42`,
+`FindResource.m:23-34`) and logged out (`WOLFRAMSCRIPT_AUTHENTICATIONPATH` at an empty
+directory: `$CloudConnected` False, the same two UUIDs, `verify --require-psalter` exit 0).
+Nobody's Wolfram ID is logged out for this — it lives in the user's own home mounts, never in
+the repo, and the pipeline never uses it. Do **not** simulate logged-out with `CloudDisconnect[]`:
+measured here, it deletes the userbase `Authentication/RecentUser/` record. 14.2.1 gave the same
+verdict on the same input (`../tier1-20260911-engine-142/`), so the engine was never the cause.
+
+**The one failure mode nothing prevents:** the resolver silently unregisters a name whose stored
+object fails `ResourceObjectQ` (`FindResource.m:76-83`) and falls through to the repository.
+The provenance assertion cannot stop that — it makes it impossible to miss (a foreign
+resolution reports the repository's UUID, measured as `b9d713ba-…` for `PolynomialDegree`, whose
+function then returned `$Failed`). Repair: `bash scripts/psalter/ensure_registered.sh`.
 
 ## What the verdict says, and what it does not
 
