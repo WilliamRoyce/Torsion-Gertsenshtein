@@ -783,6 +783,65 @@ residual ∥ WS3 solver ∥ WS4 line-of-sight ∥ WS6 Stage-2. WS3's first hando
 **Magnus and matrix-WKB together** (`solver_design.md` §12), written from the ground up for
 a time-dependent background; nothing is ported from `modal.py` and it is not an oracle.
 
+### Wave-0 completion + hardening boundary — completed 2026-09-12
+
+The completion wave's three prompts merged 2026-09-09/11 (I-REM, I-533, I-543) and the
+Tier-1 gate passes. **Foundation hardening then ran on top of it**, because four audits found
+things that would have made Wave 1 wrong: the certified configuration was not robust to a
+container rebuild *and failed green*; a fresh user could not reach a working container; the
+"engine plays no role" claim had no artifact; the Wave-1 issue bodies were not self-sufficient;
+and A7/#547 had never run.
+
+**Closed here:** #547 (three of the four excluded oracle theories derived — 9 s, 45 s, 49 s;
+`theory_radial` measured un-derivable), #554 (drift classes documented, `--staleness` detector
+shipped, `run.sh` no longer derives in place), #543/#551's markers discharged. **Filed here:**
+#559 (onboarding — the I-ONB prompt implements it), #560 (the #394 volume-element check rejects
+every FRW measure), #561 (`derive` reported success for an aborted derivation — **fixed**),
+#562 (a shipped spec now carries a Wolfram call form, invalidating #428's premise).
+
+**Two defects came from execution, not review**, and both are the same shape: a check that
+could not fail. `verify --require-psalter` asserted resource *behavior*, which a resource
+fetched from the repository would also satisfy — so a rebuild could have certified an
+uncertified leg. And `wolframscript` exits **0** after an uncaught `Throw`, so every
+pipeline-detected derivation error looked like success. Each is now an assertion that was
+watched failing.
+
+**The boundary record** — `scripts/wave_boundary_check.sh --with-wolfram`, which exists
+because prose had failed this orchestrator three times:
+
+```
+    == wave boundary check @ 7bf15d77 (2026-09-12T15:47:37Z) ==
+      GREEN  working tree clean
+      GREEN  nothing unpushed
+      GREEN  no delegate worktrees
+      GREEN  no remote cosmo/* branches
+      GREEN  CI 34702806495 [Run Tests] completed/success
+      GREEN  every open cosmology issue has a milestone
+      GREEN  no EXPIRES-WITH marker for a closed issue left un-dated
+      GREEN  every merged prompt carries a STATUS header
+      GREEN  MEMORY.md 98 lines / 16992 B
+      GREEN  memory index complete (every link resolves, no orphan)
+      GREEN  tidal sweep exits 2 (retired, names its replacement)
+      GREEN  tidal sample exits 2 (retired, names its replacement)
+      GREEN  tidal analyze exits 2 (retired, names its replacement)
+      GREEN  tidal plot exits 2 (retired, names its replacement)
+      GREEN  oracle --check: 197 fixture(s) are current
+      GREEN  oracle --staleness: 3 current, 40 stale, 6 without a hash, 0 errors (of 49). 'stale' = tidal derive 
+      GREEN  version 0.54.1 is tagged (v0.54.1)
+      GREEN  verify-wolfram-setup --require-psalter exit 0
+    == ALL GREEN ==
+```
+
+`CI 34702806495: success` [Run Tests] on `7bf15d77`, and `CI 34701324911: success`
+[Frozen Legacy Oracle] on `e9796be1`, which carried every oracle change. Version **v0.54.1**
+tagged and pushed. The Tier-1 gate was re-run from scratch from an **empty** registry:
+`VERDICT: MATCH`, `tier1_diff.json` identical to I-543's but for `generated_utc`
+(`evidence/tier1-20260911-recert/`, with the run's own `.mx` committed).
+
+**What is open at this boundary:** **I-ONB (#559) only** — the one remaining M0.5 issue, a
+delegate prompt the user dispatches. It is not a Wave-1 dependency. Carried forward with
+owners: #558, #548, #560, #562.
+
 ### Wave-boundary checklist
 
 What the next planning session does *first*, before planning anything. **Run
