@@ -70,9 +70,12 @@ file was last derived — not "legacy as of the version that froze it". The corp
 `--check` compares fresh `inspect`/`validate` runs **over the committed spec** against the
 committed reports: it detects an edited spec or a changed reader, and it is **structurally
 blind** to "the committed spec is older than what `derive` would produce today" (#554).
-That blind spot has a license-free detector (`derivation_hash` against the hash of
-`tidal derive --dry-run`'s generated script — see `scripts/oracles/README.md`), and it is
-why re-deriving in place from `examples/*/run.sh` now needs `FORCE_DERIVE=1`.
+That blind spot has a license-free detector, `freeze_legacy_oracle.py --staleness`
+(`derivation_hash` against the hash of the driver script `tidal derive` would generate here —
+see `scripts/oracles/README.md`; as of 2026-09-11 it reports **0 current / 40 stale / 6
+without a hash**, because every committed spec predates the generator's last text change on
+2026-08-18 — vintage, not drift), and it is why re-deriving in place from
+`examples/*/run.sh` now needs `FORCE_DERIVE=1`.
 
 Three drift classes are known and are **representational, not physical**. The §5.2 mapping
 must not treat their absence in the new package as a regression, and a port that reproduces

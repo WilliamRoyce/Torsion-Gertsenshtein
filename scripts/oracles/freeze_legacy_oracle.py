@@ -60,6 +60,7 @@ import re
 import socket
 import subprocess  # noqa: S404 -- running legacy is this script's entire purpose
 import sys
+import tempfile
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -676,6 +677,76 @@ def cmd_check(entries: list[Entry], exclusions: list[Exclusion]) -> int:
     return 0
 
 
+def script_hash_now(pair: Pair) -> tuple[str | None, int]:
+    """Return the ``derivation_hash`` legacy would compute for this pair *here*.
+
+    ``tidal/cli/_derive.py`` hashes the generated driver script and skips
+    wolframscript when the committed spec already carries that hash; this
+    reproduces the criterion without touching a kernel.  The script is taken
+    from ``--save-script`` (the exact bytes the hash covers), not from
+    ``--dry-run``'s stdout: twelve theories print a generator banner there
+    (the perturbative-reduction notice, for one), and hashing stdout folded
+    that banner into the verdict -- measured 2026-09-11 as 12/46 disagreements
+    against an in-process ``generate_wls`` before this was changed.
+    """
+    with tempfile.TemporaryDirectory(prefix="oracle-staleness-") as tmp:
+        script = Path(tmp) / f"{pair.ident}.wls"
+        capture = run_legacy(
+            ["derive", pair.theory, "--dry-run", "--save-script", str(script)]
+        )
+        if capture.exit_code != 0 or not script.is_file():
+            return None, capture.exit_code or 1
+        return hashlib.sha256(script.read_bytes()).hexdigest(), 0
+
+
+def cmd_staleness(pairs: list[Pair]) -> int:
+    """Report, per committed spec, whether ``tidal derive`` would re-derive it here.
+
+    ``--check`` is structurally blind to "the committed spec is older than what
+    ``derive`` would produce today" (#554): it compares readers over the
+    committed file.  This is the license-free detector for that blind spot,
+    and it is informational by design -- the corpus is mixed-vintage on purpose
+    (README, "three drift classes"), so a stale row is a fact about vintage,
+    never a failing check.  Two limits are part of the report because they are
+    part of the mechanism: the hash covers the generated driver script only,
+    not the ``tidal/wolfram/*.wl`` modules it loads, and that script embeds the
+    checkout's absolute pipeline path, so a worktree reports everything stale.
+    """
+    rows: list[tuple[str, str, str]] = []
+    counts = {"current": 0, "stale": 0, "no-hash": 0, "error": 0}
+    for pair in pairs:
+        metadata = json.loads((REPO / pair.spec).read_text(encoding="utf-8")).get(
+            "metadata", {}
+        )
+        recorded = metadata.get("derivation_hash")
+        now, exit_code = script_hash_now(pair)
+        if now is None:
+            verdict, detail = "error", f"derive --dry-run exited {exit_code}"
+        elif not isinstance(recorded, str):
+            verdict, detail = (
+                "no-hash",
+                f"spec records no derivation_hash; now {now[:12]}",
+            )
+        elif recorded == now:
+            verdict, detail = "current", recorded[:12]
+        else:
+            verdict, detail = "stale", f"recorded {recorded[:12]} != now {now[:12]}"
+        counts[verdict] += 1
+        rows.append((verdict, pair.ident, detail))
+    width = max(len(row[1]) for row in rows) if rows else 0
+    for verdict, ident, detail in rows:
+        print(f"  {verdict:<8} {ident:<{width}}  {detail}")
+    print(
+        f"\n{counts['current']} current, {counts['stale']} stale, "
+        f"{counts['no-hash']} without a hash, {counts['error']} errors "
+        f"(of {len(pairs)}). 'stale' = tidal derive would re-derive this spec at "
+        f"this checkout: the generator changed since the file was derived, or the "
+        f"checkout path differs (the script embeds it). Vintage, not drift; the "
+        f"hash covers the driver script, not tidal/wolfram/*.wl."
+    )
+    return 2 if counts["error"] else 0
+
+
 def cmd_verify_determinism(pairs: list[Pair]) -> int:
     """Capture everything twice under different hash seeds and compare.
 
@@ -714,6 +785,11 @@ def main(argv: list[str] | None = None) -> int:
         help="print the resolved corpus and exclusions; do not run legacy",
     )
     mode.add_argument(
+        "--staleness",
+        action="store_true",
+        help="per spec: would tidal derive re-derive it here? (informational; no kernel)",
+    )
+    mode.add_argument(
         "--verify-determinism",
         action="store_true",
         help="capture twice under different hash seeds and assert equality",
@@ -739,6 +815,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.list:
         return cmd_list(pairs, exclusions)
+    if args.staleness:
+        return cmd_staleness(pairs)
     if args.verify_determinism:
         return cmd_verify_determinism(pairs)
 

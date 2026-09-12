@@ -28,10 +28,24 @@ uv run python -m scripts.oracles.freeze_legacy_oracle --check          # compare
 uv run python -m scripts.oracles.freeze_legacy_oracle --list           # corpus only; no legacy run
 uv run python -m scripts.oracles.freeze_legacy_oracle --only <id>      # one spec, to stdout
 uv run python -m scripts.oracles.freeze_legacy_oracle --verify-determinism
+uv run python -m scripts.oracles.freeze_legacy_oracle --staleness      # per spec: would derive re-derive it here? no kernel
 ```
 
 A full run is ~5–8 minutes: 46 theories × 4 legacy invocations, serial. `--list` answers
 "what is in the corpus" in a second without running anything.
+
+**`--staleness` is the license-free detector for `--check`'s blind spot (#554).** `--check`
+compares readers *over the committed spec*, so it cannot see that a committed spec is older
+than what `derive` would produce today. `--staleness` regenerates each theory's driver
+script with `tidal derive --dry-run` (pure Python, ~1 s each, no kernel) and compares its
+sha256 with the spec's `metadata.derivation_hash` — exactly the criterion `derive` itself
+uses to decide whether to skip wolframscript, so `current` means "a `tidal derive` here would
+cache-hit" and `stale` means it would re-derive. It is **informational**: the corpus is
+mixed-vintage by design (see the oracle README's three drift classes), so a stale row is a
+fact about vintage, never a failing check, and it exits non-zero only when a dry-run itself
+fails. Two limits are part of the report: the hash covers the generated driver script only,
+not the `tidal/wolfram/*.wl` modules it loads; and the script embeds the checkout's absolute
+pipeline path, so a worktree reports every spec stale — run it from the canonical checkout.
 
 **`--check` runs in CI, path-filtered** — `.github/workflows/oracle.yml`. It is also run by
 hand, and by the orchestrator at merge.
