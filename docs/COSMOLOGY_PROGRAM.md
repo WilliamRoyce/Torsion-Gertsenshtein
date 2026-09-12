@@ -839,6 +839,23 @@ tagged and pushed. The Tier-1 gate was re-run from scratch from an **empty** reg
 `VERDICT: MATCH`, `tier1_diff.json` identical to I-543's but for `generated_utc`
 (`evidence/tier1-20260911-recert/`, with the run's own `.mx` committed).
 
+**Kernel rehearsal at merge (2026-09-12), the orchestrator's half of I-ONB's criteria.**
+Steps 4–6 run against an **empty** userbase, with `~/.WolframEngine` pointed at a scratch
+tree — `$UserBaseDirectory` itself cannot be redirected (`-userbase` is accepted and then
+refused: the symbol is `Protected`), and the symlink is the indirection the engine actually
+follows, which is what a fresh user's points at. The engine stayed licensed throughout, via
+the container-wide `/usr/share/WolframEngine/Licensing/mathpass` link. Result: xAct **25 s**,
+PSALTer **26 s**, `verify --require-psalter` **51 s** → *All checks passed* on a userbase that
+began with no xAct at all. Certified tree confirmed untouched afterwards (registry byte-tree
+identical to its pre-rehearsal snapshot; PSALTer and xPerm timestamps unchanged; verify green).
+
+It also **corrected an instruction in the merge it was verifying**: `install-xact-xcoba.sh`
+alone produces a working xPerm — it recompiles with the engine's own `mcc` (the resolution
+I-ONB repaired, which had never run before) and the result connects with no `LD_LIBRARY_PATH`
+wrapper. `build-xperm.sh` is a fallback, not a step (`c75d6cc6`). That reverses the orchestrator's
+own answer to I-ONB's xPerm question, which had said the wrapper's need would survive the switch
+"unless mcc sets an RPATH, which cannot be verified without running it". It has now been run.
+
 **What is open at this boundary: nothing in the completion wave.** I-ONB merged 2026-09-12
 (#564, `CI 34712322686: success`), closing #559. Carried forward with owners, none of them a
 Wave-1 dependency: #558 (β over recombination, with #503), #548 (two specs without a TOML, M3),
